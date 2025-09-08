@@ -33,6 +33,9 @@
 // don't update gTimeBlend
 #define HOURS_FREEZE_BLEND 26
 
+#define OW_FOLLOWER_NOT_SET            0xFE
+#define OW_FOLLOWER_RECALLED           0xFF
+
 struct InitialPlayerAvatarState
 {
     u8 transitionFlags;
