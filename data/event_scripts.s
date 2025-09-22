@@ -1156,3 +1156,7 @@ EventScript_VsSeekerChargingDone::
 	.include "data/text/save.inc"
 	.include "data/text/birch_speech.inc"
 	.include "data/scripts/dexnav.inc"
+
+	.include "data/maps/LALUS/scripts.inc"
+
+	.include "data/maps/LALUS_Pokecenter_1F/scripts.inc"
