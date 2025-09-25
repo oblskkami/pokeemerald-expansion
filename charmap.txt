@@ -468,6 +468,7 @@ MUGSHOT_TEST = 01
 
 EMOTE_NORMAL = 00
 EMOTE_ALT = 01
+EMOTE_DUJUA =02
 
 @ mugshot stuff ends
 

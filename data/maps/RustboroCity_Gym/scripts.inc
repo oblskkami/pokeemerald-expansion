@@ -146,12 +146,15 @@ RustboroCity_Gym_Text_ReceivedStoneBadge:
     .string "{PLAYER}从杜娟那里\n得到了岩石徽章。$"
 
 RustboroCity_Gym_Text_StoneBadgeInfoTakeThis:
+    .string "{CREATE_MUGSHOT MUGSHOT_TEST EMOTE_DUJUA}"
     .string "岩石徽章能提高您的\n宝可梦的攻击力。\p有了它，您的宝可梦也能在对战外\n使用秘传招式居合劈了。\p然后……\n请您也收下这个。$"
 
 RustboroCity_Gym_Text_ExplainRockTomb:
+    .string "{CREATE_MUGSHOT MUGSHOT_TEST EMOTE_DUJUA}"
     .string "那个招式学习器39中\n装着岩石封锁。\p用落石攻击对手的同时\n也能降低对手的速度。\p如果您使用招式学习器，\n宝可梦能立刻学会其中的招式。\p但一个招式学习器使用后就会消失，\n所以使用前要仔细考虑才行呢。$"
 
 RustboroCity_Gym_Text_RoxannePostBattle:
+    .string "{CREATE_MUGSHOT MUGSHOT_TEST EMOTE_DUJUA}"
     .string "像您这么强的训练家为什么不去\n其他道馆挑战看看呢？\p通过和许许多多的训练家对战，\n您能够学到很多知识哟。$"
 
 RustboroCity_Gym_Text_GymStatue:
@@ -173,7 +176,9 @@ RustboroCity_Gym_Text_RoxanneRematchDefeat:
     .string "呃……\n我又输了……$"
 
 RustboroCity_Gym_Text_RoxannePostRematch:
+    .string "{CREATE_MUGSHOT MUGSHOT_TEST EMOTE_DUJUA}"
     .string "杜娟：关于宝可梦对战，\n我还有许多事要学习。\p察觉到了这一点，\n让我更喜欢宝可梦对战了！$"
 
 RustboroCity_Gym_Text_RoxanneRematchNeedTwoMons:
+    .string "{CREATE_MUGSHOT MUGSHOT_TEST EMOTE_DUJUA}"
     .string "杜娟：我真高兴能再见到您。\n我是这个道馆的馆主杜娟。\p我相信我们可以再享受很多场\n像上次那样精彩的对战。\p我想看看我们彼此都变强了……\p哎，不……\n您只带了1只宝可梦？\p带至少2只\n宝可梦回来吧。$"
