@@ -11,6 +11,7 @@ enum MugshotEmotes {
     EMOTE_NORMAL = 0,
     EMOTE_ALT,
     EMOTE_DUJUA,
+    EMOTE_CZN,
     EMOTE_COUNT,
 };
 
