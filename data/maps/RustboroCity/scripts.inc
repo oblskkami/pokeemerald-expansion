@@ -735,7 +735,7 @@ RustboroCity_EventScript_RivalTrigger2::
 	waitmovement 0
 	applymovement LOCALID_RUSTBORO_RIVAL, RustboroCity_Movement_RivalApproachPlayer2
 	waitmovement 0
-	applymovement LOCALID_PLAYER, Common_Movement_WalkInPlaceFasterUp
+	applymovement LOCALID_PLAYER, Common_Movement_WalkInPlaceFasterLeft
 	waitmovement 0
 	goto RustboroCity_EventScript_RivalEncounter
 
@@ -774,7 +774,7 @@ RustboroCity_EventScript_RivalTrigger4::
 RustboroCity_EventScript_RivalTrigger5::
 	lockall
 	call RustboroCity_EventScript_PlayRivalMusic
-	applymovement LOCALID_RUSTBORO_RIVAL, Common_Movement_WalkInPlaceFasterDown
+	applymovement LOCALID_RUSTBORO_RIVAL, Common_Movement_WalkInPlaceFasterLeft
 	waitmovement 0
 	playse SE_PIN
 	applymovement LOCALID_RUSTBORO_RIVAL, Common_Movement_ExclamationMark
@@ -783,7 +783,7 @@ RustboroCity_EventScript_RivalTrigger5::
 	waitmovement 0
 	applymovement LOCALID_RUSTBORO_RIVAL, RustboroCity_Movement_RivalApproachPlayer5
 	waitmovement 0
-	applymovement LOCALID_PLAYER, Common_Movement_WalkInPlaceFasterUp
+	applymovement LOCALID_PLAYER, Common_Movement_WalkInPlaceFasterLeft
 	waitmovement 0
 	goto RustboroCity_EventScript_RivalEncounter
 
@@ -799,7 +799,7 @@ RustboroCity_EventScript_RivalTrigger6::
 	waitmovement 0
 	applymovement LOCALID_RUSTBORO_RIVAL, RustboroCity_Movement_RivalApproachPlayer6
 	waitmovement 0
-	applymovement LOCALID_PLAYER, Common_Movement_WalkInPlaceFasterUp
+	applymovement LOCALID_PLAYER, Common_Movement_WalkInPlaceFasterLeft
 	waitmovement 0
 	goto RustboroCity_EventScript_RivalEncounter
 
@@ -815,7 +815,7 @@ RustboroCity_EventScript_RivalTrigger7::
 	waitmovement 0
 	applymovement LOCALID_RUSTBORO_RIVAL, RustboroCity_Movement_RivalApproachPlayer7
 	waitmovement 0
-	applymovement LOCALID_PLAYER, Common_Movement_WalkInPlaceFasterUp
+	applymovement LOCALID_PLAYER, Common_Movement_WalkInPlaceFasterLeft
 	waitmovement 0
 	goto RustboroCity_EventScript_RivalEncounter
 
@@ -956,58 +956,60 @@ RustboroCity_EventScript_BattleBrendanMudkip::
 
 RustboroCity_Movement_RivalApproachPlayer0:
 	walk_down
-	walk_left
-	walk_left
-	walk_left
-	walk_left
+	walk_right
 	walk_down
 	step_end
 
 RustboroCity_Movement_RivalApproachPlayer1:
 	walk_down
-	walk_left
-	walk_left
-	walk_left
 	walk_down
 	step_end
 
 RustboroCity_Movement_RivalApproachPlayer2:
-	walk_down
-	walk_left
-	walk_left
-	walk_down
+    walk_up
+	walk_up
+	walk_up
+	walk_right
+	walk_right
+	walk_right
+	walk_right
 	step_end
 
 RustboroCity_Movement_RivalApproachPlayer3:
 	walk_down
+	walk_left
 	walk_left
 	walk_down
 	step_end
 
 RustboroCity_Movement_RivalApproachPlayer4:
 	walk_down
+	walk_left
 	walk_down
 	step_end
 
 RustboroCity_Movement_RivalApproachPlayer5:
-	walk_down
+    walk_up
+	walk_up
 	walk_right
-	walk_down
+	walk_right
+	walk_right
+	walk_right
 	step_end
 
 RustboroCity_Movement_RivalApproachPlayer6:
-	walk_down
+    walk_up
 	walk_right
 	walk_right
-	walk_down
+	walk_right
+	walk_right
 	step_end
 
 RustboroCity_Movement_RivalApproachPlayer7:
-	walk_down
 	walk_right
 	walk_right
 	walk_right
-	walk_down
+	walk_right
 	step_end
 
 RustboroCity_EventScript_Boy1::
