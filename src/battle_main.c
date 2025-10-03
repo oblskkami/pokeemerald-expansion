@@ -5196,6 +5196,31 @@ static bool32 TryDoGimmicksBeforeMoves(void)
     return FALSE;
 }
 
+static bool32 TryDoFormChangesBeforeMoves(void)
+{
+    if (!(gHitMarker & HITMARKER_RUN))
+    {
+        u32 i, battler;
+        u8 order[MAX_BATTLERS_COUNT];
+
+        PopulateArrayWithBattlers(order);
+        SortBattlersBySpeed(order, FALSE);
+        for (i = 0; i < gBattlersCount; i++)
+        {
+            battler = gBattlerAttacker = gBattleScripting.battler = order[i];
+            if (TryBattleFormChange(battler, FORM_CHANGE_BATTLE_TURN_START))
+            {
+                BattleScriptPushCursorAndCallback(BattleScript_BattlerFormChangeWithStringEnd3);
+                return TRUE;
+            }
+        }
+    }
+
+    if (B_MEGA_EVO_TURN_ORDER >= GEN_7)
+        TryChangeTurnOrder(); // This will just do nothing if no mon has mega evolved.
+    return FALSE;
+}
+
 static bool32 TryDoMoveEffectsBeforeMoves(void)
 {
     if (!(gHitMarker & HITMARKER_RUN))
@@ -5360,6 +5385,8 @@ static void RunTurnActionsFunctions(void)
         if (!IsPursuitTargetSet())
         {
             if (TryDoGimmicksBeforeMoves())
+                return;
+            else if (TryDoFormChangesBeforeMoves())
                 return;
             else if (TryDoMoveEffectsBeforeMoves())
                 return;

@@ -12476,9 +12476,9 @@ const struct Item gItemsInfo[] =
         .name = ITEM_NAME("陨石"),
         .price = 0,
         .description = COMPOUND_STRING(
-			"原本是落入流星瀑\n"
-			"布里的陨石。是在\n"
-			"烟囱山获得的。"),
+			"落入流星瀑布里的\n"
+			"陨石。可以改变特\n"
+            "定宝可梦的样子。"),
         .importance = 1,
         .pocket = POCKET_KEY_ITEMS,
         .type = ITEM_USE_PARTY_MENU,

@@ -3789,6 +3789,15 @@ u32 AbilityBattleEffects(u32 caseID, u32 battler, u32 ability, u32 special, u32 
                 effect++;
             }
             break;
+        case ABILITY_MUTATION_PRESSURE:
+            if (!gSpecialStatuses[battler].switchInAbilityDone)
+            {
+                gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_SWITCHIN_PRESSURE;
+                gSpecialStatuses[battler].switchInAbilityDone = TRUE;
+                BattleScriptPushCursorAndCallback(BattleScript_SwitchInAbilityMsg);
+                effect++;
+            }
+            break;
         case ABILITY_DARK_AURA:
             if (!gSpecialStatuses[battler].switchInAbilityDone)
             {
@@ -9944,6 +9953,7 @@ bool32 DoesSpeciesUseHoldItemToChangeForm(u16 species, u16 heldItemId)
         case FORM_CHANGE_BATTLE_ULTRA_BURST:
         case FORM_CHANGE_ITEM_HOLD:
         case FORM_CHANGE_BEGIN_BATTLE:
+        case FORM_CHANGE_BATTLE_TURN_START:
             if (formChanges[i].param1 == heldItemId)
                 return TRUE;
             break;
@@ -10170,6 +10180,13 @@ u16 GetBattleFormChangeTargetSpecies(u32 battler, enum FormChanges method)
             case FORM_CHANGE_BATTLE_BEFORE_MOVE_CATEGORY:
                 if (formChanges[i].param1 == GetBattleMoveCategory(gCurrentMove)
                     && (formChanges[i].param2 == ABILITY_NONE || formChanges[i].param2 == GetBattlerAbility(battler)))
+                    targetSpecies = formChanges[i].targetSpecies;
+                break;
+            case FORM_CHANGE_BATTLE_TURN_START:
+                if (heldItem == formChanges[i].param1
+                 && gChosenMoveByBattler[battler] != MOVE_NONE   
+                 && gBattleMons[battler].moves[formChanges[i].param2] == gChosenMoveByBattler[battler]
+                 && (formChanges[i].param3 == ABILITY_NONE || formChanges[i].param3 == GetBattlerAbility(battler)))
                     targetSpecies = formChanges[i].targetSpecies;
                 break;
             default:
