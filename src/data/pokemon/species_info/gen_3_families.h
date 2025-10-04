@@ -2335,8 +2335,8 @@ const struct SpeciesInfo gSpeciesInfoGen3[] =
         .weight = 23,
         .description = COMPOUND_STRING(
 			"有着不管是怎样强大的对手\n"
-			"都敢于前去迎战的毅力。\n"
-			"会向着温暖的土地飞行。"),
+			"都敢于前去迎战的毅力。以\n"
+			"捕捉住在森林里的刺尾虫为食。"),
         .pokemonScale = 465,
         .pokemonOffset = 21,
         .trainerScale = 256,
