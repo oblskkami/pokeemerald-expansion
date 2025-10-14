@@ -306,6 +306,18 @@ DirectSoundWaveData_unknown_4::
 DirectSoundWaveData_sc88pro_wind::
 	.incbin "sound/direct_sound_samples/sc88pro_wind.bin"
 
+    .align 2
+DirectSoundWaveData_violin_60::
+	.incbin "sound/direct_sound_samples/violin_60.bin"
+
+	.align 2
+DirectSoundWaveData_violin_72::
+	.incbin "sound/direct_sound_samples/violin_72.bin"
+
+	.align 2
+DirectSoundWaveData_violin_84::
+	.incbin "sound/direct_sound_samples/violin_84.bin"
+
 	.align 2
 DirectSoundWaveData_sc88pro_bubbles::
 	.incbin "sound/direct_sound_samples/sc88pro_bubbles.bin"
