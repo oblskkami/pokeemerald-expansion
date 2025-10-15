@@ -701,9 +701,9 @@ const struct ObjectEventGraphicsInfo gObjectEventGraphicsInfo_Youngster = {
     .affineAnims = gDummySpriteAffineAnimTable,
 };
 
-const struct ObjectEventGraphicsInfo gObjectEventGraphicsInfo_Milate = {
+const struct ObjectEventGraphicsInfo gObjectEventGraphicsInfo_Zinnia = {
     .tileTag = TAG_NONE,
-    .paletteTag = OBJ_EVENT_PAL_TAG_MILATE,
+    .paletteTag = OBJ_EVENT_PAL_TAG_ZINNIA,
     .reflectionPaletteTag = OBJ_EVENT_PAL_TAG_NONE,
     .size = 256,
     .width = 16,
@@ -716,7 +716,7 @@ const struct ObjectEventGraphicsInfo gObjectEventGraphicsInfo_Milate = {
     .oam = &gObjectEventBaseOam_16x32,
     .subspriteTables = sOamTables_16x32,
     .anims = sAnimTable_Standard,
-    .images = sPicTable_Milate,
+    .images = sPicTable_Zinnia,
     .affineAnims = gDummySpriteAffineAnimTable,
 };
 
