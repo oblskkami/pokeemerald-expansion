@@ -360,6 +360,7 @@ const struct TrainerClass gTrainerClasses[TRAINER_CLASS_COUNT] =
     [TRAINER_CLASS_YOUNG_COUPLE] = { _("热恋情侣"), 8 },
     [TRAINER_CLASS_OLD_COUPLE] = { _("金婚夫妻"), 10 },
     [TRAINER_CLASS_SIS_AND_BRO] = { _("海上姐弟"), 3 },
+    [TRAINER_CLASS_INHERITOR] = { _("传承者"), 4 },
     [TRAINER_CLASS_SALON_MAIDEN] = { _("对战塔大君") },
     [TRAINER_CLASS_DOME_ACE] = { _("巨蛋超级巨星") },
     [TRAINER_CLASS_PALACE_MAVEN] = { _("宫殿守护者") },

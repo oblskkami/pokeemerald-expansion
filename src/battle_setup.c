@@ -1464,6 +1464,9 @@ void PlayTrainerEncounterMusic(void)
         case TRAINER_ENCOUNTER_MUSIC_HIKER:
             music = MUS_ENCOUNTER_HIKER;
             break;
+         case TRAINER_ENCOUNTER_MUSIC_RG_ROUTE1:
+            music = MUS_RG_ROUTE1;
+            break;
         case TRAINER_ENCOUNTER_MUSIC_INTERVIEWER:
             music = MUS_ENCOUNTER_INTERVIEWER;
             break;
