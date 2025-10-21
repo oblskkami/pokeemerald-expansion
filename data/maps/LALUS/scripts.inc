@@ -32,7 +32,7 @@ LALUS_Steven_songdongxiText:
 
 LALUS_Steven_jieshiText:
     .string "大吾:太晶珠是我在帕底亚地区\n得到的。\p"
-    .string "通过消耗能量,\n它能让精灵掌握一种\p名为太晶化的力量。\n"
+    .string "通过消耗能量,\n它能让宝可梦掌握一种\p名为太晶化的力量。\n"
     .string "能量只够在每场的战斗中使用一次。\p"
-    .string "太晶珠失去能量的话,\n就去精灵中心充能吧。$"
+    .string "太晶珠失去能量的话,\n就到精灵中心充能吧。$"
 
