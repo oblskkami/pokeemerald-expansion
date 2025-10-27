@@ -2426,6 +2426,8 @@ extern const u8 gText_Rename[]; // change nickname from summary screen
 // Switch Caught Mon into Party
 extern const u8 gText_CannotSendMonToBoxHM[];
 
+extern const u8 gText_Pokenav_Cannot_Access_DexNav[];
+
 // Follower party menu
 extern const u8 gText_Follower[];
 extern const u8 gText_FollowerSet[];

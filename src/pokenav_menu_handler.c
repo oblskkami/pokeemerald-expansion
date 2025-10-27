@@ -3,7 +3,13 @@
 #include "event_data.h"
 #include "main.h"
 #include "sound.h"
+#include "task.h"
+#include "palette.h"
 #include "constants/songs.h"
+#include "overworld.h"
+#include "event_scripts.h"
+#include "dexnav.h"
+#include "wild_encounter.h"
 
 struct Pokenav_Menu
 {
@@ -20,6 +26,8 @@ static void ReturnToConditionMenu(struct Pokenav_Menu *);
 static void ReturnToMainMenu(struct Pokenav_Menu *);
 static u32 GetMenuId(struct Pokenav_Menu *);
 static void SetMenuIdAndCB(struct Pokenav_Menu *, u32);
+static u32 HandleCantAccessDexNavInput(struct Pokenav_Menu *);
+static void Task_WaitFadeAccessDexNav(u8);
 static u32 CB2_ReturnToConditionMenu(struct Pokenav_Menu *);
 static u32 CB2_ReturnToMainMenu(struct Pokenav_Menu *);
 static u32 HandleConditionSearchMenuInput(struct Pokenav_Menu *);
@@ -34,7 +42,7 @@ static void SetMenuInputHandler(struct Pokenav_Menu *);
 // Number of entries - 1 for that menu type
 static const u8 sLastCursorPositions[] =
 {
-    [POKENAV_MENU_TYPE_DEFAULT]           = 2,
+    [POKENAV_MENU_TYPE_DEFAULT]           = 3,
     [POKENAV_MENU_TYPE_UNLOCK_MC]         = 3,
     [POKENAV_MENU_TYPE_UNLOCK_MC_RIBBONS] = 4,
     [POKENAV_MENU_TYPE_CONDITION]         = 2,
@@ -46,30 +54,33 @@ static const u8 sMenuItems[][MAX_POKENAV_MENUITEMS] =
     [POKENAV_MENU_TYPE_DEFAULT] =
     {
         POKENAV_MENUITEM_MAP,
+        POKENAV_MENUITEM_ACCESS_DEXNAV,
         POKENAV_MENUITEM_CONDITION,
-        [2 ... MAX_POKENAV_MENUITEMS - 1] = POKENAV_MENUITEM_SWITCH_OFF
+        [3 ... MAX_POKENAV_MENUITEMS - 1] = POKENAV_MENUITEM_SWITCH_OFF
     },
     [POKENAV_MENU_TYPE_UNLOCK_MC] =
     {
         POKENAV_MENUITEM_MAP,
-        POKENAV_MENUITEM_CONDITION,
+        POKENAV_MENUITEM_ACCESS_DEXNAV,
         POKENAV_MENUITEM_MATCH_CALL,
-        [3 ... MAX_POKENAV_MENUITEMS - 1] = POKENAV_MENUITEM_SWITCH_OFF
+        POKENAV_MENUITEM_CONDITION,
+        [4 ... MAX_POKENAV_MENUITEMS - 1] = POKENAV_MENUITEM_SWITCH_OFF
     },
     [POKENAV_MENU_TYPE_UNLOCK_MC_RIBBONS] =
     {
         POKENAV_MENUITEM_MAP,
-        POKENAV_MENUITEM_CONDITION,
+        POKENAV_MENUITEM_ACCESS_DEXNAV,
         POKENAV_MENUITEM_MATCH_CALL,
-        POKENAV_MENUITEM_RIBBONS,
+        POKENAV_MENUITEM_CONDITION,
         [4 ... MAX_POKENAV_MENUITEMS - 1] = POKENAV_MENUITEM_SWITCH_OFF
     },
     [POKENAV_MENU_TYPE_CONDITION] =
     {
         POKENAV_MENUITEM_CONDITION_PARTY,
         POKENAV_MENUITEM_CONDITION_SEARCH,
+        POKENAV_MENUITEM_RIBBONS,
         POKENAV_MENUITEM_CONDITION_CANCEL,
-        [3 ... MAX_POKENAV_MENUITEMS - 1] = POKENAV_MENUITEM_SWITCH_OFF
+        [5 ... MAX_POKENAV_MENUITEMS - 1] = POKENAV_MENUITEM_SWITCH_OFF
     },
     [POKENAV_MENU_TYPE_CONDITION_SEARCH] =
     {
@@ -246,6 +257,18 @@ static u32 HandleMainMenuInput(struct Pokenav_Menu *menu)
                 menu->callback = HandleCantOpenRibbonsInput;
                 return POKENAV_MENU_FUNC_NO_RIBBON_WINNERS;
             }
+        case POKENAV_MENUITEM_ACCESS_DEXNAV:
+            // TODO (vi): check dexnav access
+            if(!MapHasNoEncounterData()){
+                gSysDexNavFromPokenav = TRUE;
+                CreateTask(Task_WaitFadeAccessDexNav, 0);
+                return POKENAV_MENU_FUNC_EXIT; 
+            }
+            else{
+                menu->callback = HandleCantAccessDexNavInput;
+                return POKENAV_MENU_FUNC_CANNOT_ACCESS_DEXNAV;
+            }
+
         case POKENAV_MENUITEM_SWITCH_OFF:
             return POKENAV_MENU_FUNC_EXIT;
         }
@@ -336,6 +359,33 @@ static u32 HandleCantOpenRibbonsInput(struct Pokenav_Menu *menu)
     }
 
     return POKENAV_MENU_FUNC_NONE;
+}
+
+static u32 HandleCantAccessDexNavInput(struct Pokenav_Menu *menu)
+{
+    if (UpdateMenuCursorPos(menu))
+    {
+        menu->callback = GetMainMenuInputHandler();
+        return POKENAV_MENU_FUNC_MOVE_CURSOR;
+    }
+
+    if (JOY_NEW(A_BUTTON | B_BUTTON))
+    {
+        menu->callback = GetMainMenuInputHandler();
+        return POKENAV_MENU_FUNC_RESHOW_DESCRIPTION;
+    }
+
+    return POKENAV_MENU_FUNC_NONE;
+}
+
+static void Task_WaitFadeAccessDexNav(u8 taskId)
+{
+    // TODO (vi): check if this create task and then destroy task makes any sense
+    if (WaitForPokenavShutdownFade())
+    {
+        CreateTask(Task_OpenDexNavFromStartMenu, 0);
+        DestroyTask(taskId);
+    }
 }
 
 static u32 HandleConditionMenuInput(struct Pokenav_Menu *menu)
