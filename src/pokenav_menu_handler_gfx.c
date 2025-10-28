@@ -210,7 +210,7 @@ struct
             sOptionsLabelGfx_RegionMap,
             sOptionsLabelGfx_AccessDexNav,
             sOptionsLabelGfx_Condition,
-            sOptionsLabelGfx_SwitchOff
+            sOptionsLabelGfx_Ribbons
         }
     },
     [POKENAV_MENU_TYPE_UNLOCK_MC] =
@@ -222,7 +222,7 @@ struct
             sOptionsLabelGfx_AccessDexNav,
             sOptionsLabelGfx_MatchCall,
             sOptionsLabelGfx_Condition,
-            sOptionsLabelGfx_SwitchOff
+            sOptionsLabelGfx_Ribbons
         }
     },
     [POKENAV_MENU_TYPE_UNLOCK_MC_RIBBONS] =
@@ -234,6 +234,7 @@ struct
             sOptionsLabelGfx_AccessDexNav,
             sOptionsLabelGfx_MatchCall,
             sOptionsLabelGfx_Condition,
+            sOptionsLabelGfx_Ribbons,
             sOptionsLabelGfx_SwitchOff
         }
     },
@@ -244,7 +245,6 @@ struct
         .gfx = {
             sOptionsLabelGfx_Party,
             sOptionsLabelGfx_Search,
-            sOptionsLabelGfx_Ribbons,
             sOptionsLabelGfx_Cancel
         }
     },
@@ -253,6 +253,7 @@ struct
         .yStart = 40,
         .deltaY = 16,
         .gfx = {
+
             sOptionsLabelGfx_Cool,
             sOptionsLabelGfx_Beauty,
             sOptionsLabelGfx_Cute,
