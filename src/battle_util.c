@@ -3299,14 +3299,13 @@ u32 AbilityBattleEffects(enum AbilityEffect caseID, enum BattlerId battler, enum
             }
             break;
         case ABILITY_MUTATION_PRESSURE:
-            if (!gSpecialStatuses[battler].switchInAbilityDone)
+            if (shouldAbilityTrigger)
             {
                 gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_SWITCHIN_PRESSURE;
-                gSpecialStatuses[battler].switchInAbilityDone = TRUE;
-                BattleScriptPushCursorAndCallback(BattleScript_SwitchInAbilityMsg);
+                BattleScriptCall(BattleScript_SwitchInAbilityMsg);
                 effect++;
             }
-            break;
+            break;   
         case ABILITY_DARK_AURA:
             if (shouldAbilityTrigger)
             {
@@ -8571,7 +8570,6 @@ bool32 DoesSpeciesUseHoldItemToChangeForm(u16 species, u16 heldItemId)
         case FORM_CHANGE_BATTLE_ULTRA_BURST:
         case FORM_CHANGE_ITEM_HOLD:
         case FORM_CHANGE_BEGIN_BATTLE:
-        case FORM_CHANGE_BATTLE_TURN_START:
             if (formChanges[i].param1 == heldItemId)
                 return TRUE;
             break;
@@ -8724,12 +8722,10 @@ u32 GetBattleFormChangeTargetSpecies(enum BattlerId battler, enum FormChanges me
     if (formChanges == NULL)
         return species;
 
-    // 初始化上下文结构体
     struct FormChangeContext ctx =
     {
         .method = method,
-        .battler = battler,
-        .currentSpecies = species,
+        .currentSpecies = gBattleMons[battler].species,
         .heldItem = gBattleMons[battler].item,
         .ability = ability,
         .status = gBattleMons[battler].status1,
@@ -8738,147 +8734,12 @@ u32 GetBattleFormChangeTargetSpecies(enum BattlerId battler, enum FormChanges me
         .maxHP = gBattleMons[battler].maxHP,
         .teraType = GetBattlerTeraType(battler),
         .level = gBattleMons[battler].level,
-        .targetSpecies = species,  // 默认为当前物种
-        .changed = false,
     };
 
-    // 复制招式信息
     for (u32 i = 0; i < MAX_MON_MOVES; i++)
         ctx.moves[i] = gBattleMons[battler].moves[i];
 
-    // 检查是否需要形态变化
-    for (u32 i = 0; formChanges[i].method != FORM_CHANGE_NONE; i++)
-    {
-        if (method == formChanges[i].method && species != formChanges[i].targetSpecies)
-        {
-            bool shouldChange = false;
-            
-            switch (method)
-            {
-            case FORM_CHANGE_BATTLE_MEGA_EVOLUTION_ITEM:
-            case FORM_CHANGE_BATTLE_PRIMAL_REVERSION:
-            case FORM_CHANGE_BATTLE_ULTRA_BURST:
-                if (ctx.heldItem == formChanges[i].param1)
-                    shouldChange = true;
-                break;
-                    
-            case FORM_CHANGE_BATTLE_MEGA_EVOLUTION_MOVE:
-                // 使用ctx中的moves数组进行检查
-                for (u32 j = 0; j < MAX_MON_MOVES; j++)
-                {
-                    if (ctx.moves[j] == formChanges[i].param1)
-                    {
-                        shouldChange = true;
-                        break;
-                    }
-                }
-                break;
-                    
-            case FORM_CHANGE_BATTLE_SWITCH:
-                if (formChanges[i].param1 == ctx.ability || formChanges[i].param1 == ABILITY_NONE)
-                    shouldChange = true;
-                break;
-                    
-            case FORM_CHANGE_BATTLE_HP_PERCENT:
-                if (formChanges[i].param1 == ctx.ability)
-                {
-                    // 使用整数运算避免浮点数问题
-                    u32 hpCheck = ctx.hp * 10000 / ctx.maxHP;
-                    switch(formChanges[i].param2)
-                    {
-                    case HP_HIGHER_THAN:
-                        if (hpCheck > formChanges[i].param3 * 100)
-                            shouldChange = true;
-                        break;
-                    case HP_LOWER_EQ_THAN:
-                        if (hpCheck <= formChanges[i].param3 * 100)
-                            shouldChange = true;
-                        break;
-                    }
-                }
-                break;
-                    
-            case FORM_CHANGE_BATTLE_GIGANTAMAX:
-                if (ctx.gmaxFactor)
-                    shouldChange = true;
-                break;
-                    
-            case FORM_CHANGE_BATTLE_WEATHER:
-                // Check if there is a required ability and if the battler's ability does not match it
-                // or is suppressed. If so, revert to the no weather form.
-                if (formChanges[i].param2
-                    && ctx.ability != formChanges[i].param2
-                    && formChanges[i].param1 == B_WEATHER_NONE)
-                {
-                    shouldChange = true;
-                }
-                // We need to revert the weather form if the field is under Air Lock, too.
-                else if (!HasWeatherEffect() && formChanges[i].param1 == B_WEATHER_NONE)
-                {
-                    shouldChange = true;
-                }
-                // Otherwise, just check for a match between the weather and the form change table.
-                // Added a check for whether the weather is in effect to prevent end-of-turn soft locks with Cloud Nine / Air Lock
-                else if (((gBattleWeather & formChanges[i].param1) && HasWeatherEffect())
-                    || (gBattleWeather == B_WEATHER_NONE && formChanges[i].param1 == B_WEATHER_NONE))
-                {
-                    shouldChange = true;
-                }
-                break;
-                    
-            case FORM_CHANGE_BATTLE_TURN_END:
-            case FORM_CHANGE_HIT_BY_MOVE:
-                if (formChanges[i].param1 == ctx.ability)
-                    shouldChange = true;
-                break;
-                    
-            case FORM_CHANGE_STATUS:
-                if (ctx.status & formChanges[i].param1)
-                    shouldChange = true;
-                break;
-                    
-            case FORM_CHANGE_BATTLE_TERASTALLIZATION:
-                if (ctx.teraType == formChanges[i].param1)
-                    shouldChange = true;
-                break;
-                    
-            case FORM_CHANGE_BATTLE_BEFORE_MOVE:
-            case FORM_CHANGE_BATTLE_AFTER_MOVE:
-                if (formChanges[i].param1 == gCurrentMove
-                    && (formChanges[i].param2 == ABILITY_NONE || formChanges[i].param2 == ctx.ability))
-                    shouldChange = true;
-                break;
-                    
-            case FORM_CHANGE_BATTLE_BEFORE_MOVE_CATEGORY:
-                if (formChanges[i].param1 == GetBattleMoveCategory(gCurrentMove)
-                    && (formChanges[i].param2 == ABILITY_NONE || formChanges[i].param2 == ctx.ability))
-                    shouldChange = true;
-                break;
-                    
-            case FORM_CHANGE_BATTLE_TURN_START:
-                if (ctx.heldItem == formChanges[i].param1
-                    && gChosenMoveByBattler[battler] != MOVE_NONE   
-                    && ctx.moves[formChanges[i].param2] == gChosenMoveByBattler[battler]
-                    && (formChanges[i].param3 == ABILITY_NONE || formChanges[i].param3 == ctx.ability))
-                    shouldChange = true;
-                break;
-                    
-            default:
-                // 处理其他自定义的形态变化类型
-                shouldChange = HandleCustomFormChange(&ctx, &formChanges[i]);
-                break;
-            }
-            
-            if (shouldChange)
-            {
-                ctx.targetSpecies = formChanges[i].targetSpecies;
-                ctx.changed = true;
-                break;  // 找到匹配的形态变化就退出循环
-            }
-        }
-    }
-
-    return ctx.targetSpecies;
+    return GetFormChangeTargetSpecies_Internal(ctx);
 }
 
 static bool32 CanBattlerFormChange(enum BattlerId battler, enum FormChanges method)
