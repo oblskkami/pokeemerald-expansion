@@ -69,6 +69,63 @@ Debug_CheatStart::
 	release
 	end
 
+Debug_CheatStartFrlg::
+	setflag FLAG_SYS_POKEMON_GET
+	setflag FLAG_PALLET_LADY_NOT_BLOCKING_SIGN
+	setflag FLAG_OPENED_START_MENU
+	setflag FLAG_VISITED_OAKS_LAB
+	setflag FLAG_BEAT_RIVAL_IN_OAKS_LAB
+	givemon SPECIES_BULBASAUR, 20, ITEM_NONE
+	givemon SPECIES_CHARMANDER, 20, ITEM_NONE
+	givemon SPECIES_SQUIRTLE, 20, ITEM_NONE
+	clearflag FLAG_HIDE_OAK_IN_HIS_LAB
+	setflag FLAG_HIDE_RIVAL_IN_LAB
+	setvar VAR_MAP_SCENE_PALLET_TOWN_OAK, 1 @ prevents Oak scene when trying to enter Route 1
+	setflag FLAG_SYS_POKEDEX_GET
+	special SetUnlockedPokedexFlags
+	setvar VAR_MAP_SCENE_PALLET_TOWN_PROFESSOR_OAKS_LAB, 6 @ state after handing in parcel and getting pokedex
+	setvar VAR_MAP_SCENE_VIRIDIAN_CITY_MART, 2
+	setvar VAR_MAP_SCENE_VIRIDIAN_CITY_OLD_MAN, 1
+	setvar VAR_MAP_SCENE_PALLET_TOWN_RIVALS_HOUSE, 1
+	setvar VAR_MAP_SCENE_ROUTE22, 1
+	setvar VAR_MAP_SCENE_POKEMON_CENTER_TEALA, 1 @ end
+	setflag FLAG_SYS_NATIONAL_DEX
+	special EnableNationalPokedex
+	setflag FLAG_SYS_B_DASH
+	setflag FLAG_BADGE01_GET
+	setflag FLAG_BADGE02_GET
+	setflag FLAG_BADGE03_GET
+	setflag FLAG_BADGE04_GET
+	setflag FLAG_BADGE05_GET
+	setflag FLAG_BADGE06_GET
+	setflag FLAG_BADGE07_GET
+	setflag FLAG_BADGE08_GET
+	setflag FLAG_GOT_BIKE_VOUCHER
+	setflag FLAG_GOT_BICYCLE
+	additem ITEM_BICYCLE
+	setflag FLAG_WORLD_MAP_PALLET_TOWN
+	setflag FLAG_WORLD_MAP_VIRIDIAN_CITY
+	setflag FLAG_WORLD_MAP_PEWTER_CITY
+	setflag FLAG_WORLD_MAP_ROUTE4_POKEMON_CENTER_1F
+	setflag FLAG_WORLD_MAP_CERULEAN_CITY
+	setflag FLAG_WORLD_MAP_VERMILION_CITY
+	setflag FLAG_WORLD_MAP_ROUTE10_POKEMON_CENTER_1F
+	setflag FLAG_WORLD_MAP_LAVENDER_TOWN
+	setflag FLAG_WORLD_MAP_CELADON_CITY
+	setflag FLAG_WORLD_MAP_FUCHSIA_CITY
+	setflag FLAG_WORLD_MAP_SAFFRON_CITY
+	setflag FLAG_WORLD_MAP_CINNABAR_ISLAND
+	setflag FLAG_WORLD_MAP_INDIGO_PLATEAU_EXTERIOR
+	setflag FLAG_WORLD_MAP_ONE_ISLAND
+	setflag FLAG_WORLD_MAP_TWO_ISLAND
+	setflag FLAG_WORLD_MAP_THREE_ISLAND
+	setflag FLAG_WORLD_MAP_FOUR_ISLAND
+	setflag FLAG_WORLD_MAP_FIVE_ISLAND
+	setflag FLAG_WORLD_MAP_SIX_ISLAND
+	setflag FLAG_WORLD_MAP_SEVEN_ISLAND
+	release
+	end
+
 Debug_FlagsNotSetOverworldConfigMessage::
 	message Debug_FlagsNotSetOverworldConfigMessage_Text
 	goto Debug_MessageEnd
@@ -86,6 +143,15 @@ Debug_FlagsNotSetBattleConfigMessage_Text:
 	.string "功能不可用！\n"
 	.string "请在这里定义一个可用标志：\l"
 	.string "'include/config/battle.h'！$"
+
+Debug_VarsNotSetBattleConfigMessage::
+	message Debug_VarsNotSetBattleConfigMessage_Text
+	goto Debug_MessageEnd
+
+Debug_VarsNotSetBattleConfigMessage_Text:
+	.string "Feature unavailable!\n"
+	.string "Please define a usable var in:\l"
+	.string "'include/config/battle.h'!$"
 
 Debug_BoxFilledMessage::
 	message Debug_BoxFilledMessage_Text
@@ -293,6 +359,15 @@ Debug_EventScript_Steven_Multi::
 	release
 	end
 
+Debug_EventScript_WallyTutorial::
+	special SavePlayerParty
+	special LoadWallyZigzagoon
+	special StartWallyTutorialBattle
+	waitstate
+	special LoadPlayerParty
+	release
+	end
+
 Debug_BerryPestsDisabled::
 	msgbox DebugText_BerryPestsDisabled, MSGBOX_DEFAULT
 	release
@@ -353,6 +428,16 @@ Debug_EventScript_InflictStatus1_Single:
 	releaseall
 	end
 
+Debug_EventScript_KoPokemon::
+	special ChoosePartyMon
+	waitstate
+	goto_if_ge VAR_0x8004, PARTY_SIZE, Debug_EventScript_InflictStatus1_Close
+	specialvar VAR_RESULT, ScriptGetPartyMonSpecies
+	goto_if_eq VAR_RESULT, SPECIES_EGG, Debug_EventScript_InflictStatus1_Close
+	setko VAR_0x8004
+	releaseall
+	end
+
 Debug_EventScript_SetHiddenNature::
 	special ChoosePartyMon
 	waitstate
@@ -387,7 +472,36 @@ Debug_EventScript_SetHiddenNature::
 	dynmultistack 0, 0, TRUE, 7, FALSE, 0, NULL
 	switch VAR_RESULT
 	case MULTI_B_PRESSED, Debug_EventScript_InflictStatus1_Close
-    special SetHiddenNature
+	special SetHiddenNature
+	releaseall
+	end
+
+Debug_EventScript_SetAbility::
+	special ChoosePartyMon
+	waitstate
+	callnative DebugNative_GetAbilityNames
+	dynmultipush gStringVar1, 0
+	dynmultipush gStringVar2, 1
+	dynmultipush gStringVar3, 2
+	dynmultistack 0, 0, FALSE, 3 FALSE, 0, NULL
+	switch VAR_RESULT
+	case MULTI_B_PRESSED, Debug_EventScript_SetAbilityClose
+	special SetAbility
+Debug_EventScript_SetAbilityClose:
+	releaseall
+	end
+
+Debug_EventScript_SetFriendship::
+	special ChoosePartyMon
+	waitstate
+	callnative DebugNative_Party_SetFriendship
+	releaseall
+	end
+
+Debug_EventScript_GivePokerus::
+	special ChoosePartyMon
+	waitstate
+	callnative DebugNative_Party_SetPokerus
 	releaseall
 	end
 
@@ -499,56 +613,59 @@ Debug_EventScript_InflictStatus1_Text_Freeze:
 Debug_EventScript_InflictStatus1_Text_Frostbite:
 	.string "冻伤$"
 
+Debug_EventScript_InflictStatus1_Text_KO:
+	.string "KO$"
+
 Debug_EventScript_ChangeNature_Text_Hardy:
-	.string "Hardy$"
+	.string "勤奋$"
 Debug_EventScript_ChangeNature_Text_Lonely:
-	.string "Lonely$"
+	.string "怕寂寞$"
 Debug_EventScript_ChangeNature_Text_Brave:
-	.string "Brave$"
+	.string "勇敢$"
 Debug_EventScript_ChangeNature_Text_Adamant:
-	.string "Adamant$"
+	.string "固执$"
 Debug_EventScript_ChangeNature_Text_Naughty:
-	.string "Naughty$"
+	.string "顽皮$"
 Debug_EventScript_ChangeNature_Text_Bold:
-	.string "Bold$"
+	.string "大胆$"
 Debug_EventScript_ChangeNature_Text_Docile:
-	.string "Docile$"
+	.string "坦率$"
 Debug_EventScript_ChangeNature_Text_Relaxed:
-	.string "Relaxed$"
+	.string "悠闲$"
 Debug_EventScript_ChangeNature_Text_Impish:
-	.string "Impish$"
+	.string "淘气$"
 Debug_EventScript_ChangeNature_Text_Lax:
-	.string "Lax$"
+	.string "乐天$"
 Debug_EventScript_ChangeNature_Text_Timid:
-	.string "Timid$"
+	.string "胆小$"
 Debug_EventScript_ChangeNature_Text_Hasty:
-	.string "Hasty$"
+	.string "急躁$"
 Debug_EventScript_ChangeNature_Text_Serious:
-	.string "Serious$"
+	.string "认真$"
 Debug_EventScript_ChangeNature_Text_Jolly:
-	.string "Jolly$"
+	.string "爽朗$"
 Debug_EventScript_ChangeNature_Text_Naive:
-	.string "Naive$"
+	.string "天真$"
 Debug_EventScript_ChangeNature_Text_Modest:
-	.string "Modest$"
+	.string "内敛$"
 Debug_EventScript_ChangeNature_Text_Mild:
-	.string "Mild$"
+	.string "慢吞吞$"
 Debug_EventScript_ChangeNature_Text_Quiet:
-	.string "Quiet$"
+	.string "冷静$"
 Debug_EventScript_ChangeNature_Text_Bashful:
-	.string "Bashful$"
+	.string "害羞$"
 Debug_EventScript_ChangeNature_Text_Rash:
-	.string "Rash$"
+	.string "马虎$"
 Debug_EventScript_ChangeNature_Text_Calm:
-	.string "Calm$"
+	.string "温和$"
 Debug_EventScript_ChangeNature_Text_Gentle:
-	.string "Gentle$"
+	.string "温顺$"
 Debug_EventScript_ChangeNature_Text_Sassy:
-	.string "Sassy$"
+	.string "自大$"
 Debug_EventScript_ChangeNature_Text_Careful:
-	.string "Careful$"
+	.string "慎重$"
 Debug_EventScript_ChangeNature_Text_Quirky:
-	.string "Quirky$"
+	.string "浮躁$"
 
 Debug_EventScript_EWRAMCounters::
 	callnative CheckEWRAMCounters

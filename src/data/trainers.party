@@ -4797,27 +4797,26 @@ Music: Female
 Items: Potion / Potion
 Double Battle: No
 AI: Basic Trainer
-Mugshot: Yellow
 
-Anorith
+Geodude
 Level: 12
 IVs: 12 HP / 12 Atk / 12 Def / 12 SpA / 12 SpD / 12 Spe
-- Smack Down
-- Water Gun
-- Fury Cutter
+- Tackle
+- Defense Curl
+- Rock Throw
 - Rock Tomb
 
-Lileep
+Geodude
 Level: 12
 IVs: 12 HP / 12 Atk / 12 Def / 12 SpA / 12 SpD / 12 Spe
-- Acid
-- Constrict
-- Grass Knot
+- Tackle
+- Defense Curl
+- Rock Throw
 - Rock Tomb
 
 Nosepass @ Oran Berry
 Level: 15
-IVs: 30 HP / 24 Atk / 24 Def / 24 SpA / 24 SpD / 24 Spe
+IVs: 24 HP / 24 Atk / 24 Def / 24 SpA / 24 SpD / 24 Spe
 - Block
 - Harden
 - Tackle

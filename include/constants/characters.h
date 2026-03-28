@@ -234,6 +234,10 @@
 #define EXT_CTRL_CODE_RESUME_MUSIC           0x18
 #define EXT_CTRL_CODE_CREATE_MUGSHOT         0x19
 #define EXT_CTRL_CODE_DESTROY_MUGSHOT        0x1A
+#define EXT_CTRL_CODE_SPEAKER                0x1B
+#define EXT_CTRL_CODE_ACCENT                 0x1C
+#define EXT_CTRL_CODE_BACKGROUND             0x1D
+#define EXT_CTRL_CODE_TEXT_COLORS            0x1E
 
 #define TEXT_COLOR_TRANSPARENT  0x0
 #define TEXT_COLOR_WHITE        0x1
@@ -266,6 +270,7 @@
 #define PLACEHOLDER_ID_MAXIE         0xB
 #define PLACEHOLDER_ID_KYOGRE        0xC
 #define PLACEHOLDER_ID_GROUDON       0xD
+#define PLACEHOLDER_ID_REGION        0xE
 
 // battle placeholders are located in battle_message.h
 

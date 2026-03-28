@@ -118,6 +118,7 @@ static const u8 sFontColorTable[][3] =
     {TEXT_COLOR_WHITE,       TEXT_COLOR_DARK_GRAY,  TEXT_COLOR_LIGHT_GRAY}, // Selection actions
     {TEXT_COLOR_WHITE,       TEXT_COLOR_BLUE,       TEXT_COLOR_LIGHT_BLUE}, // Field moves
     {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE,      TEXT_COLOR_DARK_GRAY},  // Unused
+    {TEXT_COLOR_WHITE,       TEXT_COLOR_RED,        TEXT_COLOR_LIGHT_RED},  // Move relearner
 };
 
 static const struct WindowTemplate sSinglePartyMenuWindowTemplate[] =
@@ -570,7 +571,7 @@ static const struct WindowTemplate sLevelUpStatsWindowTemplate =
     .baseBlock = 0x2E9,
 };
 
-static const struct WindowTemplate sUnusedWindowTemplate1 =
+static const struct WindowTemplate sWindowTemplate_FirstBattleOakVoiceover =
 {
     .bg = 2,
     .tilemapLeft = 2,
@@ -740,6 +741,11 @@ struct
     [MENU_TRADE1] = {sText_Trade4, CursorCb_Trade1},
     [MENU_TRADE2] = {sText_Trade4, CursorCb_Trade2},
     [MENU_TOSS] = {gMenuText_Toss, CursorCb_Toss},
+    [MENU_LEVEL_UP_MOVES]  = {COMPOUND_STRING("升级招式"),     CursorCb_ChangeLevelUpMoves},
+    [MENU_EGG_MOVES]       = {COMPOUND_STRING("蛋招式"),       CursorCb_ChangeEggMoves},
+    [MENU_TM_MOVES]        = {COMPOUND_STRING("学习器招式"),        CursorCb_ChangeTMMoves},
+    [MENU_TUTOR_MOVES]     = {COMPOUND_STRING("教授招式"),     CursorCb_ChangeTutorMoves},
+    [MENU_SUB_MOVES]       = {COMPOUND_STRING("学习招式"),     CursorCb_LearnMovesSubMenu},
     [MENU_CATALOG_BULB] = {COMPOUND_STRING("灯泡"), CursorCb_CatalogBulb},
     [MENU_CATALOG_OVEN] = {COMPOUND_STRING("微波炉"), CursorCb_CatalogOven},
     [MENU_CATALOG_WASHING] = {COMPOUND_STRING("洗衣机"), CursorCb_CatalogWashing},
@@ -891,9 +897,6 @@ static const struct SpriteTemplate sSpriteTemplate_HeldItem =
     .paletteTag = TAG_HELD_ITEM,
     .oam = &sOamData_HeldItem,
     .anims = sSpriteAnimTable_HeldItem,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy
 };
 
 static const struct OamData sOamData_MenuPokeball =
@@ -948,9 +951,6 @@ static const struct SpriteTemplate sSpriteTemplate_MenuPokeball =
     .paletteTag = TAG_POKEBALL,
     .oam = &sOamData_MenuPokeball,
     .anims = sSpriteAnimTable_MenuPokeball,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
 };
 
 static const struct OamData sOamData_MenuPokeballSmall =
@@ -1029,9 +1029,6 @@ static const struct SpriteTemplate sSpriteTemplate_MenuPokeballSmall =
     .paletteTag = TAG_POKEBALL,
     .oam = &sOamData_MenuPokeballSmall,
     .anims = sSpriteAnimTable_MenuPokeballSmall,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
 };
 
 static const struct OamData sOamData_StatusCondition =
@@ -1127,9 +1124,6 @@ const struct SpriteTemplate gSpriteTemplate_StatusIcons =
     .paletteTag = TAG_STATUS_ICONS,
     .oam = &sOamData_StatusCondition,
     .anims = sSpriteTemplate_StatusCondition,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback = SpriteCallbackDummy,
 };
 
 static const u8 *const sUnused_StatStrings[] =
