@@ -226,7 +226,7 @@
       "x": 17,
       "y": 26,
       "respawn_map": "MAP_PEWTER_CITY_POKEMON_CENTER_1F",
-      "respawn_npc": "LOCALID_PEWTER_NURSE"
+      "respawn_npc": "0"
     },
     {
       "id": "HEAL_LOCATION_CERULEAN_CITY",

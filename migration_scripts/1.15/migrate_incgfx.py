@@ -9,7 +9,7 @@ import sys
 
 # Set to 'True' and the files will be printed to stdout rather than
 # updated in place.
-DRY_RUN = False
+DRY_RUN = True
 
 def expand_variables(definition, variables):
     return re.sub(r'\$[({](\w+)[)}]', lambda m: variables.get(m.group(1), m.group(0)), definition)
