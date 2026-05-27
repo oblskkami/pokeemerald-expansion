@@ -234,7 +234,7 @@
       "x": 22,
       "y": 20,
       "respawn_map": "MAP_CERULEAN_CITY_POKEMON_CENTER_1F",
-      "respawn_npc": "LOCALID_CERULEAN_NURSE"
+      "respawn_npc": "0"
     },
     {
       "id": "HEAL_LOCATION_LAVENDER_TOWN",
@@ -242,7 +242,7 @@
       "x": 6,
       "y": 6,
       "respawn_map": "MAP_LAVENDER_TOWN_POKEMON_CENTER_1F",
-      "respawn_npc": "LOCALID_LAVENDER_NURSE"
+      "respawn_npc": "0"
     },
     {
       "id": "HEAL_LOCATION_VERMILION_CITY",
@@ -250,7 +250,7 @@
       "x": 15,
       "y": 7,
       "respawn_map": "MAP_VERMILION_CITY_POKEMON_CENTER_1F",
-      "respawn_npc": "LOCALID_VERMILION_NURSE"
+      "respawn_npc": "0"
     },
     {
       "id": "HEAL_LOCATION_CELADON_CITY",
@@ -258,7 +258,7 @@
       "x": 48,
       "y": 12,
       "respawn_map": "MAP_CELADON_CITY_POKEMON_CENTER_1F",
-      "respawn_npc": "LOCALID_CELADON_NURSE"
+      "respawn_npc": "0"
     },
     {
       "id": "HEAL_LOCATION_FUCHSIA_CITY",
@@ -266,7 +266,7 @@
       "x": 25,
       "y": 32,
       "respawn_map": "MAP_FUCHSIA_CITY_POKEMON_CENTER_1F",
-      "respawn_npc": "LOCALID_FUCHSIA_NURSE"
+      "respawn_npc": "0"
     },
     {
       "id": "HEAL_LOCATION_CINNABAR_ISLAND",
@@ -274,7 +274,7 @@
       "x": 14,
       "y": 12,
       "respawn_map": "MAP_CINNABAR_ISLAND_POKEMON_CENTER_1F",
-      "respawn_npc": "LOCALID_CINNABAR_NURSE"
+      "respawn_npc": "0"
     },
     {
       "id": "HEAL_LOCATION_INDIGO_PLATEAU",
