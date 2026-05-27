@@ -34,6 +34,8 @@ const u16 gObjectEventPal_PlayerUnderwater[] = INCGFX_U16("graphics/object_event
 const u32 gObjectEventPic_MayNormalRunning[] = INCBIN_U32("graphics/object_events/pics/people/may/walking.4bpp", "graphics/object_events/pics/people/may/running.4bpp");
 const u16 gObjectEventPal_May[] = INCGFX_U16("graphics/object_events/palettes/may.pal", ".gbapal");
 const u16 gObjectEventPal_MayReflection[] = INCGFX_U16("graphics/object_events/palettes/may_reflection.pal", ".gbapal");
+const u16 gObjectEventPal_Zinnia[] = INCGFX_U16("graphics/object_events/palettes/zinnia.pal", ".gbapal");
+const u16 gObjectEventPal_Milate[] = INCGFX_U16("graphics/object_events/palettes/milate.pal", ".gbapal");
 const u32 gObjectEventPic_RubySapphireMayNormal[] = INCGFX_U32("graphics/object_events/pics/people/ruby_sapphire_may/walking.png", ".4bpp", "-mwidth 2 -mheight 4");
 const u32 gObjectEventPic_RubySapphireMayRunning[] = INCGFX_U32("graphics/object_events/pics/people/ruby_sapphire_may/running.png", ".4bpp", "-mwidth 2 -mheight 4");
 const u16 gObjectEventPal_RubySapphireMay[] = INCGFX_U16("graphics/object_events/palettes/ruby_sapphire_may.pal", ".gbapal");
@@ -359,6 +361,8 @@ const u32 gObjectEventPic_Greta[] = INCGFX_U32("graphics/object_events/pics/peop
 const u32 gObjectEventPic_Noland[] = INCGFX_U32("graphics/object_events/pics/people/frontier_brains/noland.png", ".4bpp", "-mwidth 2 -mheight 4");
 const u32 gObjectEventPic_Lucy[] = INCGFX_U32("graphics/object_events/pics/people/frontier_brains/lucy.png", ".4bpp", "-mwidth 2 -mheight 4");
 const u32 gObjectEventPic_Brandon[] = INCGFX_U32("graphics/object_events/pics/people/frontier_brains/brandon.png", ".4bpp", "-mwidth 2 -mheight 4");
+const u32 gObjectEventPic_Zinnia[] = INCGFX_U32("graphics/object_events/pics/people/zinnia.png", ".4bpp", "-mwidth 2 -mheight 4");
+const u32 gObjectEventPic_Milate[] = INCGFX_U32("graphics/object_events/pics/people/milate.png", ".4bpp", "-mwidth 2 -mheight 4");
 const u32 gObjectEventPic_PokeBall[] = INCGFX_U32("graphics/object_events/pics/misc/ball_poke.png", ".4bpp", "-mwidth 2 -mheight 4");
 
 const u32 gObjectEventPic_DeoxysOld[] = INCGFX_U32("graphics/object_events/pics/pokemon_old/deoxys.png", ".4bpp", "-mwidth 4 -mheight 4");
