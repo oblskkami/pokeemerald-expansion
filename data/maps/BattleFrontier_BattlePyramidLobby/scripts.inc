@@ -136,7 +136,6 @@ BattleFrontier_BattlePyramidLobby_EventScript_TryEnterChallenge::
 	copyvar VAR_0x8004, VAR_RESULT
 	setvar VAR_0x8005, FRONTIER_PARTY_SIZE
 	special ChoosePartyForBattleFrontier
-	waitstate
 	goto_if_eq VAR_RESULT, 0, BattleFrontier_BattlePyramidLobby_EventScript_LoadPartyAndCancelChallenge
 	msgbox BattleFrontier_BattlePyramidLobby_Text_OkayToSaveBeforeChallenge, MSGBOX_YESNO
 	switch VAR_RESULT
@@ -452,7 +451,6 @@ BattleFrontier_BattlePyramidLobby_EventScript_PickItemsToKeep::
 
 BattleFrontier_BattlePyramidLobby_EventScript_PickItemsFromBag::
 	special ChooseItemsToTossFromPyramidBag
-	waitstate
 	message BattleFrontier_BattlePyramidLobby_Text_PickItemsToKeep
 	waitmessage
 	goto BattleFrontier_BattlePyramidLobby_EventScript_PickItemsToKeep
@@ -460,7 +458,6 @@ BattleFrontier_BattlePyramidLobby_EventScript_PickItemsFromBag::
 
 BattleFrontier_BattlePyramidLobby_EventScript_PickItemsFromParty::
 	special BattlePyramidChooseMonHeldItems
-	waitstate
 	message BattleFrontier_BattlePyramidLobby_Text_PickItemsToKeep
 	waitmessage
 	goto BattleFrontier_BattlePyramidLobby_EventScript_PickItemsToKeep
@@ -530,7 +527,7 @@ BattleFrontier_BattlePyramidLobby_EventScript_ExitRules::
 	end
 
 BattleFrontier_BattlePyramidLobby_Text_WelcomeToBattlePyramid:
-    .string "训练家的勇气\n将在此接受考验！\p欢迎来到\n对战金字塔！\p我是您探索式对战的向导。$"
+    .string "训练家的勇气\n将在此接受考验！\p欢迎来到\n对战金字塔！\p我是您的探索式对战向导。$"
 
 BattleFrontier_BattlePyramidLobby_Text_EmbarkOnChallenge:
     .string "有勇气挑战探索式对战吗？$"
@@ -724,7 +721,7 @@ BattleFrontier_BattlePyramidLobby_Text_ExplainTrainerRules:
     .string "在金字塔内会有训练家\n等着向您挑战。\p每层最多会有\n8个训练家。\p您每打败1个训练家，就会得到1条\n对探索有用的提示。$"
 
 BattleFrontier_BattlePyramidLobby_Text_ExplainMazeRules:
-    .string "每次进入金字塔后迷宫\n都会重新组合，\p迷宫里很暗，\n必须小心探索。\p每打败1个训练家或是1只野生宝可梦\n，里面都会稍微变亮一些。$"
+    .string "每次进入金字塔后迷宫\n都会重新组合，\p迷宫里很暗，\n必须小心探索。\p每打败1个训练家或是1只野生宝可梦，\n里面都会稍微变亮一些。$"
 
 BattleFrontier_BattlePyramidLobby_Text_ExplainBagRules:
     .string "在金字塔中，您可以像使用\n您的包包一样使用战斗包包。\p有2种不同的战斗包包——\n分别是为Lv. 50级和\l自由等级的冒险而准备的。\p2种包包都可以携带10种道具，\n每种道具99个。\p如果在探索中失败的话，\n战斗包包里的东西都会丢失。$"
