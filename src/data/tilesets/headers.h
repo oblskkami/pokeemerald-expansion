@@ -33,6 +33,7 @@ const struct Tileset *const gTilesetPointer_SecretBaseRedCave = &gTileset_Secret
 const struct Tileset gTileset_General =
 {
     .isCompressed = TRUE,
+    .swapPalettes = SWAP_PAL(4),
     .isSecondary = FALSE,
     .tiles = gTilesetTiles_General,
     .palettes = gTilesetPalettes_General,
@@ -44,6 +45,7 @@ const struct Tileset gTileset_General =
 const struct Tileset gTileset_Petalburg =
 {
     .isCompressed = TRUE,
+    .swapPalettes = SWAP_PAL(9),
     .isSecondary = TRUE,
     .tiles = gTilesetTiles_Petalburg,
     .palettes = gTilesetPalettes_Petalburg,
@@ -55,6 +57,7 @@ const struct Tileset gTileset_Petalburg =
 const struct Tileset gTileset_Rustboro =
 {
     .isCompressed = TRUE,
+    .swapPalettes = SWAP_PAL(6),
     .isSecondary = TRUE,
     .tiles = gTilesetTiles_Rustboro,
     .palettes = gTilesetPalettes_Rustboro,
@@ -110,6 +113,7 @@ const struct Tileset gTileset_Lavaridge =
 const struct Tileset gTileset_Fallarbor =
 {
     .isCompressed = TRUE,
+    .swapPalettes = SWAP_PAL(7),
     .isSecondary = TRUE,
     .tiles = gTilesetTiles_Fallarbor,
     .palettes = gTilesetPalettes_Fallarbor,
@@ -121,6 +125,7 @@ const struct Tileset gTileset_Fallarbor =
 const struct Tileset gTileset_Fortree =
 {
     .isCompressed = TRUE,
+    .swapPalettes = SWAP_PAL(8),
     .isSecondary = TRUE,
     .tiles = gTilesetTiles_Fortree,
     .palettes = gTilesetPalettes_Fortree,
@@ -132,6 +137,7 @@ const struct Tileset gTileset_Fortree =
 const struct Tileset gTileset_Lilycove =
 {
     .isCompressed = TRUE,
+    .swapPalettes = SWAP_PAL(6),
     .isSecondary = TRUE,
     .tiles = gTilesetTiles_Lilycove,
     .palettes = gTilesetPalettes_Lilycove,
@@ -143,6 +149,7 @@ const struct Tileset gTileset_Lilycove =
 const struct Tileset gTileset_Mossdeep =
 {
     .isCompressed = TRUE,
+    .swapPalettes = SWAP_PAL(8),
     .isSecondary = TRUE,
     .tiles = gTilesetTiles_Mossdeep,
     .palettes = gTilesetPalettes_Mossdeep,
@@ -165,6 +172,7 @@ const struct Tileset gTileset_EverGrande =
 const struct Tileset gTileset_Pacifidlog =
 {
     .isCompressed = TRUE,
+    .swapPalettes = SWAP_PAL(9),
     .isSecondary = TRUE,
     .tiles = gTilesetTiles_Pacifidlog,
     .palettes = gTilesetPalettes_Pacifidlog,
