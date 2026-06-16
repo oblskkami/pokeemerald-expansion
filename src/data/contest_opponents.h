@@ -772,7 +772,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_CAITLIN] = {
         .filter = CONTEST_FILTER_ONLY_POSTGAME,
-        .species = SPECIES_POLIWAG,
+        .species = SPECIES_POLIWAG, //蚊香蝌蚪
         .nickname = _("蚊香香"),
         .trainerName = _("文乃"),
         .trainerGfxId = OBJ_EVENT_GFX_TUBER_F,
@@ -801,7 +801,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_COLBY] = {
         .filter = CONTEST_FILTER_ONLY_POSTGAME,
-        .species = SPECIES_TOTODILE,
+        .species = SPECIES_TOTODILE, //小锯鳄
         .nickname = _("锯锯"),
         .trainerName = _("文也"),
         .trainerGfxId = OBJ_EVENT_GFX_NINJA_BOY,
@@ -830,7 +830,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_KYLIE] = {
         .filter = CONTEST_FILTER_ONLY_POSTGAME,
-        .species = SPECIES_LEDYBA,
+        .species = SPECIES_LEDYBA, //芭瓢虫
         .nickname = _("芭蕾"),
         .trainerName = _("如蜜"),
         .trainerGfxId = OBJ_EVENT_GFX_BEAUTY,
@@ -859,7 +859,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_LIAM] = {
         .filter = CONTEST_FILTER_ONLY_POSTGAME,
-        .species = SPECIES_DELIBIRD,
+        .species = SPECIES_DELIBIRD, //信使鸟
         .nickname = _("递利"),
         .trainerName = _("弦驰"),
         .trainerGfxId = OBJ_EVENT_GFX_MAN_5,
@@ -888,7 +888,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_MILO] = {
         .filter = CONTEST_FILTER_ONLY_POSTGAME,
-        .species = SPECIES_LARVITAR,
+        .species = SPECIES_LARVITAR, //幼基拉斯
         .nickname = _("基思"),
         .trainerName = _("胜荣"),
         .trainerGfxId = OBJ_EVENT_GFX_MANIAC,
@@ -2454,7 +2454,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_LAMAR] = {
         .filter = CONTEST_FILTER_NONE,
-        .species = SPECIES_KIRLIA,
+        .species = SPECIES_KIRLIA, //奇鲁莉安
         .nickname = _("琦琦"),
         .trainerName = _("虎雄"),
         .trainerGfxId = OBJ_EVENT_GFX_RICH_BOY,
@@ -2483,7 +2483,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_AUBREY] = {
         .filter = CONTEST_FILTER_NONE,
-        .species = SPECIES_BELLOSSOM,
+        .species = SPECIES_BELLOSSOM, //美丽花
         .nickname = _("花花"),
         .trainerName = _("仁宁"),
         .trainerGfxId = OBJ_EVENT_GFX_WOMAN_4,
@@ -2512,7 +2512,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_NIGEL] = {
         .filter = CONTEST_FILTER_NONE,
-        .species = SPECIES_SABLEYE,
+        .species = SPECIES_SABLEYE, //勾魂眼
         .nickname = _("小魄"),
         .trainerName = _("初创"),
         .trainerGfxId = OBJ_EVENT_GFX_CAMPER,
@@ -2541,7 +2541,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_CAMILLE] = {
         .filter = CONTEST_FILTER_NONE,
-        .species = SPECIES_NATU,
+        .species = SPECIES_NATU, //天然雀
         .nickname = _("天天"),
         .trainerName = _("美玲"),
         .trainerGfxId = OBJ_EVENT_GFX_LASS,
@@ -2570,7 +2570,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_DEON] = {
         .filter = CONTEST_FILTER_NONE,
-        .species = SPECIES_SHARPEDO,
+        .species = SPECIES_SHARPEDO, //巨牙鲨
         .nickname = _("鲨米"),
         .trainerName = _("强杰"),
         .trainerGfxId = OBJ_EVENT_GFX_SCHOOL_KID_M,
@@ -2599,7 +2599,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_JANELLE] = {
         .filter = CONTEST_FILTER_NONE,
-        .species = SPECIES_LUVDISC,
+        .species = SPECIES_LUVDISC, //爱心鱼
         .nickname = _("爱玲"),
         .trainerName = _("翩翡"),
         .trainerGfxId = OBJ_EVENT_GFX_GIRL_2,
@@ -2628,7 +2628,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_HEATH] = {
         .filter = CONTEST_FILTER_NONE,
-        .species = SPECIES_HERACROSS,
+        .species = SPECIES_HERACROSS, //赫拉克罗斯
         .nickname = _("赫拉斯哥"),
         .trainerName = _("亚敦"),
         .trainerGfxId = OBJ_EVENT_GFX_MAN_3,
@@ -2657,7 +2657,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_SASHA] = {
         .filter = CONTEST_FILTER_NONE,
-        .species = SPECIES_ELECTRODE,
+        .species = SPECIES_ELECTRODE, //顽皮雷弹
         .nickname = _("地雷"),
         .trainerName = _("奈叶"),
         .trainerGfxId = OBJ_EVENT_GFX_TWIN,
@@ -2686,7 +2686,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_FRANKIE] = {
         .filter = CONTEST_FILTER_NONE,
-        .species = SPECIES_PICHU,
+        .species = SPECIES_PICHU, //皮丘
         .nickname = _("皮太郎"),
         .trainerName = _("振泰"),
         .trainerGfxId = OBJ_EVENT_GFX_YOUNGSTER,
@@ -2715,7 +2715,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_HELEN] = {
         .filter = CONTEST_FILTER_NONE,
-        .species = SPECIES_WOBBUFFET,
+        .species = SPECIES_WOBBUFFET, //果然翁
         .nickname = _("然奇奇"),
         .trainerName = _("蔚来"),
         .trainerGfxId = OBJ_EVENT_GFX_WOMAN_1,
@@ -2744,7 +2744,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_CAMILE] = {
         .filter = CONTEST_FILTER_ONLY_POSTGAME,
-        .species = SPECIES_GENGAR,
+        .species = SPECIES_GENGAR, //耿鬼
         .nickname = _("咯咯"),
         .trainerName = _("绫媚"),
         .trainerGfxId = OBJ_EVENT_GFX_HEX_MANIAC,
@@ -2773,7 +2773,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_MARTIN] = {
         .filter = CONTEST_FILTER_ONLY_POSTGAME,
-        .species = SPECIES_PORYGON,
+        .species = SPECIES_PORYGON, //多边兽
         .nickname = _("折线"),
         .trainerName = _("建彦"),
         .trainerGfxId = OBJ_EVENT_GFX_SCIENTIST_1,
@@ -2802,7 +2802,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_SERGIO] = {
         .filter = CONTEST_FILTER_ONLY_POSTGAME,
-        .species = SPECIES_DRAGONITE,
+        .species = SPECIES_DRAGONITE, //快龙
         .nickname = _("太龙"),
         .trainerName = _("勇真"),
         .trainerGfxId = OBJ_EVENT_GFX_BOY_1,
@@ -2831,7 +2831,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_KAILEY] = {
         .filter = CONTEST_FILTER_ONLY_POSTGAME,
-        .species = SPECIES_MEOWTH,
+        .species = SPECIES_MEOWTH, //喵喵
         .nickname = _("喵咪"),
         .trainerName = _("桃华"),
         .trainerGfxId = OBJ_EVENT_GFX_TWIN,
@@ -2860,7 +2860,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_PERLA] = {
         .filter = CONTEST_FILTER_ONLY_POSTGAME,
-        .species = SPECIES_JYNX,
+        .species = SPECIES_JYNX, //迷唇姐
         .nickname = _("佳丽"),
         .trainerName = _("贤霞"),
         .trainerGfxId = OBJ_EVENT_GFX_BEAUTY,
@@ -2889,7 +2889,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_CLARA] = {
         .filter = CONTEST_FILTER_ONLY_POSTGAME,
-        .species = SPECIES_TOGEPI,
+        .species = SPECIES_TOGEPI, //波克比
         .nickname = _("刺福"),
         .trainerName = _("律歌"),
         .trainerGfxId = OBJ_EVENT_GFX_WOMAN_2,
@@ -2918,7 +2918,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_JAKOB] = {
         .filter = CONTEST_FILTER_ONLY_POSTGAME,
-        .species = SPECIES_ESPEON,
+        .species = SPECIES_ESPEON, //太阳伊布
         .nickname = _("阳灵"),
         .trainerName = _("震泰"),
         .trainerGfxId = OBJ_EVENT_GFX_PSYCHIC_M,
@@ -2947,7 +2947,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_TREY] = {
         .filter = CONTEST_FILTER_ONLY_POSTGAME,
-        .species = SPECIES_SLOWKING,
+        .species = SPECIES_SLOWKING, //呆呆王
         .nickname = _("贤王"),
         .trainerName = _("雄濠"),
         .trainerGfxId = OBJ_EVENT_GFX_SAILOR,
@@ -2976,7 +2976,7 @@ const struct ContestPokemon gContestOpponents[] =
     },
     [CONTEST_OPPONENT_LANE] = {
         .filter = CONTEST_FILTER_ONLY_POSTGAME,
-        .species = SPECIES_URSARING,
+        .species = SPECIES_URSARING, //圈圈熊
         .nickname = _("熊藏"),
         .trainerName = _("忠德"),
         .trainerGfxId = OBJ_EVENT_GFX_BLACK_BELT,
