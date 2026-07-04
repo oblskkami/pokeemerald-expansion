@@ -2052,6 +2052,9 @@ extern const u32 gNamingScreenCursorSquished_Gfx[];
 extern const u32 gNamingScreenCursorFilled_Gfx[];
 extern const u32 gNamingScreenInputArrow_Gfx[];
 extern const u32 gNamingScreenUnderscore_Gfx[];
+extern const u16 gPinyinNamingScreenBackground_Pal[];
+extern const u32 gPinyinNamingScreenBackground_Gfx[];
+extern const u32 gPinyinNamingScreenBackground_Tilemap[];
 
 extern const u32 gPokeblockFeedBg_Tilemap[];
 

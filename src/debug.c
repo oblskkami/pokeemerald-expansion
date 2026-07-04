@@ -1720,6 +1720,7 @@ static void DebugAction_Util_WatchCredits(u8 taskId)
 
 static void DebugAction_Player_Name(u8 taskId)
 {
+    Debug_DestroyMenu_Full(taskId);
     DoNamingScreen(NAMING_SCREEN_PLAYER, gSaveBlock2Ptr->playerName, gSaveBlock2Ptr->playerGender, 0, 0, CB2_ReturnToFieldContinueScript);
 }
 

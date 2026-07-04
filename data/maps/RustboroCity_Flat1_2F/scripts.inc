@@ -76,13 +76,13 @@ RustboroCity_Flat1_2F_EventScript_PokeDoll::
 	end
 
 RustboroCity_Flat1_2F_Text_ComingUpWithMealsIsHard:
-    .string "唉，天天这样太难了……\p什么难？\n还用问吗？\p当然是考虑一天三餐\n该吃什么。\p每天都想着做什么饭\n也不容易。\p短语？或许你应该上\n网搜索神奇宝贝百科。$"
+    .string "唉，天天这样太难了……\p什么难？\n还用问吗？\p当然是考虑一天三餐\n该吃什么。\p每天都想着做什么饭\n也不容易。\p笑话？或许你应该上\n网搜索神奇宝贝百科。$"
 
 RustboroCity_Flat1_2F_Text_HelloDoYouKnowFunnyPhrase:
-    .string "哎，你好！\n欢迎来到箱神家。\p问你一个问题，\n你带过小孩吗？\p你看，我刚当上爸爸，\n抚养孩子什么的都得从头学。\p我现在有点麻烦，\n女儿小凌总是不爱笑。\p我想如果给她讲笑话\n她就会笑起来的。\p你知道什么有趣的故事\n或短语吗？$"
+    .string "哎，你好！\n欢迎来到箱神家。\p问你一个问题，\n你带过小孩吗？\p你看，我刚当上爸爸，\n抚养孩子什么的都得从头学。\p我现在有点麻烦，\n女儿小凌总是不爱笑。\p我想如果给她讲笑话\n她就会笑起来的。\p你知道什么有趣的故事\n或笑话吗？$"
 
 RustboroCity_Flat1_2F_Text_BeenSayingXDoYouKnowBetterPhrase:
-    .string "我最近试过说\n“{STR_VAR_1}”逗她笑，\p你还知道什么\n更好点的短语吗？$"
+    .string "我最近试过说\n“{STR_VAR_1}”逗她笑，\p你还知道什么\n更好点的笑话吗？$"
 
 RustboroCity_Flat1_2F_Text_WonderfulLetsHearSuggestion:
     .string "哎，不错，那就听你的，\n说给她听听吧。$"
@@ -103,13 +103,13 @@ RustboroCity_Flat1_2F_Text_ShesNotSmilingAtAll:
     .string "{STR_VAR_1}\n{STR_VAR_1}\p唔……她根本不笑。\n也许小凌生来就很严肃……$"
 
 RustboroCity_Flat1_2F_Text_ThinkOfMyOwnPhrase:
-    .string "唉，你也不知道什么好短语啊。\n那我只能自己想一个了。\p嗯……\n“{STR_VAR_1}”怎么样？\l我们试试看。$"
+    .string "唉，你也不知道什么好笑话啊。\n那我只能自己想一个了。\p嗯……\n“{STR_VAR_1}”怎么样？\l我们试试看。$"
 
 RustboroCity_Flat1_2F_Text_ShesNotSmilingAtAll2:
     .string "{STR_VAR_1}\n{STR_VAR_1}\p唔……她根本不笑。\n也许小凌生来就很严肃……$"
 
 RustboroCity_Flat1_2F_Text_OhYouDontKnowAny:
-    .string "唉，你也不知道什么好短语啊。\n看来我只能用上次的短语\l逗她笑了。\p对了，如果你想到了什么，\n要赶快告诉我，好吗？$"
+    .string "唉，你也不知道什么好笑话啊。\n看来我只能用上次的笑话\l逗她笑了。\p对了，如果你想到了什么，\n要赶快告诉我，好吗？$"
 
 RustboroCity_Flat1_2F_Text_ThankYouIllGiveYouWallpaper:
     .string "谢谢！\p多亏了你，我亲爱的小凌\n开始笑了！\p实际上，虽然我看起来\n很普通，但我是得文\l公司的主力研究员之一。\p我该做点什么\n报答你？\p对了，我给你的\n电脑宝可梦寄放系统里的\l盒子加些新的背景图片吧。\p在选择背景图案的菜单中\n选择“伙伴”，\p就能连接到\n新的背景图片。$"

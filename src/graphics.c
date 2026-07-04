@@ -2011,6 +2011,9 @@ const u32 gNamingScreenBackground_Tilemap[]      = INCGFX_U32("graphics/naming_s
 const u32 gNamingScreenKeyboardUpper_Tilemap[]   = INCGFX_U32("graphics/naming_screen/keyboard_upper.bin", ".smolTM");
 const u32 gNamingScreenKeyboardLower_Tilemap[]   = INCGFX_U32("graphics/naming_screen/keyboard_lower.bin", ".smolTM");
 const u32 gNamingScreenKeyboardSymbols_Tilemap[] = INCGFX_U32("graphics/naming_screen/keyboard_symbols.bin", ".smolTM");
+const u16 gPinyinNamingScreenBackground_Pal[]     = INCGFX_U16("graphics/pinyin/background.png", ".gbapal");
+const u32 gPinyinNamingScreenBackground_Gfx[]     = INCGFX_U32("graphics/pinyin/background.png", ".4bpp.smol");
+const u32 gPinyinNamingScreenBackground_Tilemap[] = INCGFX_U32("graphics/pinyin/background.bin", ".smolTM");
 
 // union room chat
 const u16 gUnionRoomChat_Background_Pal[] = INCGFX_U16("graphics/union_room_chat/background.png", ".gbapal");
