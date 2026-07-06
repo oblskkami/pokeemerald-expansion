@@ -288,7 +288,7 @@ BattleFrontier_OutsideEast_Text_GoRackUpSomeWinsForDaddy:
     .string "去吧，小甜心！\n为了爸爸取得胜利吧！\p你和你妈妈一样，\n绝对能够主导对战！$"
 
 BattleFrontier_OutsideEast_Text_HeardPrettyGirlAtBattleArena:
-    .string "这一路过来可真不容易！\n但我可是听说对战竞技场的\l有个无比漂亮的女孩。\p除了她，你知道我还\n找到了什么？\p一大群满身汗臭的\n粗野的武术家！$"
+    .string "这一路过来可真不容易！\n但我可是听说对战竞技场\l有个无比漂亮的女孩。\p结果你知道我只\n找到了什么吗？\p一大群满身汗臭的\n粗野武术家！$"
 
 BattleFrontier_OutsideEast_Text_SometimesImportantOldManInThere:
     .string "有时候能看到这位看上去\n明显是大人物的老人到这儿来，\p他的宝可梦真强，\n但他本人看起来很和善。$"
@@ -312,7 +312,7 @@ BattleFrontier_OutsideEast_Text_CanDoAnythingWithYou:
     .string "只要有你在身边，我会无往不利。$"
 
 BattleFrontier_OutsideEast_Text_PowerOfOurLoveWillOvercome:
-    .string "哦哦，亲爱的，你太棒了！\p哦哦，我再也等不及了！\p我们马上去挑战\n多人对战间吧！\p如果我们一起去对战塔，\n我们之间爱的力量一定会\l使我们战胜所有人。\p啊，亲爱的，在我们两人面前，\n一切都像推倒多米诺一样！$"
+    .string "哦哦，亲爱的，你太棒了！\p哦哦，我再也等不及了！\p我们马上去挑战\n多人对战间吧！\p如果我们一起去对战沙龙，\n我们之间爱的力量一定会\l使我们战胜所有人。\p啊，亲爱的，在我们两人面前，\n一切都像推倒多米诺一样！$"
 
 BattleFrontier_OutsideEast_Text_FrontierNotExclusivelyForToughTrainers:
     .string "对战开拓区并不是\n强大的训练家专属的，\p似乎很多拥有特别能力的人\n也在被邀请的行列。\p那个亚希达……\p他建造这个地方一定有着\n远大的目标……$"
