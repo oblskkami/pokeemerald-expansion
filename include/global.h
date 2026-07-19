@@ -271,7 +271,7 @@ struct SaveBlock3
 #if APRICORN_TREE_COUNT > 0
     u8 apricornTrees[NUM_APRICORN_TREE_BYTES];
 #endif
-}; /* max size 1624 bytes */
+}; /* max size 1848 bytes */
 
 extern struct SaveBlock3 *gSaveBlock3Ptr;
 

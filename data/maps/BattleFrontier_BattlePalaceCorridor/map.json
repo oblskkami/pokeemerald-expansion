@@ -3,7 +3,6 @@
   "name": "BattleFrontier_BattlePalaceCorridor",
   "layout": "LAYOUT_BATTLE_FRONTIER_BATTLE_PALACE_CORRIDOR",
   "music": "MUS_B_PALACE",
-  "region": "REGION_HOENN",
   "region_map_section": "MAPSEC_BATTLE_FRONTIER",
   "requires_flash": false,
   "weather": "WEATHER_NONE",
@@ -30,7 +29,7 @@
       "flag": "0"
     },
     {
-      "graphics_id": "OBJ_EVENT_GFX_AZURILL",
+      "graphics_id": "OBJ_EVENT_GFX_SPECIES(AZURILL)",
       "x": 3,
       "y": 5,
       "elevation": 0,
@@ -56,7 +55,7 @@
       "flag": "0"
     },
     {
-      "graphics_id": "OBJ_EVENT_GFX_PIKACHU",
+      "graphics_id": "OBJ_EVENT_GFX_SPECIES(PIKACHU)",
       "x": 15,
       "y": 5,
       "elevation": 0,
@@ -82,7 +81,7 @@
       "flag": "0"
     },
     {
-      "graphics_id": "OBJ_EVENT_GFX_AZUMARILL",
+      "graphics_id": "OBJ_EVENT_GFX_SPECIES(AZUMARILL)",
       "x": 13,
       "y": 9,
       "elevation": 0,
@@ -95,7 +94,7 @@
       "flag": "0"
     },
     {
-      "graphics_id": "OBJ_EVENT_GFX_WINGULL",
+      "graphics_id": "OBJ_EVENT_GFX_SPECIES(WINGULL)",
       "x": 3,
       "y": 10,
       "elevation": 0,
@@ -139,5 +138,6 @@
     }
   ],
   "coord_events": [],
-  "bg_events": []
+  "bg_events": [],
+  "region": "REGION_HOENN"
 }
