@@ -1782,7 +1782,7 @@ void DebugMenu_CalculateTime(struct ScriptContext *ctx)
     }
     else
     {
-        u32 day = ((gLocalTime.days - 1) + 6) % 7 ;
+        u32 day = ((gLocalTime.days - 5) + 6) % 7 ;
         RtcCalcLocalTime();
         StringExpandPlaceholders(gStringVar1, gDayNameStringsTable[day]);
         ConvertIntToDecimalStringN(gStringVar2, gLocalTime.hours, STR_CONV_MODE_LEFT_ALIGN, 3);
