@@ -136,7 +136,14 @@ const struct CompressedSpriteSheet gBagFemaleSpriteSheet =
 
 const struct SpritePalette gBagPaletteTable =
 {
-    gBagPalette, TAG_BAG_GFX
+    .data = gBag2Palette, 
+    TAG_BAG_GFX
+};
+
+const struct SpritePalette gBag2PaletteTable =
+{
+    .data = gBagPalette, 
+    TAG_BAG_GFX
 };
 
 static const struct SpriteTemplate sBagSpriteTemplate =
