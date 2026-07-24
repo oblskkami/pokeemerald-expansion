@@ -152,6 +152,10 @@ LilycoveCity_EventScript_MotelSign::
 	msgbox LilycoveCity_Text_MotelSign, MSGBOX_SIGN
 	end
 
+LilycoveCity_EventScript_TVSign::
+	msgbox LilycoveCity_Text_TVSign, MSGBOX_SIGN
+	end
+
 LilycoveCity_EventScript_MuseumSign::
 	lockall
 	specialvar VAR_0x8004, CountPlayerMuseumPaintings
@@ -526,6 +530,9 @@ LilycoveCity_Text_ContestHallSign:
 
 LilycoveCity_Text_MotelSign:
     .string "静水民宿\p“请记住我们——\n水静市的静水。”$"
+
+LilycoveCity_Text_TVSign:
+    .string "丰缘电视台\p“实时为您播报\n全丰缘最新资讯！”$"
 
 LilycoveCity_Text_MuseumSign:
     .string "水静市美术馆\p“大量宝可梦名作\n正在展出！”$"

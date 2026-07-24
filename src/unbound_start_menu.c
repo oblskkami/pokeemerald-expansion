@@ -784,8 +784,8 @@ static void Usm_BuildPyramidFloorText(u8* buf)
     }
     buf[0] = EOS;
     u8* bufEnd = &buf[0];
-    bufEnd = StringAppend(bufEnd, COMPOUND_STRING("Floor "));
     bufEnd = ConvertIntToDecimalStringN(bufEnd, floor + 1, STR_CONV_MODE_LEFT_ALIGN, 1);
+    bufEnd = StringAppend(bufEnd, COMPOUND_STRING(" 层"));
 }
 
 static void Usm_SetupWindows()
@@ -868,8 +868,8 @@ static void Usm_BuildDateTimeString(u8* buf)
     ConvertTimeToDateTime(&dt, &gLocalTime);
 
     u32 hour = (dt.hour + 11) % 12 + 1;
-  const u8* am = COMPOUND_STRING("上午");
-  const u8* pm = COMPOUND_STRING("下午");
+  const u8* am = COMPOUND_STRING("AM");
+  const u8* pm = COMPOUND_STRING("PM");
 
     formattedBufferEnd = StringAppend(formattedBufferEnd, sUsmWeekdayNames[day]);
     formattedBufferEnd = StringAppend(formattedBufferEnd, COMPOUND_STRING(". "));
