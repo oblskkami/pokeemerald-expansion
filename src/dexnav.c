@@ -1951,14 +1951,22 @@ static void DexNavLoadEncounterData(void)
     }
 }
 
-static void TryDrawIconInSlot(enum Species species, s16 x, s16 y)
+static void TryDrawIconInSlot(u16 species, s16 x, s16 y)
 {
+    u8 spriteId;
     if (species == SPECIES_NONE || species > NUM_SPECIES)
+    {
         CreateNoDataIcon(x, y);   //'X' in slot
+    }
     else if (!GetSetPokedexFlag(SpeciesToNationalPokedexNum(species), FLAG_GET_SEEN))
-        CreateMonIcon(SPECIES_NONE, SpriteCB_MonIcon, x, y, 0, 0xFFFFFFFF); //question mark
+    {
+        spriteId = CreateMonIconNoPalette(species, SpriteCB_MonIcon, x, y, 0, 0xFFFFFFFF); // Loads grayscale copy of palette to slots 3-6
+        gSprites[spriteId].oam.paletteNum += 3; // Use grayscale palette for this icon
+    }
     else
+    {
         CreateMonIcon(species, SpriteCB_MonIcon, x, y, 0, 0xFFFFFFFF);
+    }
 }
 
 static void DrawSpeciesIcons(void)

@@ -178,6 +178,39 @@ u8 CreateMonIconIsEgg(enum Species species, void (*callback)(struct Sprite *), s
     return spriteId;
 }
 
+u8 CreateMonIconNoPalette(u16 species, void (*callback)(struct Sprite *), s16 x, s16 y, u8 subpriority, u32 personality)
+{
+    u8 spriteId;
+    u16 palIndex;
+    struct MonIconSpriteTemplate iconTemplate =
+    {
+        .oam = &sMonIconOamData,
+        .image = GetMonIconPtr(species, personality),
+        .anims = sMonIconAnims,
+        .affineAnims = sMonIconAffineAnims,
+        .callback = callback,
+        .paletteTag = POKE_ICON_BASE_PAL_TAG + gSpeciesInfo[species].iconPalIndex,
+    };
+    species = SanitizeSpeciesId(species);
+    palIndex = IndexOfSpritePaletteTag(iconTemplate.paletteTag);
+    memcpy(&gPlttBufferUnfaded[OBJ_PLTT_ID(palIndex+3)], &gPlttBufferUnfaded[palIndex+3], 16);
+    memcpy(&gPlttBufferFaded[OBJ_PLTT_ID(palIndex+3)], &gPlttBufferFaded[palIndex+3], 16);
+    TintPalette_CustomTone(&gPlttBufferFaded[OBJ_PLTT_ID(palIndex+3)], 16, 0, 0, 0);
+    TintPalette_CustomTone(&gPlttBufferUnfaded[OBJ_PLTT_ID(palIndex+3)], 16, 0, 0, 0);
+
+    if (species > NUM_SPECIES)
+        iconTemplate.paletteTag = POKE_ICON_BASE_PAL_TAG;
+#if P_GENDER_DIFFERENCES
+    else if (gSpeciesInfo[species].iconSpriteFemale != NULL && IsPersonalityFemale(species, personality))
+        iconTemplate.paletteTag = POKE_ICON_BASE_PAL_TAG + gSpeciesInfo[species].iconPalIndexFemale;
+#endif
+
+    spriteId = CreateMonIconSprite(&iconTemplate, x, y, subpriority);
+
+    UpdateMonIconFrame(&gSprites[spriteId]);
+
+    return spriteId;
+}
 
 u8 CreateMonIconNoPersonality(enum Species species, void (*callback)(struct Sprite *), s16 x, s16 y, u8 subpriority)
 {
