@@ -843,19 +843,19 @@ static u8 Usm_GetWindowBaseColor(u8 winId)
     }
 }
 
-static const u8* const sUsmMonthNames[13] = {
-    [MONTH_JAN] = COMPOUND_STRING("一月"), [MONTH_FEB] = COMPOUND_STRING("二月"), [MONTH_MAR] = COMPOUND_STRING("三月"),
-    [MONTH_APR] = COMPOUND_STRING("四月"), [MONTH_MAY] = COMPOUND_STRING("五月"), [MONTH_JUN] = COMPOUND_STRING("六月"),
-    [MONTH_JUL] = COMPOUND_STRING("七月"), [MONTH_AUG] = COMPOUND_STRING("八月"), [MONTH_SEP] = COMPOUND_STRING("九月"),
-    [MONTH_OCT] = COMPOUND_STRING("十月"), [MONTH_NOV] = COMPOUND_STRING("十一月"), [MONTH_DEC] = COMPOUND_STRING("十二月"),
-};
+//static const u8* const sUsmMonthNames[13] = {
+//    [MONTH_JAN] = COMPOUND_STRING("一月"), [MONTH_FEB] = COMPOUND_STRING("二月"), [MONTH_MAR] = COMPOUND_STRING("三月"),
+//    [MONTH_APR] = COMPOUND_STRING("四月"), [MONTH_MAY] = COMPOUND_STRING("五月"), [MONTH_JUN] = COMPOUND_STRING("六月"),
+//    [MONTH_JUL] = COMPOUND_STRING("七月"), [MONTH_AUG] = COMPOUND_STRING("八月"), [MONTH_SEP] = COMPOUND_STRING("九月"),
+//    [MONTH_OCT] = COMPOUND_STRING("十月"), [MONTH_NOV] = COMPOUND_STRING("十一月"), [MONTH_DEC] = COMPOUND_STRING("十二月"),
+//};
 
-static const u8* const sUsmWeekdayNames[WEEKDAY_COUNT] = {
-    [WEEKDAY_SUN] = COMPOUND_STRING("星期日"), [WEEKDAY_MON] = COMPOUND_STRING("星期一"),
-    [WEEKDAY_TUE] = COMPOUND_STRING("星期二"), [WEEKDAY_WED] = COMPOUND_STRING("星期三"),
-    [WEEKDAY_THU] = COMPOUND_STRING("星期四"), [WEEKDAY_FRI] = COMPOUND_STRING("星期五"),
-    [WEEKDAY_SAT] = COMPOUND_STRING("星期六"),
-};
+//static const u8* const sUsmWeekdayNames[WEEKDAY_COUNT] = {
+//  [WEEKDAY_SUN] = COMPOUND_STRING("星期日"), [WEEKDAY_MON] = COMPOUND_STRING("星期一"),
+//  [WEEKDAY_TUE] = COMPOUND_STRING("星期二"), [WEEKDAY_WED] = COMPOUND_STRING("星期三"),
+//  [WEEKDAY_THU] = COMPOUND_STRING("星期四"), [WEEKDAY_FRI] = COMPOUND_STRING("星期五"),
+//  [WEEKDAY_SAT] = COMPOUND_STRING("星期六"),
+//};
 
 static void Usm_BuildDateTimeString(u8* buf)
 {
@@ -864,23 +864,23 @@ static void Usm_BuildDateTimeString(u8* buf)
     u8* formattedBufferEnd = &formattedBuffer[0];
 
     struct DateTime dt;
-    u32 day = ((gLocalTime.days - 5) + 6) % 7 ;
+    //u32 day = ((gLocalTime.days - 5) + 6) % 7 ;
     ConvertTimeToDateTime(&dt, &gLocalTime);
 
     u32 hour = (dt.hour + 11) % 12 + 1;
   const u8* am = COMPOUND_STRING("AM");
   const u8* pm = COMPOUND_STRING("PM");
 
-    formattedBufferEnd = StringAppend(formattedBufferEnd, sUsmWeekdayNames[day]);
-    formattedBufferEnd = StringAppend(formattedBufferEnd, COMPOUND_STRING(". "));
-    formattedBufferEnd = ConvertIntToDecimalStringN(formattedBufferEnd, dt.day+19, STR_CONV_MODE_LEADING_ZEROS, 2);
-    formattedBufferEnd = StringAppend(formattedBufferEnd, COMPOUND_STRING("日 "));
+    //formattedBufferEnd = StringAppend(formattedBufferEnd, sUsmWeekdayNames[day]);
+    //formattedBufferEnd = StringAppend(formattedBufferEnd, COMPOUND_STRING("."));
+    //formattedBufferEnd = ConvertIntToDecimalStringN(formattedBufferEnd, dt.day-1, STR_CONV_MODE_LEADING_ZEROS, 2);
+    formattedBufferEnd = StringAppend(formattedBufferEnd, (dt.hour >= 12) ? pm : am);
+    formattedBufferEnd = StringAppend(formattedBufferEnd, COMPOUND_STRING(""));
     formattedBufferEnd = ConvertIntToDecimalStringN(formattedBufferEnd, hour, STR_CONV_MODE_LEADING_ZEROS, 2);
     formattedBufferEnd = StringAppend(formattedBufferEnd, COMPOUND_STRING(":"));
     formattedBufferEnd = ConvertIntToDecimalStringN(formattedBufferEnd, dt.minute, STR_CONV_MODE_LEADING_ZEROS, 2);
-    formattedBufferEnd = StringAppend(formattedBufferEnd, COMPOUND_STRING(" "));
-    formattedBufferEnd = StringAppend(formattedBufferEnd, (dt.hour >= 12) ? pm : am);
-
+    formattedBufferEnd = StringAppend(formattedBufferEnd, COMPOUND_STRING(""));
+    
     StringCopy(buf, formattedBuffer);
 }
 
@@ -1410,4 +1410,3 @@ static bool32 Usm_IsFlashObscured(void)
 {
     return Usm_IsPlayerInBattlePyramid() || GetFlashLevel();
 }
-
