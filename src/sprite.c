@@ -1743,6 +1743,9 @@ void SetSubspriteTables(struct Sprite *sprite, const struct SubspriteTable *subs
 
 bool8 AddSpriteToOamBuffer(struct Sprite *sprite, u8 *oamIndex)
 {
+    if (*oamIndex >= gOamLimit)
+        return TRUE;
+
     if (!sprite->subspriteTables || sprite->subspriteMode == SUBSPRITES_OFF)
         return AddToOamBuffer(oamIndex, &sprite->oam, sprite->copyToObjWin);
     else
@@ -1753,7 +1756,9 @@ static bool8 AddObjWinMaskToOamBuffer(struct Sprite *sprite, u8 *oamIndex)
 {
     if (*oamIndex >= gOamLimit)
     {
-        return 1;
+        gMain.oamBuffer[*oamIndex] = sprite->oam;
+        (*oamIndex)++;
+        return FALSE;
     }
 
     else
@@ -1770,11 +1775,16 @@ bool8 AddSubspritesToOamBuffer(struct Sprite *sprite, u8 *oamIndex)
     const struct SubspriteTable *subspriteTable;
     struct OamData *oam;
 
+    if (*oamIndex >= gOamLimit)
+        return TRUE;
+
     subspriteTable = &sprite->subspriteTables[sprite->subspriteTableNum];
     oam = &sprite->oam;
 
     if (!subspriteTable || !subspriteTable->subsprites)
     {
+        *destOam = *oam;
+        (*oamIndex)++;
         return AddToOamBuffer(oamIndex, oam, sprite->copyToObjWin);
     }
     else
@@ -1796,6 +1806,9 @@ bool8 AddSubspritesToOamBuffer(struct Sprite *sprite, u8 *oamIndex)
         {
             u16 x;
             u16 y;
+
+            if (*oamIndex >= gOamLimit)
+                return TRUE;
 
             x = subspriteTable->subsprites[i].x;
             y = subspriteTable->subsprites[i].y;
