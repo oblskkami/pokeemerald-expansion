@@ -1783,9 +1783,9 @@ bool8 AddSubspritesToOamBuffer(struct Sprite *sprite, u8 *oamIndex)
 
     if (!subspriteTable || !subspriteTable->subsprites)
     {
-        *destOam = *oam;
+        AddToOamBuffer(oamIndex, oam, sprite->copyToObjWin);
         (*oamIndex)++;
-        return AddToOamBuffer(oamIndex, oam, sprite->copyToObjWin);
+        return FALSE;
     }
     else
     {
