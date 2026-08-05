@@ -13,6 +13,9 @@
 .include "sound/voicegroups/unused.inc"
 .include "sound/voicegroups/keysplits/tuba.inc"
 .include "sound/voicegroups/keysplits/french_horn.inc"
+.include "sound/voicegroups/keysplits/flashing_lights.inc"
+.include "sound/voicegroups/keysplits/moonlight_sonata_3rd_movement.inc"
+.include "sound/voicegroups/keysplits/farewell_hyrule_king.inc"
 
 .include "sound/voicegroups/route110.inc"
 .include "sound/voicegroups/route101.inc"
@@ -201,3 +204,4 @@
 .include "sound/voicegroups/rg_sevii_45.inc"
 .include "sound/voicegroups/rg_sevii_67.inc"
 .include "sound/voicegroups/drumsets/rg_credits.inc"
+.include "sound/voicegroups/emerald_universal.inc"
