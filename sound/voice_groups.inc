@@ -205,3 +205,4 @@
 .include "sound/voicegroups/rg_sevii_67.inc"
 .include "sound/voicegroups/drumsets/rg_credits.inc"
 .include "sound/voicegroups/emerald_universal.inc"
+.include "sound/voicegroups/mus_oras_wally.inc"
