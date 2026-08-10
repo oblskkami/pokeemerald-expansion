@@ -3709,7 +3709,7 @@ static u8 ReformatItemDescription(enum Item item, u8 *dest)
 {
     StringCopy(dest, GetItemDescription(item));
     StripLineBreaks(dest);
-    BreakStringAutomatic(dest, 196, 2, FONT_SMALL, HIDE_SCROLL_PROMPT);
+    BreakStringAutomatic(dest, 184, 3, FONT_SMALL, HIDE_SCROLL_PROMPT);
     return CountLineBreaks(dest) + 1;
 }
 
@@ -3745,7 +3745,7 @@ void ScriptShowItemDescription(struct ScriptContext *ctx)
         return; //no box if item obtained previously
     }
 
-    SetWindowTemplateFields(&template, 0, 1, 1, 28, 3, 15, 8);
+    SetWindowTemplateFields(&template, 0, 1, 1, 28, 4, 15, 8);
     sHeaderBoxWindowId = AddWindow(&template);
     FillWindowPixelBuffer(sHeaderBoxWindowId, PIXEL_FILL(0));
     PutWindowTilemap(sHeaderBoxWindowId);
