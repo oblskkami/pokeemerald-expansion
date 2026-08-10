@@ -279,6 +279,7 @@ void BattleIntroSlide2(u8 taskId)
 
     switch (gTasks[taskId].tEnvironment)
     {
+    case BATTLE_ENVIRONMENT_WALLY:   
     case BATTLE_ENVIRONMENT_SAND:
     case BATTLE_ENVIRONMENT_WATER:
         gBattle_BG1_X += 8;

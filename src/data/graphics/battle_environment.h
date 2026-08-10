@@ -30,6 +30,10 @@ const u32 gBattleEnvironmentTiles_Cave[] = INCGFX_U32("graphics/battle_environme
 const u16 gBattleEnvironmentPalette_Cave[] = INCGFX_U16("graphics/battle_environment/cave/palette.pal", ".gbapal");
 const u32 gBattleEnvironmentTilemap_Cave[] = INCGFX_U32("graphics/battle_environment/cave/map.bin", ".smolTM");
 
+const u32 gBattleEnvironmentTiles_Wally[] = INCGFX_U32("graphics/battle_environment/wally/tiles.png", ".4bpp.smol");
+const u16 gBattleEnvironmentPalette_Wally[] = INCGFX_U16("graphics/battle_environment/wally/palette.pal", ".gbapal");
+const u32 gBattleEnvironmentTilemap_Wally[] = INCGFX_U32("graphics/battle_environment/wally/map.bin", ".smolTM");
+
 const u32 gBattleEnvironmentTiles_Building[] = INCGFX_U32("graphics/battle_environment/building/tiles.png", ".4bpp.smol");
 const u16 gBattleEnvironmentPalette_Building[] = INCGFX_U16("graphics/battle_environment/building/palette.pal", ".gbapal");
 const u32 gBattleEnvironmentTilemap_Building[] = INCGFX_U32("graphics/battle_environment/building/map.bin", ".smolTM");
@@ -80,6 +84,9 @@ const u32 gBattleEnvironmentAnimTilemap_Rock[] = INCGFX_U32("graphics/battle_env
 
 const u32 gBattleEnvironmentAnimTiles_Cave[] = INCGFX_U32("graphics/battle_environment/cave/anim_tiles.png", ".4bpp.smol");
 const u32 gBattleEnvironmentAnimTilemap_Cave[] = INCGFX_U32("graphics/battle_environment/cave/anim_map.bin", ".smolTM");
+
+const u32 gBattleEnvironmentAnimTiles_Wally[] = INCGFX_U32("graphics/battle_environment/wally/anim_tiles.png", ".4bpp.smol");
+const u32 gBattleEnvironmentAnimTilemap_Wally[] = INCGFX_U32("graphics/battle_environment/wally/anim_map.bin", ".smolTM");
 
 const u32 gBattleEnvironmentAnimTiles_Building[] = INCGFX_U32("graphics/battle_environment/building/anim_tiles.png", ".4bpp.smol");
 const u32 gBattleEnvironmentAnimTilemap_Building[] = INCGFX_U32("graphics/battle_environment/building/anim_map.bin", ".smolTM");

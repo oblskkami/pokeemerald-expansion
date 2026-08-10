@@ -13,7 +13,6 @@
 }
 
 #define DEFAULT_CAMOUFLAGE_BLEND RGB_WHITE
-
 // Cave values. Used for BATTLE_ENVIRONMENT_CAVE as well as BATTLE_ENVIRONMENT_GROUDON and BATTLE_ENVIRONMENT_KYOGRE
 #if B_NATURE_POWER_MOVES >= GEN_6
     #define CAVE_NATURE_POWER MOVE_POWER_GEM
@@ -359,6 +358,26 @@ const struct BattleEnvironment gBattleEnvironmentInfo[BATTLE_ENVIRONMENT_COUNT] 
         .background = ENVIRONMENT_BACKGROUND(Stadium),
         .palette = gBattleEnvironmentPalette_StadiumWallace,
         .battleIntroSlide = BUILDING_BATTLE_INTRO_SLIDE,
+    },
+
+    [BATTLE_ENVIRONMENT_WALLY] =
+    {
+        .name = _("满充"),
+    #if B_NATURE_POWER_MOVES >= GEN_6
+        .naturePower = MOVE_ENERGY_BALL,
+    #elif B_NATURE_POWER_MOVES >= GEN_4
+        .naturePower = MOVE_SEED_BOMB,
+    #else
+        .naturePower = MOVE_STUN_SPORE,
+    #endif
+        .secretPowerAnimation = gBattleAnimMove_NeedleArm,
+        .secretPowerEffect = B_SECRET_POWER_EFFECT >= GEN_4 ? MOVE_EFFECT_SLEEP : MOVE_EFFECT_POISON,
+        .camouflageType = TYPE_FAIRY,
+        .camouflageBlend = RGB(12, 24, 2),
+        .entry = ENVIRONMENT_ENTRY(Wally),
+        .background = ENVIRONMENT_BACKGROUND(Wally),
+        .palette = gBattleEnvironmentPalette_Wally,
+        .battleIntroSlide = BattleIntroSlide2,
     },
 
     [BATTLE_ENVIRONMENT_GROUDON] =
