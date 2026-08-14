@@ -1,2 +1,0 @@
-voice_group moonlight_sonata_3rd_movement
-	voice_keysplit voicegroup_piano_keysplit, keysplit_moonlight_sonata_3rd_movement_piano
