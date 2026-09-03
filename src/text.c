@@ -567,6 +567,8 @@ void RunTextPrinters(void)
                         case SPRITE_TEXT_PRINTER:
                             break;
                         }
+                        if (currentPrinter->callback != NULL)
+                            currentPrinter->callback(&currentPrinter->printerTemplate, renderState);
                         break;
                     case RENDER_UPDATE:
                         if (currentPrinter->callback != NULL)
@@ -2177,19 +2179,9 @@ u8 DrawKeypadIcon(u8 windowId, u8 keypadIconId, u16 x, u16 y)
     return sKeypadIcons[keypadIconId].width;
 }
 
-u8 GetKeypadIconTileOffset(u8 keypadIconId)
-{
-    return sKeypadIcons[keypadIconId].tileOffset;
-}
-
 u8 GetKeypadIconWidth(u8 keypadIconId)
 {
     return sKeypadIcons[keypadIconId].width;
-}
-
-u8 GetKeypadIconHeight(u8 keypadIconId)
-{
-    return sKeypadIcons[keypadIconId].height;
 }
 
 void SetDefaultFontsPointer(void)

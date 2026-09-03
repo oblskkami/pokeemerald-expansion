@@ -263,7 +263,7 @@ EWRAM_DATA struct Sprite gSprites[MAX_SPRITES + 1] = {0};
 EWRAM_DATA static u8 sSpriteOrder[MAX_SPRITES] = {0};
 EWRAM_DATA static bool8 sShouldProcessSpriteCopyRequests = 0;
 EWRAM_DATA static u8 sSpriteCopyRequestCount = 0;
-EWRAM_DATA static struct SpriteCopyRequest sSpriteCopyRequests[MAX_SPRITES] = {0};
+EWRAM_DATA static struct SpriteCopyRequest sSpriteCopyRequests[MAX_SPRITE_COPY_REQUESTS] = {0};
 EWRAM_DATA u8 gOamLimit = 0;
 static EWRAM_DATA u8 sOamDummyIndex = 0;
 EWRAM_DATA u16 gReservedSpriteTileCount = 0;
@@ -465,7 +465,7 @@ u32 CreateSpriteAtEndUnchecked(const struct SpriteTemplate *template, s16 x, s16
 
 u32 CreateInvisibleSprite(void (*callback)(struct Sprite *))
 {
-    u32 index = CreateSprite(&gDummySpriteTemplate, 0, 0, 31);
+    u32 index = CreateSprite(&gDummySpriteTemplate, 0, 0, 31);//This is not unchecked because CreateInvisibleSprite is only used in places that have no handler for when it returns MAX_SPRITES
 
     if (index == MAX_SPRITES)
     {
@@ -1511,9 +1511,9 @@ static u16 LoadSpriteSheetWithOffset(const struct SpriteSheet *sheet, u32 offset
 
     if (tileStart < 0)
     {
-#if T_SHOULD_RUN_MOVE_ANIM
+#if TESTING
         gLoadFail = TRUE;
-#endif // T_SHOULD_RUN_MOVE_ANIM
+#endif // TESTING
         return 0;
     }
     else
@@ -1743,31 +1743,10 @@ void SetSubspriteTables(struct Sprite *sprite, const struct SubspriteTable *subs
 
 bool8 AddSpriteToOamBuffer(struct Sprite *sprite, u8 *oamIndex)
 {
-    if (*oamIndex >= gOamLimit)
-        return TRUE;
-
     if (!sprite->subspriteTables || sprite->subspriteMode == SUBSPRITES_OFF)
         return AddToOamBuffer(oamIndex, &sprite->oam, sprite->copyToObjWin);
     else
         return AddSubspritesToOamBuffer(sprite, oamIndex);
-}
-
-static bool8 AddObjWinMaskToOamBuffer(struct Sprite *sprite, u8 *oamIndex)
-{
-    if (*oamIndex >= gOamLimit)
-    {
-        gMain.oamBuffer[*oamIndex] = sprite->oam;
-        (*oamIndex)++;
-        return FALSE;
-    }
-
-    else
-    {
-        struct OamData oam = sprite->oam;
-        oam.objMode = ST_OAM_OBJ_WINDOW;
-        gMain.oamBuffer[(*oamIndex)++] = oam;
-        return 0;
-    }
 }
 
 bool8 AddSubspritesToOamBuffer(struct Sprite *sprite, u8 *oamIndex)
@@ -1783,9 +1762,7 @@ bool8 AddSubspritesToOamBuffer(struct Sprite *sprite, u8 *oamIndex)
 
     if (!subspriteTable || !subspriteTable->subsprites)
     {
-        AddToOamBuffer(oamIndex, oam, sprite->copyToObjWin);
-        (*oamIndex)++;
-        return FALSE;
+        return AddToOamBuffer(oamIndex, oam, sprite->copyToObjWin);
     }
     else
     {
@@ -1844,7 +1821,6 @@ bool8 AddSubspritesToOamBuffer(struct Sprite *sprite, u8 *oamIndex)
             if (AddToOamBuffer(oamIndex, &subspriteOam, sprite->copyToObjWin))
                 return TRUE;
         }
-    
     }
 
     return FALSE;

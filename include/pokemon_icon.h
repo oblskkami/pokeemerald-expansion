@@ -38,4 +38,5 @@ u8 GetMonIconPaletteIndexFromSpecies(enum Species species);
 void SafeFreeMonIconPalette(enum Species species);
 u8 CreateMonIconNoPalette(u16 species, void (*callback)(struct Sprite *), s16 x, s16 y, u8 subpriority, u32 personality);
 
+u8 CreateTaggedMonIcon(u32 tileTag, u32 paletteTag, enum Species species);
 #endif // GUARD_POKEMON_ICON_H
