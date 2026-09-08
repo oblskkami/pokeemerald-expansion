@@ -26,5 +26,5 @@ PacifidlogTown_House5_Text_CanSeeMirageIslandToday:
     .string "啊！哦，天哪！\n今天看见了幻之岛！$"
 
 PacifidlogTown_House5_Text_MirageIslandAppearDependingOnWeather:
-    .string "幻之岛……\p那大概是因为\n天气变化而\l不断隐现的幻影。\p还是说，它真的不停地\n消失或出现？$"
+    .string "幻之岛……\p那大概是因为\n天气变化而\l不断隐现的幻影。\p还是说，它真的不停地\n消失或出现？\p据说曾有人\n看见幻之岛的时候,\l目击到了传说中的宝可梦\p时拉比的身影……$"
 
