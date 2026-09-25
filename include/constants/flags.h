@@ -54,7 +54,7 @@
 #define FLAG_SEARCHING       0x20 // used Flag
 #define FLAG_DEXNAV_GET      0x21 // used Flag
 #define FLAG_DETECTOR_MODE   0x22 // used Flag
-#define FLAG_UNUSED_0x023    0x23 // Unused Flag
+#define FLAG_I_EXP_SHARE     0x23 // used Flag
 #define FLAG_UNUSED_0x024    0x24 // Unused Flag
 #define FLAG_UNUSED_0x025    0x25 // Unused Flag
 #define FLAG_UNUSED_0x026    0x26 // Unused Flag
