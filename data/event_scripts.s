@@ -1618,6 +1618,9 @@ Common_EventScript_LegendaryFlewAway::
 	release
 	end
 
+Text_PlayerUsedFieldTool:
+	.string "{PLAYER}使用了{STR_VAR_2}!$"
+
 EventScript_VsSeekerChargingDone::
 	special VsSeekerFreezeObjectsAfterChargeComplete
 	waitstate

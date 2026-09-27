@@ -1,6 +1,7 @@
 #include "global.h"
 #include "event_data.h"
 #include "field_move.h"
+#include "field_move_tools.h"
 #include "fldeff.h"
 #include "fldeff_misc.h"
 #include "party_menu.h"
@@ -8,6 +9,11 @@
 #include "constants/field_move.h"
 #include "constants/moves.h"
 #include "constants/party_menu.h"
+#include "item.h"
+#include "script.h"
+#include "event_scripts.h"
+
+static u8 sFieldMoveSource = FIELD_MOVE_SOURCE_POKEMON;
 
 static bool32 IsAlwaysFalse(enum FieldMove fieldMove)
 {
@@ -190,4 +196,85 @@ const struct FieldMoveInfo gFieldMoveInfo[FIELD_MOVES_COUNT] =
         .partyMsgID = PARTY_MSG_CANT_USE_HERE,
         .hideIfLocked = TRUE,
     },
+    
 };
+
+u8 GetFieldMoveSource(void)
+{
+    return sFieldMoveSource;
+}
+
+void SetFieldMoveSource(u8 source)
+{
+    sFieldMoveSource = source;
+}
+
+bool8 CanUseFly(void)
+{
+    u32 i;
+
+    // Check if the player has the required badge.
+    if (!IsFieldMoveUnlocked(FIELD_MOVE_FLY))
+        return FALSE;
+
+    // If they have the badge, check for a Pokémon that can learn Fly.
+    for (i = 0; i < gPartiesCount[B_TRAINER_PLAYER]; i++)
+    {
+        if (!GetMonData(&gParties[B_TRAINER_PLAYER][i], MON_DATA_IS_EGG))
+        {
+            u16 species = GetMonData(&gParties[B_TRAINER_PLAYER][i], MON_DATA_SPECIES);
+            if (CanLearnTeachableMove(species, MOVE_FLY))
+            {
+                sFieldMoveSource = FIELD_MOVE_SOURCE_POKEMON;
+                return TRUE; // Found a valid Pokémon
+            }
+        }
+    }
+
+    // If no Pokémon is found, check for the Fly Tool item.
+    if (FieldMoveTool_HasKeyItem(FIELD_MOVE_FLY))
+    {
+        sFieldMoveSource = FIELD_MOVE_SOURCE_ITEM;
+        return TRUE; // Found the item
+    }
+
+    // If all checks fail, return FALSE.
+    return FALSE;
+}
+
+void FieldCallback_Surf(void)
+{
+    ScriptContext_SetupScript(EventScript_UseSurf);
+}
+
+bool8 CanUseFlash(void)
+{
+    u32 i;
+
+    // 1. Check for the badge
+    if (!IsFieldMoveUnlocked(FIELD_MOVE_FLASH))
+        return FALSE;
+
+    // 2. Check for a Pokémon that can learn Flash
+    for (i = 0; i < gPartiesCount[B_TRAINER_PLAYER]; i++)
+    {
+        if (!GetMonData(&gParties[B_TRAINER_PLAYER][i], MON_DATA_IS_EGG))
+        {
+            u16 species = GetMonData(&gParties[B_TRAINER_PLAYER][i], MON_DATA_SPECIES);
+            if (CanLearnTeachableMove(species, MOVE_FLASH))
+            {
+                sFieldMoveSource = FIELD_MOVE_SOURCE_POKEMON;
+                return TRUE;
+            }
+        }
+    }
+
+    // 3. Check for the item
+    if (FieldMoveTool_HasKeyItem(FIELD_MOVE_FLASH))
+    {
+        sFieldMoveSource = FIELD_MOVE_SOURCE_ITEM;
+        return TRUE;
+    }
+
+    return FALSE;
+}

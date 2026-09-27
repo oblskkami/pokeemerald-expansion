@@ -16,6 +16,7 @@
 #include "field_door.h"
 #include "field_effect.h"
 #include "field_move.h"
+#include "field_move_tools.h"
 #include "event_object_lock.h"
 #include "event_object_movement.h"
 #include "event_scripts.h"
@@ -2291,11 +2292,17 @@ bool8 ScrCmd_setmonmove(struct ScriptContext *ctx)
     return FALSE;
 }
 
+// Checks if a field move can be used via either a Pokémon or a key item
+// Return values in gSpecialVar_Result:
+//   0-5: Party slot index of a Pokémon that can use the move
+//   PARTY_SIZE (6): Cannot use the field move (no Pokémon/item, or badge not obtained)
+//   PARTY_SIZE + 1 (7): Can use the field move via a key item
 bool8 ScrCmd_checkfieldmove(struct ScriptContext *ctx)
 {
     enum FieldMove fieldMove = ScriptReadByte(ctx);
     bool32 doUnlockedCheck = ScriptReadByte(ctx);
     enum Move move;
+    u16 keyItem;
 
     Script_RequestEffects(SCREFF_V1);
 
@@ -2304,17 +2311,33 @@ bool8 ScrCmd_checkfieldmove(struct ScriptContext *ctx)
         return FALSE;
 
     move = FieldMove_GetMoveId(fieldMove);
+    keyItem = FieldMoveTool_GetKeyItem(fieldMove);
+
+    // 1. Check the party. Field moves with a key item alternative only need a mon
+    // that could learn them, the rest still require a mon that knows the move.
     for (u32 i = 0; i < PARTY_SIZE; i++)
     {
         enum Species species = GetMonData(&gParties[B_TRAINER_PLAYER][i], MON_DATA_SPECIES);
         if (!species)
             break;
-        if (!GetMonData(&gParties[B_TRAINER_PLAYER][i], MON_DATA_IS_EGG) && MonKnowsMove(&gParties[B_TRAINER_PLAYER][i], move) == TRUE)
+        if (GetMonData(&gParties[B_TRAINER_PLAYER][i], MON_DATA_IS_EGG))
+            continue;
+
+        if (keyItem != ITEM_NONE
+          ? CanLearnTeachableMove(species, move)
+          : MonKnowsMove(&gParties[B_TRAINER_PLAYER][i], move) == TRUE)
         {
             gSpecialVar_Result = i;
             gSpecialVar_0x8004 = species;
-            break;
+            SetFieldMoveSource(FIELD_MOVE_SOURCE_POKEMON);
+            return FALSE;
         }
+    }
+   // 2. If no Pokémon is found, check for the key item.
+    if (keyItem != ITEM_NONE && CheckBagHasItem(keyItem, 1))
+    {
+        gSpecialVar_Result = PARTY_SIZE + 1; // Special value indicating item use
+        SetFieldMoveSource(FIELD_MOVE_SOURCE_ITEM);
     }
 
     return FALSE;

@@ -19,6 +19,7 @@
 #include "field_control_avatar.h"
 #include "field_effect.h"
 #include "field_move.h"
+#include "field_move_tools.h"
 #include "field_player_avatar.h"
 #include "field_screen_effect.h"
 #include "field_specials.h"
@@ -2948,27 +2949,19 @@ static void SetPartyMonSelectionActions(struct Pokemon *mons, u8 slotId, u8 acti
 }
 
 static void SetPartyMonFieldSelectionActions(struct Pokemon *mons, u8 slotId)
+
 {
-    u8 i, j;
+    u8 fieldMoves[MAX_MON_MOVES];
+    u32 numFieldMoves;
 
     sPartyMenuInternal->numActions = 0;
     AppendToList(sPartyMenuInternal->actions, &sPartyMenuInternal->numActions, MENU_SUMMARY);
 
-    // Add field moves to action list
-    for (i = 0; i < MAX_MON_MOVES; i++)
-    {
-        for (j = 0; j != FIELD_MOVES_COUNT; j++)
-        {
-            if (!FieldMove_IsVisible(j))
-                continue;
-
-            if (GetMonData(&mons[slotId], i + MON_DATA_MOVE1) == FieldMove_GetMoveId(j))
-            {
-                AppendToList(sPartyMenuInternal->actions, &sPartyMenuInternal->numActions, j + MENU_FIELD_MOVES);
-                break;
-            }
-        }
-    }
+    // Add field moves to action list. Which ones are listed depends on OW_FIELD_MOVE_TOOLS,
+    // see gFieldMoveTools in src/field_move_tools.c.
+    numFieldMoves = FieldMoveTool_GetPartyMenuFieldMoves(&mons[slotId], fieldMoves);
+    for (u32 i = 0; i < numFieldMoves; i++)
+        AppendToList(sPartyMenuInternal->actions, &sPartyMenuInternal->numActions, fieldMoves[i] + MENU_FIELD_MOVES);
 
     if (!InBattlePike())
     {
@@ -4284,7 +4277,7 @@ bool32 SetUpFieldMove_Surf(void)
     if (!CheckFollowerNPCFlag(FOLLOWER_NPC_FLAG_CAN_SURF))
         return FALSE;
 
-    if (PartyHasMonWithSurf() == TRUE && IsPlayerFacingSurfableFishableWater() == TRUE)
+    if (IsPlayerFacingSurfableFishableWater() == TRUE)
     {
         gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
         gPostMenuFieldCallback = FieldCallback_Surf;
@@ -4305,11 +4298,16 @@ bool32 SetUpFieldMove_Fly(void)
 {
     if (!CheckFollowerNPCFlag(FOLLOWER_NPC_FLAG_CAN_LEAVE_ROUTE))
         return FALSE;
-
+    // First, check if the map allows flying.
     if (Overworld_MapTypeAllowsTeleportAndFly(gMapHeader.mapType) == TRUE)
-        return TRUE;
-    else
-        return FALSE;
+    {
+        // If it does, then perform a check for a valid Pokémon or item.
+        if (CanUseFly() == TRUE)
+            return TRUE;
+    }
+
+    // If any check fails, return FALSE.
+    return FALSE;
 }
 
 void CB2_ReturnToPartyMenuFromFlyMap(void)
@@ -8616,5 +8614,25 @@ s8 Test_UpdatePartySelectionSingleLayout(s8 slotId, s8 movementDir, bool8 choose
 
     sPartyMenuInternal = savedInternal;
     return slotId;
+}
+
+// Returns the field moves listed for 'mons[slotId]', as 'enum FieldMove'
+// values written to 'fieldMoves' (which must hold ARRAY_COUNT(internal.actions)).
+u32 Test_GetPartyMenuFieldMoves(struct Pokemon *mons, u8 slotId, u8 *fieldMoves)
+{
+    struct PartyMenuInternal internal = {0};
+    struct PartyMenuInternal *savedInternal = sPartyMenuInternal;
+    u32 count = 0;
+
+    sPartyMenuInternal = &internal;
+    SetPartyMonFieldSelectionActions(mons, slotId);
+    sPartyMenuInternal = savedInternal;
+
+    for (u32 i = 0; i < internal.numActions; i++)
+    {
+        if (internal.actions[i] >= MENU_FIELD_MOVES)
+            fieldMoves[count++] = internal.actions[i] - MENU_FIELD_MOVES;
+    }
+    return count;
 }
 #endif

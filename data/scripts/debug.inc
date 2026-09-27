@@ -204,37 +204,182 @@ Debug_EventScript_Text_OffensiveIVs:
 Debug_EventScript_Text_DefensiveIVs:
 	.string "HP个体值：{STR_VAR_1}，防御个体值：{STR_VAR_2}，\n特防个体值：{STR_VAR_3}$"
 
+@ Field move testing. These cover the parts of the field move feature that the
+@ test suite cannot reach, because they need a loaded map: using each tool from
+@ the bag or as a registered key item, the locked/"can't use" messages, the
+@ skipped field move animation when a tool is used, and the party menu listing.
+
 Debug_EventScript_Script_1::
-	release
+	lockall
+	additem ITEM_CUT_TOOL
+	additem ITEM_FLY_TOOL
+	additem ITEM_SURF_TOOL
+	additem ITEM_STRENGTH_TOOL
+	additem ITEM_FLASH_TOOL
+	additem ITEM_ROCK_SMASH_TOOL
+	additem ITEM_WATERFALL_TOOL
+	additem ITEM_DIVE_TOOL
+	msgbox Debug_FieldMove_Text_GaveTools, MSGBOX_DEFAULT
+	releaseall
 	end
 
 Debug_EventScript_Script_2::
-	release
+	lockall
+	removeitem ITEM_CUT_TOOL
+	removeitem ITEM_FLY_TOOL
+	removeitem ITEM_SURF_TOOL
+	removeitem ITEM_STRENGTH_TOOL
+	removeitem ITEM_FLASH_TOOL
+	removeitem ITEM_ROCK_SMASH_TOOL
+	removeitem ITEM_WATERFALL_TOOL
+	removeitem ITEM_DIVE_TOOL
+	msgbox Debug_FieldMove_Text_TookTools, MSGBOX_DEFAULT
+	releaseall
 	end
 
 Debug_EventScript_Script_3::
-	release
+	lockall
+	setflag FLAG_BADGE01_GET
+	setflag FLAG_BADGE02_GET
+	setflag FLAG_BADGE03_GET
+	setflag FLAG_BADGE04_GET
+	setflag FLAG_BADGE05_GET
+	setflag FLAG_BADGE06_GET
+	setflag FLAG_BADGE07_GET
+	setflag FLAG_BADGE08_GET
+	msgbox Debug_FieldMove_Text_BadgesOn, MSGBOX_DEFAULT
+	releaseall
 	end
 
 Debug_EventScript_Script_4::
-	release
+	lockall
+	clearflag FLAG_BADGE01_GET
+	clearflag FLAG_BADGE02_GET
+	clearflag FLAG_BADGE03_GET
+	clearflag FLAG_BADGE04_GET
+	clearflag FLAG_BADGE05_GET
+	clearflag FLAG_BADGE06_GET
+	clearflag FLAG_BADGE07_GET
+	clearflag FLAG_BADGE08_GET
+	msgbox Debug_FieldMove_Text_BadgesOff, MSGBOX_DEFAULT
+	releaseall
 	end
 
 Debug_EventScript_Script_5::
-	release
+	lockall
+	checkfieldmove FIELD_MOVE_CUT, TRUE
+	call Debug_FieldMove_BufferStatus1
+	checkfieldmove FIELD_MOVE_SURF, TRUE
+	call Debug_FieldMove_BufferStatus2
+	msgbox Debug_FieldMove_Text_CutSurf, MSGBOX_DEFAULT
+	checkfieldmove FIELD_MOVE_STRENGTH, TRUE
+	call Debug_FieldMove_BufferStatus1
+	checkfieldmove FIELD_MOVE_ROCK_SMASH, TRUE
+	call Debug_FieldMove_BufferStatus2
+	msgbox Debug_FieldMove_Text_StrengthRockSmash, MSGBOX_DEFAULT
+	releaseall
 	end
 
 Debug_EventScript_Script_6::
-	release
+	lockall
+	checkfieldmove FIELD_MOVE_FLY, TRUE
+	call Debug_FieldMove_BufferStatus1
+	checkfieldmove FIELD_MOVE_FLASH, TRUE
+	call Debug_FieldMove_BufferStatus2
+	msgbox Debug_FieldMove_Text_FlyFlash, MSGBOX_DEFAULT
+	checkfieldmove FIELD_MOVE_WATERFALL, TRUE
+	call Debug_FieldMove_BufferStatus1
+	checkfieldmove FIELD_MOVE_DIVE, TRUE
+	call Debug_FieldMove_BufferStatus2
+	msgbox Debug_FieldMove_Text_WaterfallDive, MSGBOX_DEFAULT
+	releaseall
 	end
 
 Debug_EventScript_Script_7::
-	release
+	lockall
+	clearflag FLAG_SYS_USE_FLASH
+	msgbox Debug_FieldMove_Text_FlashReset, MSGBOX_DEFAULT
+	releaseall
 	end
 
 Debug_EventScript_Script_8::
-	release
+	lockall
+	givemon SPECIES_TAILLOW, 20
+	givemon SPECIES_ABRA, 20
+	givemon SPECIES_WOBBUFFET, 20
+	msgbox Debug_FieldMove_Text_GaveParty, MSGBOX_DEFAULT
+	releaseall
 	end
+
+@ 'checkfieldmove' reports a party slot (0..PARTY_SIZE - 1) when a party mon can
+@ use the move, PARTY_SIZE when it cannot be used at all, and PARTY_SIZE + 1
+@ when the matching key item covers it.
+Debug_FieldMove_BufferStatus1::
+	goto_if_eq VAR_RESULT, PARTY_SIZE, Debug_FieldMove_BufferStatus1_No
+	goto_if_eq VAR_RESULT, PARTY_SIZE + 1, Debug_FieldMove_BufferStatus1_Item
+	bufferstring STR_VAR_1, Debug_FieldMove_Text_ViaParty
+	return
+
+Debug_FieldMove_BufferStatus1_Item:
+	bufferstring STR_VAR_1, Debug_FieldMove_Text_ViaItem
+	return
+
+Debug_FieldMove_BufferStatus1_No:
+	bufferstring STR_VAR_1, Debug_FieldMove_Text_Unusable
+	return
+
+Debug_FieldMove_BufferStatus2::
+	goto_if_eq VAR_RESULT, PARTY_SIZE, Debug_FieldMove_BufferStatus2_No
+	goto_if_eq VAR_RESULT, PARTY_SIZE + 1, Debug_FieldMove_BufferStatus2_Item
+	bufferstring STR_VAR_2, Debug_FieldMove_Text_ViaParty
+	return
+
+Debug_FieldMove_BufferStatus2_Item:
+	bufferstring STR_VAR_2, Debug_FieldMove_Text_ViaItem
+	return
+
+Debug_FieldMove_BufferStatus2_No:
+	bufferstring STR_VAR_2, Debug_FieldMove_Text_Unusable
+	return
+
+Debug_FieldMove_Text_ViaParty:
+	.string "party$"
+
+Debug_FieldMove_Text_ViaItem:
+	.string "item$"
+
+Debug_FieldMove_Text_Unusable:
+	.string "no$"
+
+Debug_FieldMove_Text_CutSurf:
+	.string "CUT: {STR_VAR_1}\nSURF: {STR_VAR_2}$"
+
+Debug_FieldMove_Text_StrengthRockSmash:
+	.string "STRENGTH: {STR_VAR_1}\nROCK SMASH: {STR_VAR_2}$"
+
+Debug_FieldMove_Text_FlyFlash:
+	.string "FLY: {STR_VAR_1}\nFLASH: {STR_VAR_2}$"
+
+Debug_FieldMove_Text_WaterfallDive:
+	.string "WATERFALL: {STR_VAR_1}\nDIVE: {STR_VAR_2}$"
+
+Debug_FieldMove_Text_GaveTools:
+	.string "Added every field move tool to the\nKEY ITEMS pocket.$"
+
+Debug_FieldMove_Text_TookTools:
+	.string "Removed every field move tool.$"
+
+Debug_FieldMove_Text_BadgesOn:
+	.string "All eight badges obtained.$"
+
+Debug_FieldMove_Text_BadgesOff:
+	.string "All eight badges removed.$"
+
+Debug_FieldMove_Text_FlashReset:
+	.string "FLASH cleared. Re-enter the cave to\ntest it again.$"
+
+Debug_FieldMove_Text_GaveParty:
+	.string "Added TAILLOW (learns FLY), ABRA\n(learns FLASH) and WOBBUFFET (neither).$"
 
 Debug_CheckSaveBlock::
 	callnative CheckSaveBlock1Size
