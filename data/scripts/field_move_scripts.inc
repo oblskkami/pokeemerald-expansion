@@ -255,7 +255,8 @@ Text_StrengthActivated:
 	.string "可以推动岩石了！$"
 
 Text_StrengthAlreadyActivated:
-    .string "怪力已生效.$"
+    .string "使出了怪力后，\n"
+	.string "可以推动岩石了！$"
 
 Text_CantStrength:
 	.string "好大的岩石……\n"
