@@ -46,14 +46,12 @@ RustboroCity_DevonCorp_3F_EventScript_MeetPresident::
 	applymovement LOCALID_DEVON_CORP_3F_EMPLOYEE, RustboroCity_DevonCorp_3F_Movement_EmployeeFaceDesk
 	applymovement LOCALID_PLAYER, RustboroCity_DevonCorp_3F_Movement_PlayerApproachDesk
 	waitmovement 0
+	msgbox RustboroCity_DevonCorp_3F_Text_MrStoneNoticePokenav, MSGBOX_DEFAULT
+	closemessage
 	msgbox RustboroCity_DevonCorp_3F_Text_MrStoneIHaveFavor, MSGBOX_DEFAULT
 	giveitem ITEM_LETTER
 	msgbox RustboroCity_DevonCorp_3F_Text_MrStoneWantYouToHaveThis, MSGBOX_DEFAULT
-	playfanfare MUS_OBTAIN_ITEM
-	message RustboroCity_DevonCorp_3F_Text_ReceivedPokenav
-	waitfanfare
-	setflag FLAG_SYS_POKENAV_GET
-	setflag FLAG_RECEIVED_POKENAV
+	giveitem ITEM_EXP_CHARM
 	setflag FLAG_HIDE_RUSTBORO_CITY_POKEMON_SCHOOL_SCOTT
 	msgbox RustboroCity_DevonCorp_3F_Text_MrStoneExplainPokenavRestUp, MSGBOX_DEFAULT
 	closemessage
@@ -195,23 +193,23 @@ RustboroCity_DevonCorp_3F_EventScript_RareRocksDisplay::
 	msgbox RustboroCity_DevonCorp_3F_Text_RareRocksDisplay, MSGBOX_SIGN
 	end
 
+RustboroCity_DevonCorp_3F_Text_MrStoneNoticePokenav:
+    .string "社长：嗯？\p你手上那个……\n能让我看一下吗？\p……这宝可导航。\p奇怪，这编号\n是正式发售前的。\p你怎么会有？\p……原来如此。\n是千里寄给你的吗？\p这么说，你一定就是\n千里的孩子\l{PLAYER}{KUN}了。$"
+
 RustboroCity_DevonCorp_3F_Text_MrStoneIHaveFavor:
     .string "我是兹伏奇，\n得文公司的社长。\p刚刚听说了你的事迹！\p你不止一次，而是两次\n救了我们公司的员工！\p我有件事想拜托给\n你这样出色的人。\p我知道你要送包裹到\n凯那市的船厂去。\p唔，在那之前，\n能不能顺路去武斗镇一趟？\p我希望你能把这封信交给\n武斗镇里一个叫大吾的人。$"
 
 RustboroCity_DevonCorp_3F_Text_MrStoneWantYouToHaveThis:
     .string "兹伏奇：你知道，\n作为一位优秀的社长，\p我绝不会吝啬到\n让人白白帮忙。\p因此我把这个送给你！$"
 
-RustboroCity_DevonCorp_3F_Text_ReceivedPokenav:
-    .string "{PLAYER}得到了宝可导航。$"
-
 RustboroCity_DevonCorp_3F_Text_MrStoneExplainPokenavRestUp:
-    .string "兹伏奇：那个装置……\p那是宝可梦导航器，\n简称宝可导航，\p对冒险中的训练家来说\n是不可或缺的工具。\p那里面有丰缘地区\n的地图，\p你可以很方便地查看\n武斗镇和凯那市的地点！\p对了，我听说一些邪恶的犯罪组织\n——我想是熔岩队和海洋队——\l在到处惹是生非，\p建议你出发前最好\n先好好休息一下。$"
+    .string "兹伏奇：那是经验护符。\p只要你带在身上，\n宝可梦获得的经验值\l就会额外增加。\p另外，你的宝可导航里\n装了丰缘地区的地图，\p你可以很方便地查看\n武斗镇和凯那市的地点！\p对了，我听说一些邪恶的犯罪组织\n——我想是熔岩队和海洋队——\l在到处惹是生非，\p建议你出发前最好\n先好好休息一下。$"
 
 RustboroCity_DevonCorp_3F_Text_MrStoneGoWithCautionAndCare:
     .string "兹伏奇：好了，{PLAYER}{KUN}，\n路上小心！$"
 
 RustboroCity_DevonCorp_3F_Text_CountingOnYou:
-    .string "兹伏奇：就拜托给你了！$"
+    .string "兹伏奇：就拜托给你了！\n送到之后我有谢礼。$"
 
 RustboroCity_DevonCorp_3F_Text_ThankYouForDeliveringLetter:
     .string "兹伏奇：你把信送到了？\n非常感谢！\p这是我的谢礼，\n应该对你这样的训练家有所帮助。$"

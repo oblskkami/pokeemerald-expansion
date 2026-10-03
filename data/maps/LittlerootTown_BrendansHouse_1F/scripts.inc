@@ -287,7 +287,16 @@ PlayersHouse_1F_Text_IsntItNiceInHere:
     .string "妈妈：怎么样，{PLAYER}？\n家里也很不错吧？$"
 
 PlayersHouse_1F_Text_MoversPokemonGoSetClock:
-    .string "搬家公司的宝可梦帮我们把东西\n都搬进来，并且整理打扫好了。\l真是太方便了！\p{PLAYER}，你的房间在楼上，\n去看看吧，宝贝！\p爸爸特意买了新的时钟\n来庆祝我们搬家。\l记得调好时间哦！$"
+    .string "搬家公司的宝可梦帮我们把东西\n都搬进来，并且整理打扫好了。\l真是太方便了！\p{PLAYER}，你的房间在楼上，\n去看看吧，宝贝！\p我们刚搬过来，\n楼上的时钟应该还没调过。\l记得先把时间调好哦！$"
+
+PlayersHouse_1F_Text_MomGivePokNavIntro:
+    .string "妈妈：对了，{PLAYER}。\p这个给你。\n是你爸爸寄过来的。\p他托得文公司的朋友\n弄到了这个。\p你爸爸啊\n虽然平时工作很忙\l但总是惦记着你。$"
+
+PlayersHouse_1F_Text_MomGivePokNavReceived:
+    .string "{PLAYER}得到了宝可梦多功能导航器！$"
+
+PlayersHouse_1F_Text_MomGivePokNavExplain:
+    .string "妈妈：听说这东西既能联络，\n又能看地图。\l有了它，出门就方便多了！$"
 
 PlayersHouse_1F_Text_ArentYouInterestedInRoom:
     .string "妈妈：怎么了，{PLAYER}？\p不去看看自己的\n新房间吗？$"
@@ -326,7 +335,7 @@ PlayersHouse_1F_Text_DontPushYourselfTooHard:
     .string "别太勉强自己，宝贝，\n累了的话就回家来歇歇。\p加油吧！$"
 
 PlayersHouse_1F_Text_IsThatAPokenav:
-    .string "妈妈：这是什么，宝贝？宝可导航？\n得文公司的人送你的吗？\p那不如把妈妈也\n登记一下吧？\p…… ……$"
+    .string "妈妈：哎呀，{PLAYER}。\p你那台宝可导航\n已经能联系别人了吗？\p那不如把妈妈也\n登记一下吧？\p…… ……$"
 
 PlayersHouse_1F_Text_RegisteredMom:
     .string "把妈妈\n登记到宝可导航里了。$"

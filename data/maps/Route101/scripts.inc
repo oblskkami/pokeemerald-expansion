@@ -59,14 +59,172 @@ Route101_EventScript_PreventExitWest::
 	releaseall
 	end
 
-Route101_EventScript_PreventExitNorth::
+Route101_EventScript_DexNavTutorial0::
+	setvar VAR_0x8004, 0
+	goto Route101_EventScript_DexNavTutorial_Common
+
+Route101_EventScript_DexNavTutorial1::
+	setvar VAR_0x8004, 1
+	goto Route101_EventScript_DexNavTutorial_Common
+
+Route101_EventScript_DexNavTutorial2::
+	setvar VAR_0x8004, 2
+	goto Route101_EventScript_DexNavTutorial_Common
+
+
+Route101_EventScript_DexNavTutorial_Common::
 	lockall
-	msgbox Route101_Text_DontLeaveMe, MSGBOX_DEFAULT
-	closemessage
-	applymovement LOCALID_PLAYER, Route101_Movement_PreventExitNorth
+	goto_if_set FLAG_DEXNAV_TUTORIAL_DONE, Route101_EventScript_DexNavTutorialEnd
+	goto_if_unset FLAG_RECEIVED_POKEDEX_FROM_BIRCH, Route101_EventScript_DexNavTutorialEnd
+	checkplayergender
+	goto_if_eq VAR_RESULT, MALE, Route101_EventScript_DexNavTutorial_May
+	goto Route101_EventScript_DexNavTutorial_Brendan
+
+Route101_EventScript_DexNavTutorial_May::
+	setvar VAR_OBJ_GFX_ID_0, OBJ_EVENT_GFX_MAY_NORMAL
+	playbgm MUS_ENCOUNTER_MAY, TRUE
+	goto Route101_EventScript_DexNavTutorial_StartCommon
+
+Route101_EventScript_DexNavTutorial_Brendan::
+	setvar VAR_OBJ_GFX_ID_0, OBJ_EVENT_GFX_BRENDAN_NORMAL
+	playbgm MUS_ENCOUNTER_BRENDAN, TRUE
+	goto Route101_EventScript_DexNavTutorial_StartCommon
+
+Route101_EventScript_DexNavTutorial_StartCommon::
+	clearflag FLAG_HIDE_ROUTE101_RIVAL
+	addobject LOCALID_ROUTE101_RIVAL
+	switch VAR_0x8004
+	case 0, Route101_EventScript_DexNavTutorial_Start0
+	case 1, Route101_EventScript_DexNavTutorial_Start1
+	case 2, Route101_EventScript_DexNavTutorial_Start2
+
+Route101_EventScript_DexNavTutorial_Start0::
+	setobjectxy LOCALID_ROUTE101_RIVAL, 10, 17
+	applymovement LOCALID_ROUTE101_RIVAL, Route101_Movement_RivalApproach0
+	goto Route101_EventScript_DexNavTutorial_AfterApproach
+
+Route101_EventScript_DexNavTutorial_Start1::
+	setobjectxy LOCALID_ROUTE101_RIVAL, 10, 17
+	applymovement LOCALID_ROUTE101_RIVAL, Route101_Movement_RivalApproach1
+	goto Route101_EventScript_DexNavTutorial_AfterApproach
+
+Route101_EventScript_DexNavTutorial_Start2::
+	setobjectxy LOCALID_ROUTE101_RIVAL, 10, 17
+	applymovement LOCALID_ROUTE101_RIVAL, Route101_Movement_RivalApproach2
+	goto Route101_EventScript_DexNavTutorial_AfterApproach
+
+Route101_EventScript_DexNavTutorial_AfterApproach::
 	waitmovement 0
+	applymovement LOCALID_PLAYER, Common_Movement_WalkInPlaceFasterLeft
+	waitmovement 0
+
+	msgbox Route101_Text_RivalCatchUp, MSGBOX_DEFAULT
+	closemessage
+	msgbox Route101_Text_RivalDexNavExplain, MSGBOX_DEFAULT
+	playfanfare MUS_OBTAIN_ITEM
+	msgbox Route101_Text_RivalDexNavReceived, MSGBOX_DEFAULT
+	waitfanfare
+	setflag FLAG_DEXNAV_GET
+	setflag FLAG_DETECTOR_MODE
+
+	msgbox Route101_Text_RivalSneakExplain, MSGBOX_DEFAULT
+	msgbox Route101_Text_RivalSneakExplain2, MSGBOX_DEFAULT
+
+	applymovement LOCALID_ROUTE101_RIVAL, Common_Movement_ExclamationMark
+	waitmovement 0
+	playse SE_PIN
+	msgbox Route101_Text_RivalSpotsPoochyena, MSGBOX_DEFAULT
+	closemessage
+
+	setwildbattle SPECIES_POOCHYENA, 5, ITEM_NONE
+	special ModifyDexNavTutorialPoochyena
+	dowildbattle
+
+	msgbox Route101_Text_RivalAfterTutorial, MSGBOX_DEFAULT
+	closemessage
+	switch VAR_0x8004
+	case 0, Route101_EventScript_DexNavTutorial_Leave0
+	case 1, Route101_EventScript_DexNavTutorial_Leave1
+	case 2, Route101_EventScript_DexNavTutorial_Leave2
+
+Route101_EventScript_DexNavTutorial_Leave0::
+	applymovement LOCALID_ROUTE101_RIVAL, Route101_Movement_RivalLeave0
+	goto Route101_EventScript_DexNavTutorial_Finish
+
+Route101_EventScript_DexNavTutorial_Leave1::
+	applymovement LOCALID_ROUTE101_RIVAL, Route101_Movement_RivalLeave1
+	goto Route101_EventScript_DexNavTutorial_Finish
+
+Route101_EventScript_DexNavTutorial_Leave2::
+	applymovement LOCALID_ROUTE101_RIVAL, Route101_Movement_RivalLeave2
+	goto Route101_EventScript_DexNavTutorial_Finish
+
+Route101_EventScript_DexNavTutorial_Finish::
+	waitmovement 0
+	removeobject LOCALID_ROUTE101_RIVAL
+	setflag FLAG_HIDE_ROUTE101_RIVAL
+	setflag FLAG_DEXNAV_TUTORIAL_DONE
+	fadedefaultbgm
 	releaseall
 	end
+
+Route101_EventScript_DexNavTutorialEnd::
+	releaseall
+	end
+
+Route101_Movement_RivalApproach0:
+	walk_fast_up
+	walk_fast_up
+	walk_fast_up
+	jump_2_up
+	walk_fast_right
+	step_end
+
+Route101_Movement_RivalLeave0:
+	walk_fast_left
+	jump_2_down
+	walk_fast_down
+	walk_fast_down
+	walk_fast_down
+	step_end
+
+Route101_Movement_RivalApproach1:
+	walk_fast_up
+	walk_fast_up
+	walk_fast_up
+	walk_fast_up
+	jump_2_up
+	walk_fast_right
+	step_end
+
+Route101_Movement_RivalLeave1:
+	walk_fast_left
+	walk_fast_down
+	jump_2_down
+	walk_fast_down
+	walk_fast_down
+	walk_fast_down
+	step_end
+
+Route101_Movement_RivalApproach2:
+	walk_fast_up
+	walk_fast_up
+	walk_fast_up
+	walk_fast_up
+	walk_fast_up
+	jump_2_up
+	walk_fast_right
+	step_end
+
+Route101_Movement_RivalLeave2:
+	walk_fast_left
+	walk_fast_down
+	walk_fast_down
+	jump_2_down
+	walk_fast_down
+	walk_fast_down
+	walk_fast_down
+	step_end
 
 Route101_Movement_PreventExitSouth:
 	walk_up
@@ -74,10 +232,6 @@ Route101_Movement_PreventExitSouth:
 
 Route101_Movement_PreventExitWest:
 	walk_right
-	step_end
-
-Route101_Movement_PreventExitNorth:
-	walk_down
 	step_end
 
 Route101_Movement_ZigzagoonChaseInCircles:
@@ -277,3 +431,39 @@ Route101_Text_WildPokemonInTallGrass:
 Route101_Text_RouteSign:
     .string "101号道路\n{UP_ARROW}古玫镇$"
 
+Route101_Text_RivalCatchUp:
+	.string "{PLAYER}！等一下——！$"
+
+Route101_Text_RivalDexNavExplain:
+	.string "差点忘了把这个给你。\p"
+	.string "这是宝可梦多功能导航器的\n"
+	.string "新应用——宝可梦搜寻器。\p"
+	.string "它可以告诉你当前区域\n"
+	.string "有哪些宝可梦出没。$"
+
+Route101_Text_RivalDexNavReceived:
+	.string "{PLAYER}的宝可梦多功能导航器\n"
+	.string "安装了宝可梦搜寻器！$"
+
+Route101_Text_RivalSneakExplain:
+	.string "对了，再教你一个技巧。\p"
+	.string "按住A键行动,就能悄悄 \n"
+	.string "靠近草丛里的宝可梦。$"
+
+Route101_Text_RivalSneakExplain2:
+	.string "如果草丛里出现了\n"
+	.string "摇晃，就说明那里\l"
+	.string "有宝可梦。\p"
+	.string "这时候慢慢靠近，\n"
+	.string "就能遇到它！$"
+
+Route101_Text_RivalSpotsPoochyena:
+	.string "看！那边草丛里有动静！\n"
+	.string "去试试吧！$"
+
+Route101_Text_RivalAfterTutorial:
+	.string "干得漂亮！\p"
+	.string "宝可梦搜寻器应该已经\n"
+	.string "自动记录下来了。\p"
+	.string "我还有事，先走了。\n"
+	.string "以后再见！$"

@@ -104,6 +104,20 @@
       "trainer_sight_or_berry_tree_id": "0",
       "script": "Route101_EventScript_Boy",
       "flag": "FLAG_HIDE_ROUTE_101_BOY"
+    },
+    {
+      "local_id": "LOCALID_ROUTE101_RIVAL",
+      "graphics_id": "OBJ_EVENT_GFX_VAR_0",
+      "x": 19,
+      "y": 19,
+      "elevation": 0,
+      "movement_type": "MOVEMENT_TYPE_FACE_LEFT",
+      "movement_range_x": 1,
+      "movement_range_y": 1,
+      "trainer_type": "TRAINER_TYPE_NONE",
+      "trainer_sight_or_berry_tree_id": "0",
+      "script": "0x0",
+      "flag": "FLAG_HIDE_ROUTE101_RIVAL"
     }
   ],
   "warp_events": [],
@@ -173,21 +187,30 @@
     },
     {
       "type": "trigger",
-      "x": 6,
-      "y": 18,
-      "elevation": 3,
+      "x": 12,
+      "y": 10,
+      "elevation": 0,
       "var": "VAR_ROUTE101_STATE",
-      "var_value": "2",
-      "script": "Route101_EventScript_PreventExitWest"
+      "var_value": "3",
+      "script": "Route101_EventScript_DexNavTutorial2"
     },
     {
       "type": "trigger",
-      "x": 7,
-      "y": 13,
-      "elevation": 3,
+      "x": 12,
+      "y": 11,
+      "elevation": 0,
       "var": "VAR_ROUTE101_STATE",
-      "var_value": "2",
-      "script": "Route101_EventScript_PreventExitNorth"
+      "var_value": "3",
+      "script": "Route101_EventScript_DexNavTutorial1"
+    },
+    {
+      "type": "trigger",
+      "x": 12,
+      "y": 12,
+      "elevation": 0,
+      "var": "VAR_ROUTE101_STATE",
+      "var_value": "3",
+      "script": "Route101_EventScript_DexNavTutorial0"
     }
   ],
   "bg_events": [

@@ -3,6 +3,7 @@
 #include "event_data.h"
 #include "main.h"
 #include "sound.h"
+#include "pokemon.h"
 #include "constants/songs.h"
 
 struct Pokenav_Menu
@@ -145,8 +146,17 @@ bool32 PokenavCallback_Init_ConditionMenu(void)
         return FALSE;
 
     menu->menuType = POKENAV_MENU_TYPE_CONDITION;
-    menu->cursorPos = 0;   //party
-    menu->currMenuItem = POKENAV_MENUITEM_CONDITION_PARTY;
+    if (CalculatePlayerPartyCount() == 0)
+    {
+        // 队伍为空，光标默认停在“返回”上
+        menu->cursorPos = 2;
+        menu->currMenuItem = POKENAV_MENUITEM_CONDITION_CANCEL;
+    }
+    else
+    {
+        menu->cursorPos = 0;
+        menu->currMenuItem = POKENAV_MENUITEM_CONDITION_PARTY;
+    }
     menu->helpBarIndex = HELPBAR_NONE;
     SetMenuInputHandler(menu);
     return TRUE;
@@ -343,26 +353,36 @@ static u32 HandleConditionMenuInput(struct Pokenav_Menu *menu)
     if (UpdateMenuCursorPos(menu))
         return POKENAV_MENU_FUNC_MOVE_CURSOR;
 
-    if (JOY_NEW(A_BUTTON))
-    {
-        switch (sMenuItems[menu->menuType][menu->cursorPos])
+        if (JOY_NEW(A_BUTTON))
         {
-        case POKENAV_MENUITEM_CONDITION_SEARCH:
-            menu->menuType = POKENAV_MENU_TYPE_CONDITION_SEARCH;
-            menu->cursorPos = 0;
-            menu->currMenuItem = sMenuItems[POKENAV_MENU_TYPE_CONDITION_SEARCH][0];
-            menu->callback = HandleConditionSearchMenuInput;
-            return POKENAV_MENU_FUNC_OPEN_CONDITION_SEARCH;
-        case POKENAV_MENUITEM_CONDITION_PARTY:
-            menu->helpBarIndex = 0;
-            SetMenuIdAndCB(menu, POKENAV_CONDITION_GRAPH_PARTY);
-            return POKENAV_MENU_FUNC_OPEN_FEATURE;
-        case POKENAV_MENUITEM_CONDITION_CANCEL:
-            PlaySE(SE_SELECT);
-            ReturnToMainMenu(menu);
-            return POKENAV_MENU_FUNC_RETURN_TO_MAIN;
+            switch (sMenuItems[menu->menuType][menu->cursorPos])
+            {
+            case POKENAV_MENUITEM_CONDITION_SEARCH:
+                if (CalculatePlayerPartyCount() == 0)
+                {
+                    PlaySE(SE_FAILURE);
+                    return POKENAV_MENU_FUNC_NONE;
+                }
+                menu->menuType = POKENAV_MENU_TYPE_CONDITION_SEARCH;
+                menu->cursorPos = 0;
+                menu->currMenuItem = sMenuItems[POKENAV_MENU_TYPE_CONDITION_SEARCH][0];
+                menu->callback = HandleConditionSearchMenuInput;
+                return POKENAV_MENU_FUNC_OPEN_CONDITION_SEARCH;
+            case POKENAV_MENUITEM_CONDITION_PARTY:
+                if (CalculatePlayerPartyCount() == 0)
+                {
+                    PlaySE(SE_FAILURE);
+                    return POKENAV_MENU_FUNC_NONE;
+                }
+                menu->helpBarIndex = 0;
+                SetMenuIdAndCB(menu, POKENAV_CONDITION_GRAPH_PARTY);
+                return POKENAV_MENU_FUNC_OPEN_FEATURE;
+            case POKENAV_MENUITEM_CONDITION_CANCEL:
+                PlaySE(SE_SELECT);
+                ReturnToMainMenu(menu);
+                return POKENAV_MENU_FUNC_RETURN_TO_MAIN;
+            }
         }
-    }
     if (JOY_NEW(B_BUTTON))
     {
         if (menu->cursorPos != sLastCursorPositions[menu->menuType])

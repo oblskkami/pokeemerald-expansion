@@ -2678,3 +2678,26 @@ void IncrementDexNavChain(void)
     if (gSaveBlock3Ptr->dexNavChain < DEXNAV_CHAIN_MAX)
         gSaveBlock3Ptr->dexNavChain++;
 }
+
+void ModifyDexNavTutorialPoochyena(void)
+{
+    enum Move move;
+
+    switch (VarGet(VAR_STARTER_MON))
+    {
+    case 0:  // 木守宫
+        move = MOVE_THUNDER_FANG;
+        break;
+    case 1:  // 火稚鸡
+        move = MOVE_ICE_FANG;
+        break;
+    case 2:  // 水跃鱼
+        move = MOVE_FIRE_FANG;
+        break;
+    default:
+        move = MOVE_THUNDER_FANG;
+        break;
+    }
+
+    SetMonMoveSlot(&gEnemyParty[0], move, 0);
+}

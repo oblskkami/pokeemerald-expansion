@@ -8,6 +8,13 @@ PlayersHouse_1F_EventScript_EnterHouseMovingIn::
 	waitmovement 0
 	call_if_eq VAR_0x8005, MALE, PlayersHouse_1F_EventScript_MomFacePlayerMovingInMale
 	call_if_eq VAR_0x8005, FEMALE, PlayersHouse_1F_EventScript_MomFacePlayerMovingInFemale
+	msgbox PlayersHouse_1F_Text_MomGivePokNavIntro, MSGBOX_DEFAULT
+	playfanfare MUS_OBTAIN_ITEM
+	msgbox PlayersHouse_1F_Text_MomGivePokNavReceived, MSGBOX_DEFAULT
+	waitfanfare
+	msgbox PlayersHouse_1F_Text_MomGivePokNavExplain, MSGBOX_DEFAULT
+	setflag FLAG_SYS_POKENAV_GET
+	setflag FLAG_RECEIVED_POKENAV
 	msgbox PlayersHouse_1F_Text_MoversPokemonGoSetClock, MSGBOX_DEFAULT
 	closemessage
 	setvar VAR_LITTLEROOT_INTRO_STATE, 4
