@@ -2,6 +2,7 @@
 
 // Whether a palette has a night version, located at ((x + 9) % 16).pal
 #define SWAP_PAL(x) ((x) < NUM_PALS_IN_PRIMARY ? 1 << (x) : 1 << ((x) - NUM_PALS_IN_PRIMARY))
+#define SWAP_PAL_2(a, b) (SWAP_PAL(a) | SWAP_PAL(b))
 
 const struct Tileset gTileset_SecretBase =
 {
@@ -149,7 +150,7 @@ const struct Tileset gTileset_Lilycove =
 const struct Tileset gTileset_Mossdeep =
 {
     .isCompressed = TRUE,
-    .swapPalettes = SWAP_PAL(8),
+    .swapPalettes = SWAP_PAL_2(8, 9),
     .isSecondary = TRUE,
     .tiles = gTilesetTiles_Mossdeep,
     .palettes = gTilesetPalettes_Mossdeep,
@@ -184,6 +185,7 @@ const struct Tileset gTileset_Pacifidlog =
 const struct Tileset gTileset_Sootopolis =
 {
     .isCompressed = TRUE,
+    .swapPalettes = SWAP_PAL(12),
     .isSecondary = TRUE,
     .tiles = gTilesetTiles_Sootopolis,
     .palettes = gTilesetPalettes_Sootopolis,

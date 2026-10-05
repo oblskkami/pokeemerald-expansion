@@ -13413,7 +13413,7 @@ const struct ItemInfo gItemsInfo[] =
         .description = COMPOUND_STRING(
 			"拥有后，宝可梦获\n"
 			"得的经验值就会增\n"
-			"加。"),
+			"加1.5倍。"),
         .pocket = POCKET_KEY_ITEMS,
         .type = ITEM_USE_BAG_MENU,
         .fieldUseFunc = ItemUseOutOfBattle_CannotUse,

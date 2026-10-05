@@ -2699,5 +2699,5 @@ void ModifyDexNavTutorialPoochyena(void)
         break;
     }
 
-    SetMonMoveSlot(&gEnemyParty[0], move, 0);
+    SetMonMoveSlot(&gParties[B_TRAINER_OPPONENT_A][0], move, 0);
 }

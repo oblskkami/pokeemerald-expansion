@@ -203,7 +203,7 @@ RustboroCity_DevonCorp_3F_Text_MrStoneWantYouToHaveThis:
     .string "兹伏奇：你知道，\n作为一位优秀的社长，\p我绝不会吝啬到\n让人白白帮忙。\p因此我把这个送给你！$"
 
 RustboroCity_DevonCorp_3F_Text_MrStoneExplainPokenavRestUp:
-    .string "兹伏奇：那是经验护符。\p只要你带在身上，\n宝可梦获得的经验值\l就会额外增加。\p另外，你的宝可导航里\n装了丰缘地区的地图，\p你可以很方便地查看\n武斗镇和凯那市的地点！\p对了，我听说一些邪恶的犯罪组织\n——我想是熔岩队和海洋队——\l在到处惹是生非，\p建议你出发前最好\n先好好休息一下。$"
+    .string "兹伏奇：那是经验护符。\p你只要带在身上，\n宝可梦获得的经验值\l就会额外增加。\p另外，你的宝可导航里\n装了丰缘地区的地图，\p你可以很方便地查看\n武斗镇和凯那市的地点！\p对了，我听说一些邪恶的犯罪组织\n——我想是熔岩队和海洋队——\l在到处惹是生非，\p建议你出发前最好\n先好好休息一下。$"
 
 RustboroCity_DevonCorp_3F_Text_MrStoneGoWithCautionAndCare:
     .string "兹伏奇：好了，{PLAYER}{KUN}，\n路上小心！$"
@@ -215,7 +215,7 @@ RustboroCity_DevonCorp_3F_Text_ThankYouForDeliveringLetter:
     .string "兹伏奇：你把信送到了？\n非常感谢！\p这是我的谢礼，\n应该对你这样的训练家有所帮助。$"
 
 RustboroCity_DevonCorp_3F_Text_ExplainExpShare:
-    .string "兹伏奇：携带这个学习装置的宝可梦，\n即使没有实际参与战斗，\l也能分享到部分经验值。\p对于培养弱小的宝可梦来说，\n学习装置非常实用。$"
+    .string "兹伏奇：开启这个学习装置的宝可梦，\n即使没有实际参与战斗，\l也能分享到部分经验值。\p对于培养弱小的宝可梦来说，\n学习装置非常实用。$"
 
 RustboroCity_DevonCorp_3F_Text_NotFamiliarWithTrends:
     .string "兹伏奇：我从年轻时起，\n就一直全身心投入工作，\p所以我也不怎么了解\n流行趋势之类的东西。\p现在的年轻人们都想成为\n宝可梦联盟的训练家吗？$"
