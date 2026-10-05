@@ -288,3 +288,4 @@
 .include "sound/voicegroups/keysplits/keysplit_hgss_shamisen.inc"                     @ .include "sound/voicegroups/voicegroup272.inc"
 .include "sound/voicegroups/keysplits/keysplit_hgss_piano_4.inc"                      @ .include "sound/voicegroups/voicegroup273.inc"
 .include "sound/voicegroups/mus_oras_wally.inc"
+.include "sound/voicegroups/mus_oras_soaring_dreams.inc"
