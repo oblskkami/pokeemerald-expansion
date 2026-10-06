@@ -2503,6 +2503,7 @@ enum
 };
 
 static const u32 sAbilityPopUpGfx[] = INCGFX_U32("graphics/battle_interface/ability_pop_up.png", ".4bpp", "-mwidth 8 -mheight 4");
+static const u32 sAbilityPopUpGfx_Mirrored[] = INCGFX_U32("graphics/battle_interface/ability_pop_up_mirrored.png", ".4bpp", "-mwidth 8 -mheight 4");
 static const u16 sAbilityPopUpPalette[] = INCGFX_U16("graphics/battle_interface/ability_pop_up.pal", ".gbapal");
 
 static const struct SpriteSheet sSpriteSheet_AbilityPopUp =
@@ -2561,7 +2562,6 @@ static void PrintOnAbilityPopUp(const u8 *str, u32 spriteId1, u32 spriteId2, u32
     u8 ids[2] = {spriteId1, spriteId2};
     const u32 *spriteSrcs[2] = {&sAbilityPopUpGfx[0], &sAbilityPopUpGfx[256]};
     SetupSpritesForTextPrinting(ids, spriteSrcs, 2, 1);
-
     if (isName)
     {
         AddSpriteTextPrinterParameterized6(spriteId1, font, x, y, 0, 0, sBattlerTextColor, TEXT_SKIP_DRAW, str);
@@ -2581,7 +2581,7 @@ static void PrintOnAbilityPopUp(const u8 *str, u32 spriteId1, u32 spriteId2, u32
 
 static void PrintBattlerOnAbilityPopUp(enum BattlerId battler, u8 spriteId1, u8 spriteId2)
 {
-    u32 totalChar = 0, lastChar;
+    u32 totalChar = 0;
     struct Pokemon *illusionMon = GetIllusionMonPtr(battler);
 
     if (illusionMon != NULL)
@@ -2592,7 +2592,7 @@ static void PrintBattlerOnAbilityPopUp(enum BattlerId battler, u8 spriteId1, u8 
     while (gStringVar1[totalChar] != EOS)
         totalChar++;
 
-    lastChar = gStringVar1[totalChar - 1];
+    //lastChar = gStringVar1[totalChar - 1];
     //StringAppend(gStringVar1, COMPOUND_STRING("'"));
     //if (lastChar != CHAR_S && lastChar != CHAR_s)
     StringAppend(gStringVar1, COMPOUND_STRING("的"));
@@ -2602,7 +2602,7 @@ static void PrintBattlerOnAbilityPopUp(enum BattlerId battler, u8 spriteId1, u8 
     if (IsOnPlayerSide(battler))
         x = 16;
     else
-        x = 8;
+        x = 32;
 
     PrintOnAbilityPopUp(gStringVar1, spriteId1, spriteId2, x, y, TRUE);
 }
@@ -2614,7 +2614,7 @@ static void PrintAbilityOnAbilityPopUp(enum Ability ability, u8 spriteId1, u8 sp
     if (IsOnPlayerSide(gSprites[spriteId1].sBattlerId))
         x = 16;
     else
-        x = 8;
+        x = 32;
 
     PrintOnAbilityPopUp(gAbilitiesInfo[ability].name, spriteId1, spriteId2, x, y, FALSE);
 }
@@ -2626,7 +2626,7 @@ static void PrintItemOnItemPopUp(enum Item item, u8 spriteId1, u8 spriteId2)
     if (IsOnPlayerSide(gSprites[spriteId1].sBattlerId))
         x = 16;
     else
-        x = 8;
+        x = 32;
 
     PrintOnAbilityPopUp(GetItemName(item), spriteId1, spriteId2, x, y, FALSE);
 }
@@ -2668,6 +2668,12 @@ void CreateAbilityPopUp(enum BattlerId battler, enum Ability ability, bool32 isD
     if (IndexOfSpriteTileTag(tileTag) == 0xFF)
     {
         struct SpriteSheet sheet = sSpriteSheet_AbilityPopUp;
+        if (!IsOnPlayerSide(battler))
+        {
+            // 对手侧：用镜像图作为 sprite sheet 的数据源
+            sheet.data = sAbilityPopUpGfx_Mirrored;
+            sheet.size = sizeof(sAbilityPopUpGfx_Mirrored);
+        }
         sheet.tag = tileTag;
         LoadSpriteSheet(&sheet);
     }
@@ -2826,6 +2832,12 @@ void CreateItemPopUp(enum BattlerId battler)
     if (IndexOfSpriteTileTag(tileTag) == 0xFF)
     {
         struct SpriteSheet sheet = sSpriteSheet_AbilityPopUp;
+        if (!IsOnPlayerSide(battler))
+        {
+            // 对手侧：用镜像图作为 sprite sheet 的数据源
+            sheet.data = sAbilityPopUpGfx_Mirrored;
+            sheet.size = sizeof(sAbilityPopUpGfx_Mirrored);
+        }
         sheet.tag = tileTag;
         LoadSpriteSheet(&sheet);
     }
