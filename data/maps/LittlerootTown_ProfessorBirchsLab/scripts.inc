@@ -525,7 +525,7 @@ LittlerootTown_ProfessorBirchsLab_EventScript_GivePokedex::
 
 LittlerootTown_ProfessorBirchsLab_EventScript_MayGivePokeBalls::
 	msgbox LittlerootTown_ProfessorBirchsLab_Text_MayGotPokedexTooTakeThese, MSGBOX_DEFAULT
-	giveitem ITEM_POKE_BALL, 5
+	giveitem ITEM_POKE_BALL, 10
 	call_if_eq VAR_RESULT, FALSE, LittlerootTown_ProfessorBirchsLab_EventScript_MayNoRoomForPokeBalls
 	msgbox LittlerootTown_ProfessorBirchsLab_Text_CatchCutePokemonWithPokeBalls, MSGBOX_DEFAULT
 	setvar VAR_RESULT, 0
@@ -533,7 +533,7 @@ LittlerootTown_ProfessorBirchsLab_EventScript_MayGivePokeBalls::
 
 LittlerootTown_ProfessorBirchsLab_EventScript_BrendanGivePokeBalls::
 	msgbox LittlerootTown_ProfessorBirchsLab_Text_BrendanGotPokedexTooTakeThese, MSGBOX_DEFAULT
-	giveitem ITEM_POKE_BALL, 5
+	giveitem ITEM_POKE_BALL, 10
 	call_if_eq VAR_RESULT, FALSE, LittlerootTown_ProfessorBirchsLab_EventScript_BrendanNoRoomForPokeBalls
 	msgbox LittlerootTown_ProfessorBirchsLab_Text_CatchCoolPokemonWithPokeBalls, MSGBOX_DEFAULT
 	setvar VAR_RESULT, 1
@@ -684,19 +684,19 @@ LittlerootTown_ProfessorBirchsLab_Text_BirchRivalGoneHome:
     .string "小田卷博士：{RIVAL}？\n可能回家里去了，\p也可能去草丛里\n调查什么了……\p你和宝可梦累了的话，\n记得回家休息一下。$"
 
 LittlerootTown_ProfessorBirchsLab_Text_HeardYouBeatRivalTakePokedex:
-    .string "小田卷博士：哦，{PLAYER}{KUN}！\p听说你第一次对战就赢了\n{RIVAL}，很厉害啊！\p{RIVAL}做我的助手\n已经很久了，\p作为训练家而言，\n经验非常丰富。\p{PLAYER}{KUN}，这个宝可梦图鉴\n是我为了研究订购的，\l但现在我想把它给你。$"
+    .string "小田卷博士：哦，{PLAYER}{KUN}！\p听说你初次战斗就打败了\n{RIVAL}，真厉害啊！\p{RIVAL}做我的助手\n已经很久了，\p作为训练家而言，\n经验非常丰富。\p{PLAYER}{KUN}，这个宝可梦图鉴\n是我为了研究订购的，\l但现在我想把它给你。$"
 
 LittlerootTown_ProfessorBirchsLab_Text_ReceivedPokedex:
     .string "{PLAYER}得到了宝可梦图鉴！$"
 
 LittlerootTown_ProfessorBirchsLab_Text_ExplainPokedex:
-    .string "小田卷博士：宝可梦图鉴是一种\n能够自动记录你遇见或捕获的\l宝可梦的高科技工具，\p我家{RIVAL}无论去哪儿\n都一直带着它。\p每当{RIVAL}捕捉到稀有宝可梦\n并记录数据到宝可梦图鉴上时，\l那孩子就会来找在外实地调查的我，\l把成果展示给我看。$"
+    .string "小田卷博士：宝可梦图鉴是一种\n能自动记录你遇见或捕获的\n宝可梦的高科技工具。\p我家{RIVAL}无论去哪儿\n都一直带着它。\p每当{RIVAL}捕捉到稀有宝可梦，\n并把数据记录到图鉴上，\l那孩子就会来找正在野外调查的我，\l把成果拿给我看。\p你会遇到各种各样的宝可梦，\n也会遇到有趣的人，\l还能看到美丽的大自然。\p一边亲身去体验这个广阔的世界，\n一边填充自己的宝可梦图鉴，\l一定会很快乐吧。\p不过我还是希望你能偶尔回来，\n让我看看你的图鉴完成得怎么样了。\p这样就变成两份快乐了！$"
 
 LittlerootTown_ProfessorBirchsLab_Text_CountlessPokemonAwait:
-    .string "小田卷博士：前面还有无数的宝可梦\n在等着你！\p啊——\n我又想去做实地调查了！$"
+    .string "小田卷博士：前面还有无数的宝可梦\n在等着你！\p啊——说着说着\n我又想去做实地调查了！$"
 
 LittlerootTown_ProfessorBirchsLab_Text_MayGotPokedexTooTakeThese:
-    .string "小遥：哇，{PLAYER}{KUN}！\n你也拿到宝可梦图鉴啦！\p太好了！和我一样！\n这个送给你！$"
+    .string "小遥：哇，{PLAYER}{KUN}！\n你也拿到宝可梦图鉴啦！\p太好了！和我的一样！\n那这些送给你！$"
 
 LittlerootTown_ProfessorBirchsLab_Text_CatchCutePokemonWithPokeBalls:
     .string "小遥：宝可梦捕捉得越多\n就感觉会越有趣！\p我要去各处寻找\n不同的宝可梦，\p发现可爱的宝可梦的话，\n就用精灵球捕捉它们！$"
@@ -708,7 +708,7 @@ LittlerootTown_ProfessorBirchsLab_Text_MayWhereShouldIGoNext:
     .string "小遥：接下来该去\n哪里找宝可梦呢？$"
 
 LittlerootTown_ProfessorBirchsLab_Text_BrendanGotPokedexTooTakeThese:
-    .string "小悠：哦……？\n你也拿到宝可梦图鉴了啊。\p那这个送给你！$"
+    .string "小悠：哦……？\n你也拿到宝可梦图鉴了啊。\p那这些送给你！$"
 
 LittlerootTown_ProfessorBirchsLab_Text_CatchCoolPokemonWithPokeBalls:
     .string "小悠：你知道吗，捕捉的宝可梦\n越多就越有趣。\p我要去各地寻找\n捕捉不同的宝可梦，\p如果见到很帅气的宝可梦，\n我肯定会用精灵球捕捉到！$"

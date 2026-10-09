@@ -5,7 +5,9 @@ Route101_MapScripts::
 
 Route101_OnTransition:
 	call ProfBirch_EventScript_UpdateLocation
+	goto_if_unset FLAG_DEXNAV_TUTORIAL_DONE, Route101_OnTransition_HideRival
 	end
+
 
 Route101_OnFrame:
 	map_script_2 VAR_ROUTE101_STATE, 0, Route101_EventScript_HideMapNamePopup
@@ -57,6 +59,10 @@ Route101_EventScript_PreventExitWest::
 	applymovement LOCALID_PLAYER, Route101_Movement_PreventExitWest
 	waitmovement 0
 	releaseall
+	end
+
+Route101_OnTransition_HideRival::
+	setflag FLAG_HIDE_ROUTE101_RIVAL
 	end
 
 Route101_EventScript_DexNavTutorial0::
@@ -133,7 +139,11 @@ Route101_EventScript_DexNavTutorial_AfterApproach::
 	applymovement LOCALID_ROUTE101_RIVAL, Common_Movement_ExclamationMark
 	waitmovement 0
 	playse SE_PIN
-	msgbox Route101_Text_RivalSpotsPoochyena, MSGBOX_DEFAULT
+	msgbox Route101_Text_RivalSpots_SeeGrass, MSGBOX_DEFAULT
+	closemessage
+	applymovement LOCALID_PLAYER, Common_Movement_WalkInPlaceFasterRight
+	waitmovement 0
+	msgbox Route101_Text_RivalSpots_Careful, MSGBOX_DEFAULT
 	closemessage
 
 	setwildbattle SPECIES_POOCHYENA, 5, ITEM_NONE
@@ -435,11 +445,7 @@ Route101_Text_RivalCatchUp:
 	.string "{PLAYER}！等一下——！$"
 
 Route101_Text_RivalDexNavExplain:
-	.string "差点忘了把这个给你。\p"
-	.string "这是宝可梦多功能导航器的\n"
-	.string "新应用——宝可梦搜寻器。\p"
-	.string "它可以告诉你当前区域\n"
-	.string "有哪些宝可梦出没。$"
+    .string "我爸让我把这个东西送到你手里\n他说他之前忘把这个给你了。\p这是宝可梦多功能导航器的\n新应用——宝可梦搜寻器。\p它可以告诉你当前区域\n有哪些宝可梦出没。\p是得文公司和我爸爸合作的成果。$"
 
 Route101_Text_RivalDexNavReceived:
 	.string "{PLAYER}的宝可梦多功能导航器\n"
@@ -457,13 +463,19 @@ Route101_Text_RivalSneakExplain2:
 	.string "这时候慢慢靠近，\n"
 	.string "就能遇到它！$"
 
-Route101_Text_RivalSpotsPoochyena:
-	.string "看！那边草丛里有动静！\n"
-	.string "去试试吧！$"
+Route101_Text_RivalSpots_SeeGrass:
+    .string "看！那边草丛里有动静！$"
+
+Route101_Text_RivalSpots_Careful:
+    .string "小心！土狼犬扑过来了！\n"
+    .string "我的搜寻器显示，\l"
+    .string "它带了元素牙类招式！$"
 
 Route101_Text_RivalAfterTutorial:
-	.string "干得漂亮！\p"
-	.string "宝可梦搜寻器应该已经\n"
-	.string "自动记录下来了。\p"
-	.string "我还有事，先走了。\n"
-	.string "以后再见！$"
+    .string "不错嘛！\p"
+    .string "刚才那只土狼犬，\n"
+    .string "搜寻器已经自动记录下来了。\p"
+    .string "以后你也能用搜寻器\n"
+    .string "找到各种各样的宝可梦。\p"
+    .string "我还得去帮爸爸的忙，先走了。\n"
+    .string "之后再见！$"
