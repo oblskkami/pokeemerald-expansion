@@ -2183,8 +2183,16 @@ static void Cmd_getexp(void)
             s32 viaSentIn = 0;
             s32 viaExpShare = 0;
 
+            u32 limit = PARTY_SIZE;
+            if ((gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER) && !(gBattleTypeFlags & BATTLE_TYPE_LINK))
+            {
+                limit = CalculatePartyCount(B_TRAINER_PLAYER);
+            }
+
             for (i = 0; i < PARTY_SIZE; i++)
             {
+                if (i >= limit)
+                    continue;
                 if (!IsValidForBattle(&gParties[B_TRAINER_PLAYER][i]))
                     continue;
                 if ((1u << i) & sentInBits)
@@ -2200,11 +2208,15 @@ static void Cmd_getexp(void)
             // Get order of mons getting exp: 1. all mons via sent in, 2. all mons via exp share
             for (i = 0; i < PARTY_SIZE; i++)
             {
+                if (i >= limit)
+                    continue;
                 if ((1u << i) & sentInBits)
                     gBattleStruct->expGettersOrder[orderId++] = i;
             }
             for (i = 0; i < PARTY_SIZE; i++)
             {
+                if (i >= limit)
+                    continue;
                 if (!((1u << i) & sentInBits) && (1u << i) & expShareBits)
                     gBattleStruct->expGettersOrder[orderId++] = i;
             }
@@ -2400,7 +2412,16 @@ static void Cmd_getexp(void)
                     if (gBattleMons[battler].volatiles.powerTrick)
                         SWAP(gBattleMons[battler].attack, gBattleMons[battler].defense, temp);
                 }
-
+                // 【终极掩盖】直接指定搭档队伍的真实数据去刷新右侧血条，绕过被污染的索引
+                if ((gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER) && !(gBattleTypeFlags & BATTLE_TYPE_LINK))
+                {
+                    if (battler == B_BATTLER_0 && IsBattlerAlive(B_BATTLER_2))
+                    {
+                        // 强制传入 gParties[B_TRAINER_PARTNER][0] 的指针
+                        UpdateHealthboxAttribute(gHealthboxSpriteIds[B_BATTLER_2], &gParties[B_TRAINER_PARTNER][0], HEALTHBOX_ALL);
+                    }
+                }
+                
                 gBattleScripting.getexpState = 5;
             }
             else
@@ -2516,11 +2537,21 @@ bool32 NoAliveMonsForPlayer(void)
     if (DoesPartyHaveBattleReadyMons(B_TRAINER_PLAYER))
         return FALSE;
 
-    if (!(gBattleTypeFlags & (BATTLE_TYPE_MULTI | BATTLE_TYPE_INGAME_PARTNER)))
+    // 【精准限定】只在野生搭档战（如103号道路）生效，训练家搭档战（如大吾）保持原版白屏
+    if ((gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER) && !(gBattleTypeFlags & BATTLE_TYPE_LINK) && !(gBattleTypeFlags & BATTLE_TYPE_TRAINER))
+    {
+        if (DoesPartyHaveBattleReadyMons(B_TRAINER_PARTNER))
+            return FALSE; // 搭档活着，不判全灭
+        else
+            return TRUE;  // 搭档也死光了，彻底全灭，触发白屏
+    }
+
+    if (!(gBattleTypeFlags & BATTLE_TYPE_MULTI))
         return TRUE;
 
     if (!DoesPartyHaveBattleReadyMons(B_TRAINER_PARTNER))
         return TRUE;
+        
     return WillPlayerWhiteOutIfPartnerWinsAlone();
 }
 
@@ -3816,7 +3847,9 @@ static void Cmd_handlelearnnewmove(void)
         {
             GiveMoveToBattleMon(&gBattleMons[battler], learnMove);
         }
-        if (IsDoubleBattle())
+        
+        // 【核心修复】如果是 NPC 搭档战，绝对不要去更新右侧的搭档，否则会导致搭档名字变成玩家的名字
+        if (IsDoubleBattle() && !(gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER))
         {
             battler = GetBattlerAtPosition(B_POSITION_PLAYER_RIGHT);
             if (gBattlerPartyIndexes[battler] == monId
@@ -3923,6 +3956,7 @@ static void Cmd_yesnoboxlearnmove(void)
                         SetBattleMonMoveSlot(&gBattleMons[0], gMoveToLearn, movePosition);
                     }
                     if (IsDoubleBattle()
+                        && !(gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER)
                         && gBattlerPartyIndexes[2] == gBattleStruct->expGetterMonId
                         && MOVE_IS_PERMANENT(2, movePosition))
                     {

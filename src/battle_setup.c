@@ -533,7 +533,15 @@ void BattleSetup_StartScriptedWildBattle(void)
 {
     LockPlayerFieldControls();
     gMain.savedCallback = CB2_EndScriptedWildBattle;
-    gBattleTypeFlags = 0;
+    if (FollowerNPCIsBattlePartner())
+    {
+        gBattleTypeFlags = BATTLE_TYPE_MULTI | BATTLE_TYPE_INGAME_PARTNER | BATTLE_TYPE_DOUBLE;
+        FillPartnerParty(gPartnerTrainerId);
+    }
+    else
+    {
+        gBattleTypeFlags = 0;
+    }
     CreateBattleStartTask(GetWildBattleTransition(), 0);
     IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
     IncrementGameStat(GAME_STAT_WILD_BATTLES);
@@ -691,28 +699,24 @@ static void DowngradeBadPoison(void)
 
 static void CB2_EndWildBattle(void)
 {
-    CpuFill16(0, (void *)(BG_PLTT), BG_PLTT_SIZE);
-    ResetOamRange(0, 128);
+	CpuFill16(0, (void *)(BG_PLTT), BG_PLTT_SIZE);
+	ResetOamRange(0, 128);
 
-    if (IsNPCFollowerWildBattle())
-    {
-        RestorePartyAfterFollowerNPCBattle();
-        if (FNPC_FLAG_HEAL_AFTER_FOLLOWER_BATTLE != 0
-         && (FNPC_FLAG_HEAL_AFTER_FOLLOWER_BATTLE == FNPC_ALWAYS
-         || FlagGet(FNPC_FLAG_HEAL_AFTER_FOLLOWER_BATTLE)))
-            HealPlayerParty();
-    }
+	if (IsNPCFollowerWildBattle())
+	{
+		RestorePartyAfterFollowerNPCBattle();
+	}
 
-    if (IsPlayerDefeated(gBattleOutcome) == TRUE && CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE && !InBattlePike())
-    {
-        SetMainCallback2(CB2_WhiteOut);
-    }
-    else
-    {
-        SetMainCallback2(CB2_ReturnToField);
-        DowngradeBadPoison();
-        gFieldCallback = FieldCB_ReturnToFieldNoScriptCheckMusic;
-    }
+	if (IsPlayerDefeated(gBattleOutcome) == TRUE && CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE && !InBattlePike())
+	{
+		SetMainCallback2(CB2_WhiteOut);
+	}
+	else
+	{
+		SetMainCallback2(CB2_ReturnToField);
+		DowngradeBadPoison();
+		gFieldCallback = FieldCB_ReturnToFieldNoScriptCheckMusic;
+	}
 }
 
 static void CB2_EndScriptedWildBattle(void)

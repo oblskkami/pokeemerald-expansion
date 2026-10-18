@@ -743,9 +743,12 @@ bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior)
                 {
                     if (TryDoDoubleWildBattle())
                     {
-                        struct Pokemon mon1 = gParties[B_TRAINER_OPPONENT_A][0];
-                        TryGenerateWildMon(gWildMonHeaders[headerId].encounterTypes[timeOfDay].landMonsInfo, WILD_AREA_LAND, WILD_CHECK_KEEN_EYE);
-                        gParties[B_TRAINER_OPPONENT_A][1] = mon1;
+                        if (!FlagGet(FLAG_FORCE_2_VS_1_WILD))
+                        {
+                            struct Pokemon mon1 = gParties[B_TRAINER_OPPONENT_A][0];
+                            TryGenerateWildMon(gWildMonHeaders[headerId].encounterTypes[timeOfDay].landMonsInfo, WILD_AREA_LAND, WILD_CHECK_KEEN_EYE);
+                            gParties[B_TRAINER_OPPONENT_A][1] = mon1;
+                        }
                         BattleSetup_StartDoubleWildBattle();
                     }
                     else
@@ -788,9 +791,12 @@ bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior)
                     gIsSurfingEncounter = TRUE;
                     if (TryDoDoubleWildBattle())
                     {
-                        struct Pokemon mon1 = gParties[B_TRAINER_OPPONENT_A][0];
-                        TryGenerateWildMon(gWildMonHeaders[headerId].encounterTypes[timeOfDay].waterMonsInfo, WILD_AREA_WATER, WILD_CHECK_KEEN_EYE);
-                        gParties[B_TRAINER_OPPONENT_A][1] = mon1;
+                        if (!FlagGet(FLAG_FORCE_2_VS_1_WILD))
+                        {
+                            struct Pokemon mon1 = gParties[B_TRAINER_OPPONENT_A][0];
+                            TryGenerateWildMon(gWildMonHeaders[headerId].encounterTypes[timeOfDay].waterMonsInfo, WILD_AREA_WATER, WILD_CHECK_KEEN_EYE);
+                            gParties[B_TRAINER_OPPONENT_A][1] = mon1;
+                        }
                         BattleSetup_StartDoubleWildBattle();
                     }
                     else
@@ -828,9 +834,12 @@ void RockSmashWildEncounter(void)
         {
             if (TryDoDoubleWildBattle())
             {
-                struct Pokemon mon1 = gParties[B_TRAINER_OPPONENT_A][0];
-                TryGenerateWildMon(wildPokemonInfo, WILD_AREA_ROCKS, WILD_CHECK_REPEL | WILD_CHECK_KEEN_EYE);
-                gParties[B_TRAINER_OPPONENT_A][1] = mon1;
+                if (!FlagGet(FLAG_FORCE_2_VS_1_WILD))
+                {
+                    struct Pokemon mon1 = gParties[B_TRAINER_OPPONENT_A][0];
+                    TryGenerateWildMon(wildPokemonInfo, WILD_AREA_ROCKS, WILD_CHECK_REPEL | WILD_CHECK_KEEN_EYE);
+                    gParties[B_TRAINER_OPPONENT_A][1] = mon1;
+                }
                 BattleSetup_StartDoubleWildBattle();
                 gSpecialVar_Result = TRUE;
             }
@@ -1199,7 +1208,7 @@ bool8 TryDoDoubleWildBattle(void)
         return FALSE;
     if (FollowerNPCIsBattlePartner() && FNPC_FLAG_PARTNER_WILD_BATTLES != 0
      && (FNPC_FLAG_PARTNER_WILD_BATTLES == FNPC_ALWAYS || FlagGet(FNPC_FLAG_PARTNER_WILD_BATTLES)) && FNPC_NPC_FOLLOWER_WILD_BATTLE_VS_2 == TRUE)
-        return TRUE;
+        return  FlagGet(WE_FLAG_FORCE_DOUBLE_WILD);
     else if (FlagGet(WE_FLAG_FORCE_DOUBLE_WILD))
         return TRUE;
     else if (RandomPercentage(RNG_NONE, WE_DOUBLE_WILD_CHANCE))

@@ -5452,8 +5452,7 @@ const u8 *GetTrainerPartnerName(void)
 {
     if (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER)
     {
-        GetFrontierTrainerName(gStringVar1, gPartnerTrainerId);
-        return gStringVar1;
+        return gBattlePartners[DIFFICULTY_NORMAL][gPartnerTrainerId].trainerName;
     }
     else
     {

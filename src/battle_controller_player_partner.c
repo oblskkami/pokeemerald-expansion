@@ -220,36 +220,33 @@ static void PlayerPartnerHandleDrawTrainerPic(enum BattlerId battler)
 
     enum DifficultyLevel difficulty = GetBattlePartnerDifficultyLevel(gPartnerTrainerId);
 
-    if (TESTING)
-    {
-        trainerPicId = TRAINER_PIC_STEVEN;
-        xPos = 90;
-        yPos = (8 - GetTrainerBackPicCoords(trainerPicId)->size) * 4 + 80;
-    }
-    else if (gPartnerTrainerId > TRAINER_PARTNER(PARTNER_NONE))
+    if (gPartnerTrainerId > TRAINER_PARTNER(PARTNER_NONE))
     {
         trainerPicId = PlayerPartnerGetTrainerBackPicId(difficulty);
+        
+        // 如果发现背图未加载，可以在这里手动映射（视图库而定）
+        if (trainerPicId == TRAINER_PIC_MAY) trainerPicId = TRAINER_PIC_MAY;
+        if (trainerPicId == TRAINER_PIC_BRENDAN) trainerPicId = TRAINER_PIC_BRENDAN;
+        if (trainerPicId == TRAINER_PIC_STEVEN) trainerPicId = TRAINER_PIC_STEVEN;
+
         xPos = 90;
         yPos = (8 - GetTrainerBackPicCoords(trainerPicId)->size) * 4 + 80;
+        isFrontPic = FALSE;
     }
     else if (IsAiVsAiBattle())
     {
         trainerPicId = GetTrainerPicFromId(gPartnerTrainerId);
         xPos = 60;
         yPos = 80;
+        isFrontPic = TRUE;
     }
     else
     {
         trainerPicId = GetFrontierTrainerFrontSpriteId(gPartnerTrainerId);
         xPos = 32;
         yPos = 80;
-    }
-
-    // Use back pic only if the partner Steven or is custom.
-    if (gPartnerTrainerId > TRAINER_PARTNER(PARTNER_NONE))
-        isFrontPic = FALSE;
-    else
         isFrontPic = TRUE;
+    }
 
     BtlController_HandleDrawTrainerPic(battler, trainerPicId, isFrontPic, xPos, yPos, -1);
 }
@@ -330,7 +327,7 @@ static void PlayerPartnerHandleIntroTrainerBallThrow(enum BattlerId battler)
     else if (IsAiVsAiBattle())
         trainerPal = GetTrainerFrontPicPalette(GetTrainerPicFromId(gPartnerTrainerId));
     else
-        trainerPal = GetTrainerFrontPicPalette(GetFrontierTrainerFrontSpriteId(gPartnerTrainerId)); // 2 vs 2 multi battle in Battle Frontier, load front sprite and pal.
+        trainerPal = GetTrainerFrontPicPalette(GetFrontierTrainerFrontSpriteId(gPartnerTrainerId));
 
     BtlController_HandleIntroTrainerBallThrow(battler, 0xD6F9, trainerPal, 24, Controller_PlayerPartnerShowIntroHealthbox);
 }

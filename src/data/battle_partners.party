@@ -42,3 +42,81 @@ EVs: 252 Atk / 252 SpA / 6 SpD
 - Protect
 - Solar Beam
 - Dragon Claw
+
+=== PARTNER_MAY_ROUTE_103_MUDKIP ===
+Name: 小遥
+Class: Rival
+Pic: May
+Gender: Female
+Music: Female
+Double Battle: No
+AI: Check Bad Move / Try to Faint / Check Viability / HP Aware
+
+Treecko
+Level: 6
+IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
+
+=== PARTNER_MAY_ROUTE_103_TORCHIC ===
+Name: 小遥
+Class: Rival
+Pic: May
+Gender: Female
+Music: Female
+Double Battle: No
+AI: Check Bad Move / Try to Faint / Check Viability / HP Aware
+
+Mudkip
+Level: 6
+IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
+
+=== PARTNER_MAY_ROUTE_103_TREECKO ===
+Name: 小遥
+Class: Rival
+Pic: May
+Gender: Female
+Music: Female
+Double Battle: No
+AI: Check Bad Move / Try to Faint / Check Viability / HP Aware
+
+Torchic
+Level: 6
+IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
+
+=== PARTNER_BRENDAN_ROUTE_103_MUDKIP ===
+Name: 小悠
+Class: Rival
+Pic: Brendan
+Gender: Male
+Music: Male
+Double Battle: No
+AI: Check Bad Move / Try to Faint / Check Viability / HP Aware
+
+Treecko
+Level: 6
+IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
+
+=== PARTNER_BRENDAN_ROUTE_103_TREECKO ===
+Name: 小悠
+Class: Rival
+Pic: Brendan
+Gender: Male
+Music: Male
+Double Battle: No
+AI: Check Bad Move / Try to Faint / Check Viability / HP Aware
+
+Torchic
+Level: 6
+IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
+
+=== PARTNER_BRENDAN_ROUTE_103_TORCHIC ===
+Name: 小悠
+Class: Rival
+Pic: Brendan
+Gender: Male
+Music: Male
+Double Battle: No
+AI: Check Bad Move / Try to Faint / Check Viability / HP Aware
+
+Mudkip
+Level: 6
+IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
