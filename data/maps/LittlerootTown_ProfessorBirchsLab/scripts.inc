@@ -690,7 +690,7 @@ LittlerootTown_ProfessorBirchsLab_Text_ReceivedPokedex:
     .string "{PLAYER}得到了宝可梦图鉴！$"
 
 LittlerootTown_ProfessorBirchsLab_Text_ExplainPokedex:
-    .string "小田卷博士：宝可梦图鉴是一种\n能自动记录你遇见或捕获的\n宝可梦的高科技工具。\p我家{RIVAL}无论去哪儿\n都一直带着它。\p每当{RIVAL}捕捉到稀有宝可梦，\n并把数据记录到图鉴上，\l那孩子就会来找正在野外调查的我，\l把成果拿给我看。\p你会遇到各种各样的宝可梦，\n也会遇到有趣的人，\l还能看到美丽的大自然。\p一边亲身去体验这个广阔的世界，\n一边填充自己的宝可梦图鉴，\l一定会很快乐吧。\p不过我还是希望你能偶尔回来，\n让我看看你的图鉴完成得怎么样了。\p这样就变成两份快乐了！$"
+    .string "小田卷博士：宝可梦图鉴是一种\n能自动记录你遇见或捕获的\n宝可梦的\p高科技工具。\p我家{RIVAL}无论去哪儿\n都一直带着它。\p每当{RIVAL}捕捉到稀有宝可梦，\n并把数据记录到图鉴上，\l那孩子就会来找正在野外调查的我，\l把成果拿给我看。\p你会遇到各种各样的宝可梦，\n也会遇到有趣的人，\l还能看到美丽的大自然。\p一边亲身去体验这个广阔的世界，\n一边填充自己的宝可梦图鉴，\l一定会很快乐吧。\p不过我还是希望你能偶尔回来，\n让我看看你的图鉴完成得怎么样了。\p这样就变成两份快乐了！$"
 
 LittlerootTown_ProfessorBirchsLab_Text_CountlessPokemonAwait:
     .string "小田卷博士：前面还有无数的宝可梦\n在等着你！\p啊——说着说着\n我又想去做实地调查了！$"

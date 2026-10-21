@@ -632,7 +632,7 @@ Pic: Aroma Lady
 Gender: Female
 Music: Female
 Double Battle: No
-AI: Check Bad Move
+AI: Basic Trainer
 
 Shroomish
 Level: 14
@@ -691,7 +691,7 @@ Pic: Aroma Lady
 Gender: Female
 Music: Female
 Double Battle: No
-AI: Check Bad Move
+AI: Basic Trainer
 
 Roselia
 Level: 26
@@ -708,7 +708,7 @@ Pic: Aroma Lady
 Gender: Female
 Music: Female
 Double Battle: No
-AI: Check Bad Move
+AI: Basic Trainer
 
 Shroomish
 Level: 26
@@ -725,7 +725,7 @@ Pic: Aroma Lady
 Gender: Female
 Music: Female
 Double Battle: No
-AI: Check Bad Move
+AI: Basic Trainer
 
 Shroomish
 Level: 28
@@ -746,7 +746,7 @@ Pic: Aroma Lady
 Gender: Female
 Music: Female
 Double Battle: No
-AI: Check Bad Move
+AI: Basic Trainer
 
 Shroomish
 Level: 31
@@ -767,7 +767,7 @@ Pic: Aroma Lady
 Gender: Female
 Music: Female
 Double Battle: No
-AI: Check Bad Move
+AI: Basic Trainer
 
 Breloom
 Level: 34
@@ -2704,11 +2704,11 @@ AI: Check Bad Move
 
 Lairon
 Level: 29
-IVs: 2 HP / 2 Atk / 2 Def / 2 SpA / 2 SpD / 2 Spe
+IVs: 4 HP / 4 Atk / 4 Def / 4 SpA / 4 SpD / 4 Spe
 
 Rhyhorn
 Level: 29
-IVs: 2 HP / 2 Atk / 2 Def / 2 SpA / 2 SpD / 2 Spe
+IVs: 4 HP / 4 Atk / 4 Def / 4 SpA / 4 SpD / 4 Spe
 
 === TRAINER_STEVE_4 ===
 Name: 俊夫
@@ -2717,15 +2717,15 @@ Pic: Pokemaniac
 Gender: Male
 Music: Suspicious
 Double Battle: No
-AI: Check Bad Move
+AI: Basic Trainer
 
 Lairon
 Level: 32
-IVs: 3 HP / 3 Atk / 3 Def / 3 SpA / 3 SpD / 3 Spe
+IVs: 8 HP / 8 Atk / 8 Def / 8 SpA / 8 SpD / 8 Spe
 
 Rhyhorn
 Level: 32
-IVs: 3 HP / 3 Atk / 3 Def / 3 SpA / 3 SpD / 3 Spe
+IVs: 8 HP / 8 Atk / 8 Def / 8 SpA / 8 SpD / 8 Spe
 
 === TRAINER_STEVE_5 ===
 Name: 俊夫
@@ -2734,15 +2734,15 @@ Pic: Pokemaniac
 Gender: Male
 Music: Suspicious
 Double Battle: No
-AI: Check Bad Move
+AI: Basic Trainer
 
 Aggron
-Level: 35
-IVs: 4 HP / 4 Atk / 4 Def / 4 SpA / 4 SpD / 4 Spe
+Level: 42
+IVs: 12 HP / 12 Atk / 12 Def / 12 SpA / 12 SpD / 12 Spe
 
 Rhydon
-Level: 35
-IVs: 4 HP / 4 Atk / 4 Def / 4 SpA / 4 SpD / 4 Spe
+Level: 42
+IVs: 12 HP / 12 Atk / 12 Def / 12 SpA / 12 SpD / 12 Spe
 
 === TRAINER_LUIS ===
 Name: 洋平
@@ -4594,7 +4594,7 @@ Gender: Male
 Music: Elite Four
 Items: Full Restore / Full Restore
 Double Battle: No
-AI: Basic Trainer / Force Setup First Turn
+AI: Basic Trainer / Smart Switching / Smart Mon Choices
 Mugshot: Purple
 
 Mightyena
@@ -4645,7 +4645,7 @@ Gender: Female
 Music: Elite Four
 Items: Full Restore / Full Restore
 Double Battle: No
-AI: Basic Trainer
+AI: Basic Trainer / Smart Switching / Smart Mon Choices
 Mugshot: Green
 
 Dusclops
@@ -4696,7 +4696,7 @@ Gender: Female
 Music: Elite Four
 Items: Full Restore / Full Restore
 Double Battle: No
-AI: Basic Trainer
+AI: Basic Trainer / Smart Switching / Smart Mon Choices / Omniscient
 Mugshot: Pink
 
 Sealeo
@@ -4747,7 +4747,7 @@ Gender: Male
 Music: Elite Four
 Items: Full Restore / Full Restore
 Double Battle: No
-AI: Basic Trainer
+AI: Basic Trainer / Smart Switching / Smart Mon Choices / Omniscient
 Mugshot: Blue
 
 Shelgon
@@ -6250,7 +6250,7 @@ Gender: Male
 Music: Male
 Items: Full Restore / Full Restore / Full Restore / Full Restore
 Double Battle: No
-AI: Basic Trainer
+AI: Smart Trainer
 Mugshot: Yellow
 
 Wailord
@@ -7614,16 +7614,17 @@ Gender: Female
 Music: Cool
 Items: Full Restore
 Double Battle: No
+AI: Basic Trainer
 
 Claydol
 Level: 43
-IVs: 0 HP / 0 Atk / 0 Def / 0 SpA / 0 SpD / 0 Spe
+IVs: 4 HP / 4 Atk / 4 Def / 4 SpA / 4 SpD / 4 Spe
 - Skill Swap
 - Earthquake
 
 Lanturn
 Level: 43
-IVs: 0 HP / 0 Atk / 0 Def / 0 SpA / 0 SpD / 0 Spe
+IVs: 4 HP / 4 Atk / 4 Def / 4 SpA / 4 SpD / 4 Spe
 - Thunderbolt
 - Earthquake
 
@@ -7634,6 +7635,7 @@ Pic: Tuber F
 Gender: Female
 Music: Girl
 Double Battle: No
+AI: Check Bad Move
 
 Marill
 Level: 26
@@ -7646,6 +7648,7 @@ Pic: Ninja Boy
 Gender: Male
 Music: Suspicious
 Double Battle: No
+AI: Check Bad Move
 
 Koffing
 Level: 17
@@ -7678,14 +7681,15 @@ Pic: Ninja Boy
 Gender: Male
 Music: Suspicious
 Double Battle: No
+AI: Basic Trainer
 
 Koffing
 Level: 18
-IVs: 0 HP / 0 Atk / 0 Def / 0 SpA / 0 SpD / 0 Spe
+IVs: 4 HP / 4 Atk / 4 Def / 4 SpA / 4 SpD / 4 Spe
 
 Ninjask
 Level: 18
-IVs: 0 HP / 0 Atk / 0 Def / 0 SpA / 0 SpD / 0 Spe
+IVs: 4 HP / 4 Atk / 4 Def / 4 SpA / 4 SpD / 4 Spe
 
 === TRAINER_LAO_2 ===
 Name: 金次
@@ -7694,6 +7698,7 @@ Pic: Ninja Boy
 Gender: Male
 Music: Suspicious
 Double Battle: No
+AI: Check Bad Move
 
 Koffing
 Level: 24
@@ -7731,6 +7736,7 @@ Pic: Ninja Boy
 Gender: Male
 Music: Suspicious
 Double Battle: No
+AI: Basic Trainer
 
 Koffing
 Level: 27
@@ -7768,6 +7774,7 @@ Pic: Ninja Boy
 Gender: Male
 Music: Suspicious
 Double Battle: No
+AI: Basic Trainer
 
 Koffing
 Level: 30
@@ -7803,6 +7810,7 @@ Pic: Ninja Boy
 Gender: Male
 Music: Suspicious
 Double Battle: No
+AI: Basic Trainer
 
 Koffing
 Level: 33
@@ -8011,7 +8019,7 @@ Pic: Parasol Lady
 Gender: Female
 Music: Female
 Double Battle: No
-AI: Check Bad Move
+AI: Basic Trainer
 
 Castform
 Level: 30
@@ -9221,7 +9229,7 @@ Pic: Parasol Lady
 Gender: Female
 Music: Female
 Double Battle: No
-AI: Check Bad Move
+AI: Basic Trainer
 
 Castform
 Level: 31
@@ -9371,7 +9379,7 @@ Pic: Magma Admin
 Gender: Male
 Music: Magma
 Double Battle: No
-AI: Check Bad Move
+AI: Basic Trainer
 Multi Party: Half
 
 Camerupt
@@ -9511,7 +9519,7 @@ Pic: Brendan
 Gender: Male
 Music: Male
 Double Battle: No
-AI: Basic Trainer
+AI: Check Bad Move
 
 Treecko
 Level: 5
@@ -9566,7 +9574,7 @@ Pic: Brendan
 Gender: Male
 Music: Male
 Double Battle: No
-AI: Check Bad Move / Try To Faint / Force Setup First Turn
+AI: Check Bad Move
 
 Torchic
 Level: 5
@@ -9621,7 +9629,7 @@ Pic: Brendan
 Gender: Male
 Music: Male
 Double Battle: No
-AI: Basic Trainer
+AI: Check Bad Move
 
 Mudkip
 Level: 5
@@ -9676,7 +9684,7 @@ Pic: May
 Gender: Female
 Music: Female
 Double Battle: No
-AI: Basic Trainer
+AI: Check Bad Move
 
 Treecko
 Level: 5
@@ -9731,7 +9739,7 @@ Pic: May
 Gender: Female
 Music: Female
 Double Battle: No
-AI: Basic Trainer
+AI: Check Bad Move
 
 Torchic
 Level: 5
@@ -9786,7 +9794,7 @@ Pic: May
 Gender: Female
 Music: Female
 Double Battle: No
-AI: Basic Trainer
+AI: Check Bad Move
 
 Mudkip
 Level: 5
@@ -13493,7 +13501,7 @@ Pic: Magma Admin
 Gender: Male
 Music: Magma
 Double Battle: No
-AI: Check Bad Move
+AI: Basic Trainer
 
 Numel
 Level: 26
@@ -15865,7 +15873,7 @@ Gender: Male
 Music: Male
 Items: Full Restore / Full Restore / Full Restore / Full Restore
 Double Battle: No
-AI: Basic Trainer
+AI: Smart Trainer / Prediction
 
 Skarmory
 Level: 77
@@ -15880,15 +15888,15 @@ Level: 75
 IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
 - Reflect
 - Light Screen
-- Ancient Power
-- Earthquake
+- Extrasensory
+- Earth Power
 
 Aggron
 Level: 76
 IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
-- Thunder
+- Iron Tail
 - Earthquake
-- Solar Beam
+- Stone Edge
 - Dragon Claw
 
 Cradily
@@ -15896,24 +15904,24 @@ Level: 76
 IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
 - Giga Drain
 - Ancient Power
-- Ingrain
-- Confuse Ray
+- Sludge Bomb
+- Leech Seed
 
 Armaldo
 Level: 76
 IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
-- Water Pulse
-- Ancient Power
-- Aerial Ace
-- Slash
+- X-Scissor
+- Rock Blast
+- Protect
+- Metal Claw
 
 Metagross @ Sitrus Berry
 Level: 78
 IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
 - Earthquake
-- Psychic
+- Zen Headbutt
 - Meteor Mash
-- Shadow Ball
+- Giga Impact
 
 === TRAINER_ANABEL ===
 Name: 莉拉
@@ -16797,6 +16805,7 @@ Pic: Psychic F
 Gender: Female
 Music: Intense
 Double Battle: No
+AI: Check Bad Move
 
 Chimecho
 Level: 41
@@ -16809,6 +16818,7 @@ Pic: Psychic M
 Gender: Male
 Music: Intense
 Double Battle: No
+AI: Basic Trainer
 
 Banette
 Level: 41
@@ -16825,10 +16835,11 @@ Pic: Gentleman
 Gender: Male
 Music: Rich
 Double Battle: No
+AI: Basic Trainer
 
 Wobbuffet
 Level: 41
-IVs: 0 HP / 0 Atk / 0 Def / 0 SpA / 0 SpD / 0 Spe
+IVs: 4 HP / 4 Atk / 4 Def / 4 SpA / 4 SpD / 4 Spe
 
 === TRAINER_RED ===
 Name: 赤红
