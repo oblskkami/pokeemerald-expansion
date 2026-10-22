@@ -13933,6 +13933,22 @@ const struct ItemInfo gItemsInfo[] =
         .iconPalette = gItemIconPalette_PokeFlute,
     },
 
+    [ITEM_EON_FLUTE] =
+    {
+        .name = ITEM_NAME("无限之笛"),
+        .price = 0,
+        .description = COMPOUND_STRING(
+			"能召唤无限宝可梦\n"
+			"在空中翱翔的笛子\n"
+			"。"),
+        .importance = 1,
+        .pocket = POCKET_KEY_ITEMS,
+        .type = ITEM_USE_FIELD,
+        .fieldUseFunc = ItemUseOutOfBattle_EonFlute,
+        .iconPic = gItemIcon_PokeFlute,
+        .iconPalette = gItemIconPalette_PokeFlute,
+    },
+
     [ITEM_FAME_CHECKER] =
     {
         .name = ITEM_NAME("声音记录器"),

@@ -91,7 +91,7 @@ static mapsec_u16_t GetMapSecIdAt(u16 x, u16 y);
 static void RegionMap_SetBG2XAndBG2Y(s16 x, s16 y);
 static void InitMapBasedOnPlayerLocation(void);
 static void RegionMap_InitializeStateBasedOnSSTidalLocation(void);
-static u8 GetMapsecType(mapsec_u16_t mapSecId);
+u8 GetMapsecType(mapsec_u16_t mapSecId);
 static mapsec_u16_t CorrectSpecialMapSecId_Internal(mapsec_u16_t mapSecId);
 static mapsec_u16_t GetTerraOrMarineCaveMapSecId(void);
 static void GetMarineCaveCoords(u16 *x, u16 *y);
@@ -1420,7 +1420,7 @@ static void RegionMap_InitializeStateBasedOnSSTidalLocation(void)
     sRegionMap->cursorPosY = gRegionMapEntries[sRegionMap->mapSecId].y + y + MAPCURSOR_Y_MIN;
 }
 
-static u8 GetMapsecType(mapsec_u16_t mapSecId)
+u8 GetMapsecType(mapsec_u16_t mapSecId)
 {
     switch (mapSecId)
     {
@@ -1510,6 +1510,154 @@ static u8 GetMapsecType(mapsec_u16_t mapSecId)
 mapsec_u16_t GetRegionMapSecIdAt(u16 x, u16 y)
 {
     return GetMapSecIdAt(x, y);
+}
+
+u32 GetHealLocationForMapSec(mapsec_u16_t mapSecId)
+{
+    if (mapSecId >= ARRAY_COUNT(sMapHealLocations))
+        return HEAL_LOCATION_NONE;
+
+    return sMapHealLocations[mapSecId][2];
+}
+
+// Returns the map section id and the position of that section's cursor on the region map
+// image for the player's current field position. Used by the soaring camera.
+void RegionMap_GetSectionCoordsFromCurrFieldPos(u16 *mapSectionId, u16 *cursorPosX, u16 *cursorPosY, bool8 *playerIsInCave)
+{
+    const struct MapHeader *mapHeader;
+    u16 mapWidth;
+    u16 mapHeight;
+    u16 x;
+    u16 y;
+    u16 dimensionScale;
+    u16 xOnMap;
+    struct WarpData *warp;
+
+    switch (GetMapTypeByGroupAndId(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum))
+    {
+    default:
+    case MAP_TYPE_TOWN:
+    case MAP_TYPE_CITY:
+    case MAP_TYPE_ROUTE:
+    case MAP_TYPE_UNDERWATER:
+    case MAP_TYPE_OCEAN_ROUTE:
+        *mapSectionId = gMapHeader.regionMapSectionId;
+        *playerIsInCave = FALSE;
+        mapWidth = gMapHeader.mapLayout->width;
+        mapHeight = gMapHeader.mapLayout->height;
+        x = gSaveBlock1Ptr->pos.x;
+        y = gSaveBlock1Ptr->pos.y;
+        if (*mapSectionId == MAPSEC_UNDERWATER_SEAFLOOR_CAVERN || *mapSectionId == MAPSEC_UNDERWATER_MARINE_CAVE)
+            *playerIsInCave = TRUE;
+        break;
+    case MAP_TYPE_UNDERGROUND:
+    case MAP_TYPE_UNKNOWN:
+        if (gMapHeader.allowEscaping)
+        {
+            mapHeader = Overworld_GetMapHeaderByGroupAndId(gSaveBlock1Ptr->escapeWarp.mapGroup, gSaveBlock1Ptr->escapeWarp.mapNum);
+            *mapSectionId = mapHeader->regionMapSectionId;
+            *playerIsInCave = TRUE;
+            mapWidth = mapHeader->mapLayout->width;
+            mapHeight = mapHeader->mapLayout->height;
+            x = gSaveBlock1Ptr->escapeWarp.x;
+            y = gSaveBlock1Ptr->escapeWarp.y;
+        }
+        else
+        {
+            *mapSectionId = gMapHeader.regionMapSectionId;
+            *playerIsInCave = TRUE;
+            mapWidth = 1;
+            mapHeight = 1;
+            x = 1;
+            y = 1;
+        }
+        break;
+    case MAP_TYPE_SECRET_BASE:
+        mapHeader = Overworld_GetMapHeaderByGroupAndId((u16)gSaveBlock1Ptr->dynamicWarp.mapGroup, (u16)gSaveBlock1Ptr->dynamicWarp.mapNum);
+        *mapSectionId = mapHeader->regionMapSectionId;
+        *playerIsInCave = TRUE;
+        mapWidth = mapHeader->mapLayout->width;
+        mapHeight = mapHeader->mapLayout->height;
+        x = gSaveBlock1Ptr->dynamicWarp.x;
+        y = gSaveBlock1Ptr->dynamicWarp.y;
+        break;
+    case MAP_TYPE_INDOOR:
+        *mapSectionId = gMapHeader.regionMapSectionId;
+        if (*mapSectionId != MAPSEC_DYNAMIC)
+        {
+            warp = &gSaveBlock1Ptr->escapeWarp;
+            mapHeader = Overworld_GetMapHeaderByGroupAndId(warp->mapGroup, warp->mapNum);
+        }
+        else
+        {
+            warp = &gSaveBlock1Ptr->dynamicWarp;
+            mapHeader = Overworld_GetMapHeaderByGroupAndId(warp->mapGroup, warp->mapNum);
+            *mapSectionId = mapHeader->regionMapSectionId;
+        }
+
+        if (IsPlayerInAquaHideout(*mapSectionId))
+            *playerIsInCave = TRUE;
+        else
+            *playerIsInCave = FALSE;
+
+        mapWidth = mapHeader->mapLayout->width;
+        mapHeight = mapHeader->mapLayout->height;
+        x = warp->x;
+        y = warp->y;
+        break;
+    }
+
+    xOnMap = x;
+
+    dimensionScale = mapWidth / gRegionMapEntries[*mapSectionId].width;
+    if (dimensionScale == 0)
+        dimensionScale = 1;
+    x /= dimensionScale;
+    if (x >= gRegionMapEntries[*mapSectionId].width)
+        x = gRegionMapEntries[*mapSectionId].width - 1;
+
+    dimensionScale = mapHeight / gRegionMapEntries[*mapSectionId].height;
+    if (dimensionScale == 0)
+        dimensionScale = 1;
+    y /= dimensionScale;
+    if (y >= gRegionMapEntries[*mapSectionId].height)
+        y = gRegionMapEntries[*mapSectionId].height - 1;
+
+    switch (*mapSectionId)
+    {
+    case MAPSEC_ROUTE_114:
+        if (y != 0)
+            x = 0;
+        break;
+    case MAPSEC_ROUTE_126:
+    case MAPSEC_UNDERWATER_126:
+        x = 0;
+        if (gSaveBlock1Ptr->pos.x > 32)
+            x++;
+        if (gSaveBlock1Ptr->pos.x > 51)
+            x++;
+
+        y = 0;
+        if (gSaveBlock1Ptr->pos.y > 37)
+            y++;
+        if (gSaveBlock1Ptr->pos.y > 56)
+            y++;
+        break;
+    case MAPSEC_ROUTE_121:
+        x = 0;
+        if (xOnMap > 14)
+            x++;
+        if (xOnMap > 28)
+            x++;
+        if (xOnMap > 54)
+            x++;
+        break;
+    case MAPSEC_UNDERWATER_MARINE_CAVE:
+        GetMarineCaveCoords(cursorPosX, cursorPosY);
+        return;
+    }
+    *cursorPosX = gRegionMapEntries[*mapSectionId].x + x + MAPCURSOR_X_MIN;
+    *cursorPosY = gRegionMapEntries[*mapSectionId].y + y + MAPCURSOR_Y_MIN;
 }
 
 static mapsec_u16_t CorrectSpecialMapSecId_Internal(mapsec_u16_t mapSecId)

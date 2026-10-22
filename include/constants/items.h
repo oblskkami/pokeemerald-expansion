@@ -1062,6 +1062,9 @@ enum __attribute__((packed)) Item
     ITEM_WATERFALL_TOOL,
     ITEM_DIVE_TOOL,
 
+    // Custom key items
+    ITEM_EON_FLUTE,
+
     ITEMS_COUNT,
     ITEM_FIELD_ARROW = ITEMS_COUNT,
 };

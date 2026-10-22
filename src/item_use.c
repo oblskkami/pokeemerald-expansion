@@ -37,6 +37,7 @@
 #include "pokeblock.h"
 #include "pokemon.h"
 #include "script.h"
+#include "soar.h"
 #include "sound.h"
 #include "strings.h"
 #include "string_util.h"
@@ -1567,6 +1568,19 @@ void ItemUseOutOfBattle_PokeFlute(u8 taskId)
             DisplayItemMessage(taskId, FONT_NORMAL, sText_PlayedPokeFluteCatchy, CloseItemMessage);
         else
             DisplayItemMessageOnField(taskId, sText_PlayedPokeFluteCatchy, Task_CloseCantUseKeyItemMessage);
+    }
+}
+
+void ItemUseOutOfBattle_EonFlute(u8 taskId)
+{
+    if (Overworld_MapTypeAllowsTeleportAndFly(gMapHeader.mapType) == TRUE)
+    {
+        sItemUseOnFieldCB = ItemUseOnFieldCB_EonFlute;
+        SetUpItemUseOnFieldCallback(taskId);
+    }
+    else
+    {
+        DisplayDadsAdviceCannotUseItemMessage(taskId, gTasks[taskId].tUsingRegisteredKeyItem);
     }
 }
 
