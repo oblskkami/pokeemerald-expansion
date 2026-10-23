@@ -60,7 +60,7 @@
 #define FLAG_FORCE_2_VS_1_WILD       0x26 // used Flag
 #define FLAG_HIDE_ROUTE103_SEVIPER   0x27 // used Flag
 #define FLAG_ROUTE103_RIVAL_TAG_RETRY 0x28 // used Flag
-#define FLAG_UNUSED_0x029            0x29 // Unused Flag
+#define FLAG_NO_ESCAPE_WILD_BATTLE   0x29 // Set by a script to forbid running from (and Roar/Whirlwind/Teleport out of) the wild battle it starts. Clear it when the battle ends.
 #define FLAG_UNUSED_0x02A            0x2A // Unused Flag
 #define FLAG_UNUSED_0x02B            0x2B // Unused Flag
 #define FLAG_UNUSED_0x02C            0x2C // Unused Flag

@@ -8,6 +8,7 @@ Route103_OnTransition:
 	call ProfBirch_EventScript_UpdateLocation
 	call_if_unset FLAG_DEFEATED_RIVAL_ROUTE103, Route103_EventScript_ResetRival
 	call_if_unset FLAG_DEFEATED_RIVAL_ROUTE103, Route103_EventScript_HideSeviper
+	clearflag FLAG_NO_ESCAPE_WILD_BATTLE
 	end
 
 Route103_EventScript_ResetRival::
@@ -223,8 +224,10 @@ Route103_EventScript_TagBattle_Ambush::
 	end
 
 Route103_EventScript_SeviperBattle_Start::
+	setflag FLAG_NO_ESCAPE_WILD_BATTLE
 	setwildbattle SPECIES_SEVIPER, 7
 	dowildbattle
+	clearflag FLAG_NO_ESCAPE_WILD_BATTLE
 	removeobject LOCALID_ROUTE103_SEVIPER
 	special HealPlayerParty
 	applymovement OBJ_EVENT_ID_NPC_FOLLOWER, Common_Movement_FacePlayer
@@ -450,7 +453,7 @@ Route103_Text_BrendanTimeToHeadBack:
 	.string "小悠：我明白了……\n难怪爸爸会对你青睐有加。\p{PLAYER}，我想你说不定能和\n任何宝可梦都成为朋友呢！\p好了，既然是我输了，\n我们先回研究所……$"
 
 Route103_Text_SeviperAmbush:
-	.string "嘶……嘶嘶……！！\p{RIVAL}：那是……！？\n突然窜出来的……\p是野生的饭匙蛇！\n它盯上我们了！\p你在干什么？！快点迎击啊！\n面对这么凶暴的宝可梦，\p你不帮忙的话，待会连你也会遭殃的！\n我们一起上！$"
+	.string "嘶……嘶嘶……！！\p{RIVAL}：那是……！？\n突然窜出来的……\p是野生的饭匙蛇！\n它盯上我们了！\p你愣着干什么？！快点迎击啊！\n面对这么凶暴的宝可梦，\p你不帮忙的话，待会连你也会遭殃的！\n我们一起上！$"
 
 Route103_Text_RivalRetryAmbush:
 	.string "{RIVAL}：你准备好了吗？\n我还撑的住！\p那条野生的饭匙蛇还在那里！\n这次我们一定要\p把它打倒！$"
