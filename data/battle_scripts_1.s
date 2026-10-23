@@ -3967,6 +3967,15 @@ BattleScript_BattlerFormChangeFromAfterAnimation::
 	jumpifability BS_SCRIPTING, ABILITY_DISGUISE, BattleScript_ApplyDisguiseFormChangeHPLoss
 	return
 
+@ 纯形态变化：不弹特性、不跑 switchinabilities（受击变形用，避免每回合刷文本）
+BattleScript_BattlerFormChangeSilent::
+	flushtextbox
+	handleformchange BS_SCRIPTING, 0
+	playanimation BS_SCRIPTING, B_ANIM_FORM_CHANGE
+	waitanimation
+	handleformchange BS_SCRIPTING, 1
+	return
+
 BattleScript_ZenMode::
 	flushtextbox
 	call BattleScript_AbilityPopUpScripting

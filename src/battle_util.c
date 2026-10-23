@@ -3296,6 +3296,7 @@ u32 AbilityBattleEffects(enum AbilityEffect caseID, enum BattlerId battler, enum
                 }
             }
             break;
+        case ABILITY_MUTANT_PRESSURE:
         case ABILITY_PRESSURE:
             if (shouldAbilityTrigger)
             {

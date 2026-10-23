@@ -12651,7 +12651,9 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("招式学习器51"),
         .price = 3000,
         .description = COMPOUND_STRING(
-			"?????"), // Todo
+			"刮起猛烈的旋风，\n"
+            "在4回合内提高\n"
+            "我方全员的速度。"), // Todo
         .importance = I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
@@ -12663,7 +12665,9 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("招式学习器52"),
         .price = 3000,
         .description = COMPOUND_STRING(
-			"?????"), // Todo
+			"制造出离奇空间。\n"
+            "5回合内速度慢的\n"
+			"宝可梦可以先行动。"),// Todo
         .importance = I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,
@@ -12675,7 +12679,9 @@ const struct ItemInfo gItemsInfo[] =
         .name = ITEM_NAME("招式学习器53"),
         .price = 3000,
         .description = COMPOUND_STRING(
-			"?????"), // Todo
+			"用整个身体撞向\n"
+			"对手进行攻击。\n"
+			"防御越高威力越大。"), // Todo
         .importance = I_REUSABLE_TMS,
         .pocket = POCKET_TM_HM,
         .type = ITEM_USE_PARTY_MENU,

@@ -335,7 +335,7 @@ enum __attribute__((packed)) Ability
     ABILITY_PIERCING_DRILL = 311,
     ABILITY_DRAGONIZE = 312,
     ABILITY_EELEVATE = 313,
-    ABILITY_314 = 314,
+    ABILITY_MUTANT_PRESSURE = 314,
     ABILITY_MEGA_SOL = 315,
     ABILITY_FIRE_MANE = 316,
     ABILITY_317 = 317,
@@ -344,5 +344,8 @@ enum __attribute__((packed)) Ability
     ABILITIES_COUNT_GEN9,
     ABILITIES_COUNT = ABILITIES_COUNT_GEN9,
 };
+
+// 突变威压：兼具压迫感效果（多扣对手 PP 与出场提示）与按招式分类变换形态
+#define IS_PRESSURE_ABILITY(ability) ((ability) == ABILITY_PRESSURE || (ability) == ABILITY_MUTANT_PRESSURE)
 
 #endif  // GUARD_CONSTANTS_ABILITIES_H

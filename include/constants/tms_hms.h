@@ -53,7 +53,8 @@
     F(SNATCH) \
     F(OVERHEAT) \
     F(TAILWIND) \
-    F(TRICK_ROOM)
+    F(TRICK_ROOM) \
+    F(BODY_PRESS)
 
 #define FOREACH_HM(F) \
     F(CUT) \

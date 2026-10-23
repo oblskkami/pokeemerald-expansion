@@ -2439,10 +2439,17 @@ const struct AbilityInfo gAbilitiesInfo[ABILITIES_COUNT] =
         .description = COMPOUND_STRING("飘浮，打倒对手最高项提升"),
     },
 
-    [ABILITY_314] =
+    [ABILITY_MUTANT_PRESSURE] =
     {
-        .name = _("-------"),
-        .description = COMPOUND_STRING("无特殊效果。"),
+        .name = _("突变威压"),
+        .description = COMPOUND_STRING("拥有压迫感，并能变换形态"),
+        .aiRating = 5,
+        .cantBeCopied = TRUE,
+        .cantBeSwapped = TRUE,
+        .cantBeTraced = TRUE,
+        .cantBeSuppressed = TRUE,
+        .cantBeOverwritten = TRUE,
+        .failsOnImposter = TRUE,
     },
 
     [ABILITY_MEGA_SOL] =

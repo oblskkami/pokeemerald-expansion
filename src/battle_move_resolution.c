@@ -1019,12 +1019,12 @@ static enum CancelerResult CancelerPPDeduction(struct BattleCalcValues *cv)
         for (u32 i = 0; i < gBattlersCount; i++)
         {
             if (!IsBattlerAlly(i, cv->battlerAtk))
-                ppToDeduct += (GetBattlerAbility(i) == ABILITY_PRESSURE);
+                ppToDeduct += IS_PRESSURE_ABILITY(GetBattlerAbility(i));
         }
     }
     else if (moveTarget != TARGET_OPPONENTS_FIELD)
     {
-        if (cv->battlerAtk != cv->battlerDef && GetBattlerAbility(cv->battlerDef) == ABILITY_PRESSURE)
+        if (cv->battlerAtk != cv->battlerDef && IS_PRESSURE_ABILITY(GetBattlerAbility(cv->battlerDef)))
              ppToDeduct++;
     }
 
@@ -2584,6 +2584,29 @@ static bool32 ShouldSkipBattlerForDamage(enum BattlerId battlerAtk, enum Battler
     return FALSE;
 }
 
+// 突变威压：被伤害招式命中前切换为防御形态。
+// 位于命中判定之前，因此打空也会变形（按需求选择）。
+static enum CancelerResult CancelerMutantPressureGuard(struct BattleCalcValues *cv)
+{
+    for (enum BattlerId battlerDef = B_BATTLER_0; battlerDef < gBattlersCount; battlerDef++)
+    {
+        if (battlerDef == cv->battlerAtk || IsBattlerAlly(cv->battlerAtk, battlerDef))
+            continue;
+
+        if (ShouldSkipBattlerForDamage(cv->battlerAtk, battlerDef))
+            continue;
+
+        if (TryBattleFormChange(battlerDef, FORM_CHANGE_BATTLE_BEFORE_HIT, GetBattlerAbility(battlerDef)))
+        {
+            gBattleScripting.battler = battlerDef;
+            BattleScriptCall(BattleScript_BattlerFormChangeSilent);
+            return CANCELER_RESULT_RUN_SCRIPT;
+        }
+    }
+
+    return CANCELER_RESULT_SUCCESS;
+}
+
 static enum CancelerResult CancelerPreAttackMoveEffect(struct BattleCalcValues *cv)
 {
     if (IsBattleMoveStatus(cv->move))
@@ -3130,6 +3153,7 @@ static enum CancelerResult (*const sMoveSuccessOrderCancelers[])(struct BattleCa
     [CANCELER_TARGET_FAILURE] = CancelerTargetFailure,
     [CANCELER_MULTIHIT_MOVES] = CancelerMultihitMoves,
     [CANCELER_SUBSTITUTE] = CancelerSubstitute,
+    [CANCELER_MUTANT_PRESSURE_GUARD] = CancelerMutantPressureGuard,
     [CANCELER_ACCURACY_CHECK] = CancelerAccuracyCheck,
     [CANCELER_PRE_ATTACK_MOVE_EFFECT] = CancelerPreAttackMoveEffect,
     [CANCELER_DAMAGE_CALC] = CancelerDamageCalc,

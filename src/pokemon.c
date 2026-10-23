@@ -6137,6 +6137,11 @@ enum Species GetFormChangeTargetSpecies_Internal(struct FormChangeContext ctx)
                 && (formChanges[i].param2 == ABILITY_NONE || formChanges[i].param2 == ctx.ability))
                 targetSpecies = formChanges[i].targetSpecies;
             break;
+        case FORM_CHANGE_BATTLE_BEFORE_HIT:
+            if (formChanges[i].param1 == GetBattleMoveCategory(gCurrentMove)
+                && (formChanges[i].param2 == ABILITY_NONE || formChanges[i].param2 == ctx.ability))
+                targetSpecies = formChanges[i].targetSpecies;
+            break;
         case FORM_CHANGE_OVERWORLD_WEATHER:
         case FORM_CHANGE_TERMINATOR:
             break;
@@ -6145,7 +6150,6 @@ enum Species GetFormChangeTargetSpecies_Internal(struct FormChangeContext ctx)
 
     return targetSpecies;
 }
-
 
 void TrySetDayLimitToFormChange(struct Pokemon *mon)
 {

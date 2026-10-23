@@ -339,6 +339,7 @@ extern const u8 BattleScript_DancerActivates[];
 extern const u8 BattleScript_AftermathDmg[];
 extern const u8 BattleScript_BattlerFormChange[];
 extern const u8 BattleScript_BattlerFormChangeNoPopup[];
+extern const u8 BattleScript_BattlerFormChangeSilent[];
 extern const u8 BattleScript_ZenMode[];
 extern const u8 BattleScript_BattlerFormChangeDisguise[];
 extern const u8 BattleScript_TargetFormChange[];

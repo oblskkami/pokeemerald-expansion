@@ -2857,6 +2857,9 @@ static void BattleStartClearSetData(void)
         for (enum BattleTrainer trainer = B_TRAINER_PLAYER; trainer < MAX_BATTLE_TRAINERS; trainer++)
         {
             gBattleStruct->partyState[trainer][i].usedHeldItem = ITEM_NONE;
+            // 突变威压：记录战斗开始时的形态，供战斗结束时还原（形态表的 END_BATTLE 条目不含 species）
+            if (GetMonAbility(&gParties[trainer][i]) == ABILITY_MUTANT_PRESSURE)
+                gBattleStruct->partyState[trainer][i].changedSpecies = GetMonData(&gParties[trainer][i], MON_DATA_SPECIES);
             gBattleStruct->itemLost[trainer][i].originalItem = GetMonData(&gParties[trainer][i], MON_DATA_HELD_ITEM);
             gPartyCriticalHits[i] = 0;
         }

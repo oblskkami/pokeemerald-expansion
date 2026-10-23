@@ -2,6 +2,7 @@
 #define GUARD_BATTLE_UTIL_H
 
 #include "move.h"
+#include "constants/form_change_types.h"
 #include "constants/battle_util.h"
 #include "constants/battle_string_ids.h"
 #include "constants/hold_effects.h"

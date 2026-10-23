@@ -166,6 +166,10 @@ enum FormChanges
     FORM_CHANGE_DEPOSIT,
     // Form change for Minior, which appears unchanged when encountered in the wild
     FORM_CHANGE_BEGIN_WILD_ENCOUNTER,
+    // Form change that activates right before a Pokémon is hit by a move of a specific category.
+    // param1: move category to check
+    // param2: ability to check, optional
+    FORM_CHANGE_BATTLE_BEFORE_HIT,
 };
 
 #endif // GUARD_CONSTANTS_FORM_CHANGE_TYPES_H
