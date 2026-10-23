@@ -26,6 +26,7 @@
 #include "text_window.h"
 #include "window.h"
 #include "constants/songs.h"
+#include "constants/vars_frlg.h"
 
 struct MenuInfoIcon
 {
@@ -194,6 +195,30 @@ void AddTextPrinterForMessage(bool8 allowSkippingDelayWithButtonPress)
 {
     gTextFlags.canABSpeedUpPrint = allowSkippingDelayWithButtonPress;
     AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, GetPlayerTextSpeedDelay(), NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+}
+
+// Converts the value set by the "textcolor" script command into a TEXT_COLOR_* id.
+// 0-3 are the FRLG NPC_TEXT_COLOR_* values, 4-15 are used as TEXT_COLOR_* directly.
+static u8 GetTextColorForMessage(u16 textColor)
+{
+    switch (textColor)
+    {
+    case NPC_TEXT_COLOR_MALE:
+        return TEXT_COLOR_BLUE;
+    case NPC_TEXT_COLOR_FEMALE:
+        return TEXT_COLOR_RED;
+    case NPC_TEXT_COLOR_MON:
+    case NPC_TEXT_COLOR_NEUTRAL:
+    case NPC_TEXT_COLOR_DEFAULT:
+    default:
+        return TEXT_COLOR_DARK_GRAY;
+    }
+}
+
+void AddTextPrinterForMessageWithTextColor(bool8 allowSkippingDelayWithButtonPress)
+{
+    gTextFlags.canABSpeedUpPrint = allowSkippingDelayWithButtonPress;
+    AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, GetPlayerTextSpeedDelay(), NULL, GetTextColorForMessage(gSpecialVar_TextColor), TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
 }
 
 void AddTextPrinterWithCustomSpeedForMessage(bool8 allowSkippingDelayWithButtonPress, u8 speed)

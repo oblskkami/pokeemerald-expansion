@@ -469,7 +469,7 @@ Route101_Text_RivalSpots_SeeGrass:
 Route101_Text_RivalSpots_Careful:
     .string "小心！土狼犬扑过来了！\n"
     .string "我的搜寻器显示，\l"
-    .string "它带了元素牙类招式！$"
+    .string "它带了{COLOR BLUE}元素牙{COLOR DARK_GRAY}类招式！$"
 
 Route101_Text_RivalAfterTutorial:
     .string "不错嘛！\p"

@@ -106,8 +106,9 @@ gSpecialVars::
 	.4byte gSpecialVar_ContestCategory
 	.4byte gSpecialVar_MonBoxId
 	.4byte gSpecialVar_MonBoxPos
-	.4byte gSpecialVar_Unused_0x8014
+	.4byte gSpecialVar_TextColor
 	.4byte gTrainerBattleParameter + 2 // gTrainerBattleParameter.params.opponentA
+	.4byte gSpecialVar_PrevTextColor
 
 	.purgem def_special
 	.set ALLOCATE_SPECIAL_TABLE, 1

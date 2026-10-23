@@ -1,4 +1,5 @@
 #include "global.h"
+#include "event_data.h"
 #include "menu.h"
 #include "string_util.h"
 #include "task.h"
@@ -8,6 +9,7 @@
 #include "text_window.h"
 #include "script.h"
 #include "field_name_box.h"
+#include "constants/vars_frlg.h"
 
 static EWRAM_DATA u8 sFieldMessageBoxMode = 0;
 EWRAM_DATA u8 gWalkAwayFromSignpostTimer = 0;
@@ -17,6 +19,7 @@ static void StartDrawFieldMessage(void);
 
 void InitFieldMessageBox(void)
 {
+    gSpecialVar_TextColor = NPC_TEXT_COLOR_DEFAULT;
     sFieldMessageBoxMode = FIELD_MESSAGE_BOX_HIDDEN;
     gTextFlags.canABSpeedUpPrint = FALSE;
     gTextFlags.useAlternateDownArrow = FALSE;
@@ -131,13 +134,13 @@ static void ExpandStringAndStartDrawFieldMessage(const u8 *str, bool32 allowSkip
 {
     StringExpandPlaceholders(gStringVar4, str);
     TrySpawnNamebox(gStringVar4, NAME_BOX_BASE_TILE_NUM);
-    AddTextPrinterForMessage(allowSkippingDelayWithButtonPress);
+    AddTextPrinterForMessageWithTextColor(allowSkippingDelayWithButtonPress);
     CreateTask_DrawFieldMessage();
 }
 
 static void StartDrawFieldMessage(void)
 {
-    AddTextPrinterForMessage(TRUE);
+    AddTextPrinterForMessageWithTextColor(TRUE);
     CreateTask_DrawFieldMessage();
 }
 

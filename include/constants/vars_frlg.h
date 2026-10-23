@@ -292,11 +292,10 @@
 #define VAR_LAST_TALKED            0x800F
 #define VAR_MON_BOX_ID_FRLG        0x8010
 #define VAR_MON_BOX_POS_FRLG       0x8011
-#define VAR_TEXT_COLOR             0x8012
-#define VAR_PREV_TEXT_COLOR        0x8013
-#define VAR_0x8014                 0x8014 // Unknown/unused
+#define VAR_TEXT_COLOR             0x8014
+#define VAR_PREV_TEXT_COLOR        0x8016
 
-#define SPECIAL_VARS_END_FRLG      0x8014
+#define SPECIAL_VARS_END_FRLG      0x8016
 
 // Text color ids for VAR_TEXT_COLOR / VAR_PREV_TEXT_COLOR
 #define NPC_TEXT_COLOR_MALE      0 // Blue, for male NPCs
