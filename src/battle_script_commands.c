@@ -3077,6 +3077,11 @@ static void Cmd_endselectionscript(void)
 
 static void PlayAnimation(enum BattlerId battler, u8 animId, const u16 *argPtr, const u8 *nextInstr)
 {
+    // 脚本宏 playanimation 的第三个参数默认是 NULL（.4byte NULL），大量脚本（形态变化等）
+    // 都不带参数。GBA 上解引用地址 0 只是读到 BIOS 的垃圾值（这些动画不取该参数），
+    // 宿主版（PC）上则是空指针崩溃（crash.log 里 PlayAnimation+0x5d, fault=0 read）。
+    u16 animArg = (argPtr != NULL) ? *argPtr : 0;
+
     if (B_TERRAIN_BG_CHANGE == FALSE && animId == B_ANIM_RESTORE_BG)
     {
         // workaround for .if not working
@@ -3097,7 +3102,7 @@ static void PlayAnimation(enum BattlerId battler, u8 animId, const u16 *argPtr, 
      || animId == B_ANIM_TERA_ACTIVATE
      || animId == B_ANIM_FORM_CHANGE_INSTANT)
     {
-        BtlController_EmitBattleAnimation(battler, B_COMM_TO_CONTROLLER, animId, *argPtr);
+        BtlController_EmitBattleAnimation(battler, B_COMM_TO_CONTROLLER, animId, animArg);
         MarkBattlerForControllerExec(battler);
         gBattlescriptCurrInstr = nextInstr;
     }
@@ -3113,7 +3118,7 @@ static void PlayAnimation(enum BattlerId battler, u8 animId, const u16 *argPtr, 
           || animId == B_ANIM_SNOW_CONTINUES
           || animId == B_ANIM_FOG_CONTINUES)
     {
-        BtlController_EmitBattleAnimation(battler, B_COMM_TO_CONTROLLER, animId, *argPtr);
+        BtlController_EmitBattleAnimation(battler, B_COMM_TO_CONTROLLER, animId, animArg);
         MarkBattlerForControllerExec(battler);
         gBattlescriptCurrInstr = nextInstr;
     }
@@ -3123,7 +3128,7 @@ static void PlayAnimation(enum BattlerId battler, u8 animId, const u16 *argPtr, 
     }
     else
     {
-        BtlController_EmitBattleAnimation(battler, B_COMM_TO_CONTROLLER, animId, *argPtr);
+        BtlController_EmitBattleAnimation(battler, B_COMM_TO_CONTROLLER, animId, animArg);
         MarkBattlerForControllerExec(battler);
         gBattlescriptCurrInstr = nextInstr;
     }
@@ -3143,6 +3148,13 @@ static void Cmd_playanimation_var(void)
     CMD_ARGS(u8 battler, const u8 *animIdPtr, const u16 *argPtr);
 
     enum BattlerId battler = GetBattlerForBattleScript(cmd->battler);
+
+    // 同理：animIdPtr 是脚本里的 .4byte 指针，缺省为 NULL，宿主版会空指针崩溃
+    if (cmd->animIdPtr == NULL)
+    {
+        gBattlescriptCurrInstr = cmd->nextInstr;
+        return;
+    }
     PlayAnimation(battler, *(cmd->animIdPtr), cmd->argPtr, cmd->nextInstr);
 }
 

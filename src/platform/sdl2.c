@@ -28,6 +28,7 @@
 #include "bg.h"
 #include "scanline_effect.h"
 #include "sprite.h"
+#include "field_camera.h"
 
 #ifdef _WIN32
 // winuser.h 也声明了一个 ScrollWindow（HWND 版），和 window.h 的
@@ -91,17 +92,52 @@ static Uint64 sDiagPresentTicks;
 static Uint32 sDiagFrameCount;
 static Uint32 sDiagMaxWaitMs;
 static Uint32 sDiagMaxPresentMs;
+static Uint32 sDiagMaxLogicMs;
 
 // Every diagnostic line below costs a console write, which is far from free on
 // Windows. Keep them off unless PE_TRACE is set so a distributed build stays
 // quiet; crash.log still gets written by the unhandled-exception filter.
 static int sHostTrace = -1;
+// 自动帧快照（地图初始化 / 野外异常空带 / Navigator）默认关闭，
+// 只保留 P / F 键的手动快照；需要抓自动快照时设 PE_AUTO_DUMP=1（PE_DUMP_POKENAV=1 亦可）。
+static int sAutoDump = -1;
+static int AutoDumpEnabled(void)
+{
+    if (sAutoDump < 0)
+        sAutoDump = (getenv("PE_AUTO_DUMP") != NULL || getenv("PE_DUMP_POKENAV") != NULL);
+    return sAutoDump;
+}
+static u32 sSlowPumpLogs;
 
 static bool HostTraceEnabled(void)
 {
     if (sHostTrace < 0)
         sHostTrace = getenv("PE_TRACE") != NULL;
     return sHostTrace != 0;
+}
+
+// 进程累计 CPU 时间（微秒）。配合 dtUs 一起看：dt 尖峰时 cpuUs 几乎不涨，
+// 说明那一刻进程没被调度（被系统/别的线程饿了），不是我们的代码在算。
+static Uint64 DiagProcessCpuUs(void)
+{
+#ifdef _WIN32
+    FILETIME creation;
+    FILETIME exitTime;
+    FILETIME kernelTime;
+    FILETIME userTime;
+    ULARGE_INTEGER kernel;
+    ULARGE_INTEGER user;
+
+    if (!GetProcessTimes(GetCurrentProcess(), &creation, &exitTime, &kernelTime, &userTime))
+        return 0;
+    kernel.LowPart = kernelTime.dwLowDateTime;
+    kernel.HighPart = (LONG)kernelTime.dwHighDateTime;
+    user.LowPart = userTime.dwLowDateTime;
+    user.HighPart = (LONG)userTime.dwHighDateTime;
+    return (Uint64)((kernel.QuadPart + user.QuadPart) / 10);
+#else
+    return 0;
+#endif
 }
 
 static Uint32 DiagTicksToMs(Uint64 ticks)
@@ -573,6 +609,8 @@ bool Platform_Init(const char *title, int scale, bool hidden)
 
     // Keep the GBA's discrete pixels crisp when SDL scales the logical frame.
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
+    // 不用输入法：不要弹出候选词窗口。
+    SDL_SetHint(SDL_HINT_IME_SHOW_UI, "0");
 
     sWindow = SDL_CreateWindow(title,
                                SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
@@ -584,6 +622,13 @@ bool Platform_Init(const char *title, int scale, bool hidden)
         Platform_Shutdown();
         return false;
     }
+
+    // 关掉 SDL 的文本输入（= 让 Windows 把我们这个窗口从中文输入法上摘下来）。
+    // 游戏完全不需要输入文字，但只要 IME 还挂在这个窗口上，按住方向键时
+    // 输入法会把按键当成"候选词光标移动"去处理，产生大量 SDL_TEXTEDITING
+    // 事件；那些事件的处理发生在 PeekMessage 内部（Windows/IME 代码），
+    // 一次能让主循环卡 50~270ms，表现为画面和音乐一起顿一下。
+    SDL_StopTextInput();
 
     sVBlankSemaphore = SDL_CreateSemaphore(0);
     if (sVBlankSemaphore == NULL)
@@ -723,7 +768,8 @@ bool Platform_PumpEvents(void)
     Uint64 handlerTicks = 0;
     Uint32 eventCount = 0;
     Uint32 eventTypes[8] = {0};
-    Uint32 eventTypeCount = 0;
+    Uint32 eventSubs[8] = {0};
+    Uint32 eventMs[8] = {0};
 
     pumpStart = SDL_GetPerformanceCounter();
     LockInputState();
@@ -732,10 +778,19 @@ bool Platform_PumpEvents(void)
     while (SDL_PollEvent(&event))
     {
         Uint64 handlerStart = SDL_GetPerformanceCounter();
+        Uint32 slot = eventCount;
 
         eventCount++;
-        if (eventTypeCount < 8)
-            eventTypes[eventTypeCount++] = (Uint32)event.type;
+        if (slot < 8)
+        {
+            eventTypes[slot] = (Uint32)event.type;
+            // 窗口事件记子类型（FOCUS_LOST=1, EXPOSED=3, MOVED=4, SIZE_CHANGED=5…），
+            // 按键事件记 scancode。慢 pump 里到底是哪个事件，一看就知道。
+            if (event.type == SDL_WINDOWEVENT)
+                eventSubs[slot] = (Uint32)event.window.event;
+            else if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP)
+                eventSubs[slot] = (Uint32)event.key.keysym.scancode;
+        }
         if (event.type == SDL_QUIT)
         {
             Platform_RequestQuit();
@@ -753,6 +808,8 @@ bool Platform_PumpEvents(void)
             else if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED)
             {
                 sKeyboardFocused = true;
+                // 切回窗口时输入法可能又被挂上来，再摘一次。
+                SDL_StopTextInput();
             }
         }
         if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP)
@@ -822,6 +879,8 @@ bool Platform_PumpEvents(void)
             SetControllerAxis(event.caxis.axis, event.caxis.value);
         }
         handlerTicks += SDL_GetPerformanceCounter() - handlerStart;
+        if (slot < 8)
+            eventMs[slot] = DiagTicksToMs(SDL_GetPerformanceCounter() - handlerStart);
     }
     pollEnd = SDL_GetPerformanceCounter();
 
@@ -845,18 +904,41 @@ bool Platform_PumpEvents(void)
     stateEnd = SDL_GetPerformanceCounter();
     UnlockInputState();
 
-    if (DiagTicksToMs(stateEnd - pumpStart) >= 30 && HostTraceEnabled())
     {
-        fprintf(stderr,
-                "[host] slow pump total=%ums lock=%ums poll=%ums(%u ev) state=%ums handler=%ums types=%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x\n",
-                DiagTicksToMs(stateEnd - pumpStart),
-                DiagTicksToMs(lockEnd - pumpStart),
-                DiagTicksToMs(pollEnd - lockEnd),
-                eventCount,
-                DiagTicksToMs(stateEnd - pollEnd),
-                DiagTicksToMs(handlerTicks),
-                eventTypes[0], eventTypes[1], eventTypes[2], eventTypes[3],
-                eventTypes[4], eventTypes[5], eventTypes[6], eventTypes[7]);
+        Uint32 slowMs = DiagTicksToMs(stateEnd - pumpStart);
+
+        if (slowMs >= 40 && sSlowPumpLogs < 400)
+        {
+            // 卡顿现场：慢 pump 的子阶段明细（排查左右行走卡顿用）。
+            sSlowPumpLogs++;
+            HostLogf("pump total=%ums lock=%ums poll=%ums ev=%u state=%ums handler=%ums frame=%u keys=%03X",
+                     slowMs,
+                     DiagTicksToMs(lockEnd - pumpStart),
+                     DiagTicksToMs(pollEnd - lockEnd),
+                     eventCount,
+                     DiagTicksToMs(stateEnd - pollEnd),
+                     DiagTicksToMs(handlerTicks),
+                     sPresentFrameCount,
+                     (unsigned)sKeyboardKeys);
+            HostLogf("pump ev0=%02x/%02x:%ums ev1=%02x/%02x:%ums ev2=%02x/%02x:%ums ev3=%02x/%02x:%ums",
+                     eventTypes[0], eventSubs[0], eventMs[0],
+                     eventTypes[1], eventSubs[1], eventMs[1],
+                     eventTypes[2], eventSubs[2], eventMs[2],
+                     eventTypes[3], eventSubs[3], eventMs[3]);
+        }
+        if (slowMs >= 30 && HostTraceEnabled())
+        {
+            fprintf(stderr,
+                    "[host] slow pump total=%ums lock=%ums poll=%ums(%u ev) state=%ums handler=%ums types=%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x\n",
+                    slowMs,
+                    DiagTicksToMs(lockEnd - pumpStart),
+                    DiagTicksToMs(pollEnd - lockEnd),
+                    eventCount,
+                    DiagTicksToMs(stateEnd - pollEnd),
+                    DiagTicksToMs(handlerTicks),
+                    eventTypes[0], eventTypes[1], eventTypes[2], eventTypes[3],
+                    eventTypes[4], eventTypes[5], eventTypes[6], eventTypes[7]);
+        }
     }
     return result;
 }
@@ -868,6 +950,9 @@ bool Platform_IsQuitRequested(void)
 
 void Platform_RequestFrameDump(const char *reason)
 {
+    // 手动快照（P/F 键会先置 sFrameDumpImmediate）总是生效；自动快照默认关闭。
+    if (!sFrameDumpImmediate && !AutoDumpEnabled())
+        return;
     sFrameDumpReason = (reason != NULL) ? reason : "unknown";
     sFrameDumpRequestFrame = sPresentFrameCount;
     sFrameDumpRequest = 1;
@@ -978,6 +1063,20 @@ static void DumpFrameBins(const u16 *pixels, u32 seq)
 // window registers, BG control/offset registers, palette slots, the final
 // framebuffer samples of one scanline and the tilemap entries the map layers
 // are actually reading for those pixels.
+u32 Platform_ObjTileChecksum(u32 tileNum)
+{
+    const u8 *p = (const u8 *)(uintptr_t)(VRAM + 0x10000 + tileNum * 32);
+    u32 sum = 0;
+    u32 i;
+
+    // 128 个 4bpp 图块 = 0x1000 字节，必须整个落在 OBJ VRAM 内。
+    if (tileNum >= 1024 || tileNum + 128 > 1024)
+        return 0;
+    for (i = 0; i < 0x1000; i++)
+        sum = sum * 31u + p[i];
+    return sum;
+}
+
 static void DumpFrameDiagnostics(const u16 *pixels)
 {
     #define DUMP_SAMPLE_COUNT 11u
@@ -993,7 +1092,11 @@ static void DumpFrameDiagnostics(const u16 *pixels)
     static u32 sDumpSequence;
     HostLogf("---- frame dump #%u (%s) ----", ++sDumpSequence, sFrameDumpReason);
     DumpFramePPM(pixels, sDumpSequence);
-    DumpFrameBins(pixels, sDumpSequence);
+    // 那堆 .bin（vram/winners/bgmaps/oam/pltt，加起来约 150KB）只在需要逐像素
+    // 复盘时用 PE_DUMP_BINS=1 打开。默认关掉：一是写这么多文件本身会让
+    // 下一帧卡半秒到一秒（杀毒/磁盘），会污染我们正在测的卡顿数据。
+    if (getenv("PE_DUMP_BINS") != NULL)
+        DumpFrameBins(pixels, sDumpSequence);
     HostLogf("DISPCNT=%04X DISPSTAT=%04X BLDCNT=%04X BLDALPHA=%04X BLDY=%02X MOSAIC=%04X",
              REG_DISPCNT, REG_DISPSTAT, REG_BLDCNT, REG_BLDALPHA, REG_BLDY, REG_MOSAIC);
     HostLogf("WININ=%04X WINOUT=%04X W0H=%04X W0V=%04X W1H=%04X W1V=%04X",
@@ -1067,6 +1170,26 @@ static void DumpFrameDiagnostics(const u16 *pixels)
             shown++;
         }
         HostLogf("oam listed=%u", (unsigned)shown);
+        // 右上角旋转小图标（pokenav 主菜单）单独列出来：它在 y<24，上面的过滤条件看不到它。
+        for (i2 = 0; i2 < 128; i2++)
+        {
+            const struct OamData *o = &oam[i2];
+            if (o->objMode == 3 || o->y >= 24 || o->x < 200)
+                continue;
+            HostLogf("oam-icon[%u] x=%d y=%d tile=%u pal=%u bpp=%u shape=%u size=%u prio=%u",
+                     (unsigned)i2, (int)o->x, (int)o->y, (unsigned)o->tileNum,
+                     (unsigned)o->paletteNum, (unsigned)o->bpp, (unsigned)o->shape,
+                     (unsigned)o->size, (unsigned)o->priority);
+            if (o->bpp == 0)
+            {
+                u16 sheetStart = GetSpriteTileStartByTag(0);
+                HostLogf("oam-icon[%u] tilesum=%08X sheetsum=%08X",
+                         (unsigned)i2, Platform_ObjTileChecksum((u32)o->tileNum),
+                         (sheetStart == TAG_NONE) ? 0 : Platform_ObjTileChecksum((u32)sheetStart));
+            }
+        }
+        HostLogf("tag0 tileStart=%u palSlot=%d",
+                 (unsigned)GetSpriteTileStartByTag(0), (int)IndexOfSpritePaletteTag(0));
     }
     HostLogf("PLTT[0x100..0x10F]=%04X %04X %04X %04X %04X %04X %04X %04X %04X %04X %04X %04X %04X %04X %04X %04X",
              pltt[0x100], pltt[0x101], pltt[0x102], pltt[0x103],
@@ -1587,6 +1710,7 @@ bool Platform_PresentFrame(void)
         // 连续 24 帧都成立才抓，彻底排除载入/淡入那几帧的假报警。
         if (emptyStreak >= 24
          && autoDumps < 8
+         && AutoDumpEnabled()
          && (lastAutoDumpFrame == 0 || sPresentFrameCount - lastAutoDumpFrame >= 600))
         {
             lastAutoDumpFrame = sPresentFrameCount;
@@ -1602,15 +1726,16 @@ bool Platform_PresentFrame(void)
 
     // Navigator（pokenav 主菜单）一进来就同时具备：BLDCNT 只对 OBJ 做亮度增高、
     // WIN0 覆盖整屏、扫描线 HBlank DMA 在逐行改 WIN0H。这个组合只出现在这个菜单。
-    // 这个自动快照默认关闭（每进一次菜单会写 6 个文件、几十 MB 的 bin），
-    // 需要复现 Navigator 的调色板/扫描线问题时再设 PE_DUMP_POKENAV=1 打开。
-    if (REG_BLDCNT == (BLDCNT_TGT1_OBJ | BLDCNT_EFFECT_LIGHTEN) && getenv("PE_DUMP_POKENAV") != NULL)
+    // 默认关闭；设 PE_AUTO_DUMP=1（或 PE_DUMP_POKENAV=1）时才抓，
+    // 每次运行最多 3 份、间隔 600 帧，用来复现 Navigator 的调色板/图块问题。
+    // （只写文本 + frame_N.ppm；那堆 .bin 由 PE_DUMP_BINS 单独控制）
+    if (REG_BLDCNT == (BLDCNT_TGT1_OBJ | BLDCNT_EFFECT_LIGHTEN) && AutoDumpEnabled())
     {
         static u32 pokenavDumps;
         static u32 lastPokenavDumpFrame;
 
-        if (pokenavDumps < 4
-         && (lastPokenavDumpFrame == 0 || sPresentFrameCount - lastPokenavDumpFrame >= 240))
+        if (pokenavDumps < 3
+         && (lastPokenavDumpFrame == 0 || sPresentFrameCount - lastPokenavDumpFrame >= 600))
         {
             lastPokenavDumpFrame = sPresentFrameCount;
             pokenavDumps++;
@@ -1658,11 +1783,13 @@ bool Platform_PresentFrame(void)
             Uint32 audioKB = sAudioDevice != 0
                            ? (Uint32)(SDL_GetQueuedAudioSize(sAudioDevice) / 1024) : 0;
 
-            if (HostTraceEnabled())
-            fprintf(stderr,
-                    "[host] frames=%u logic=%.1fms wait=%.1fms waitMax=%ums present=%.1fms presentMax=%ums audioQ=%uKB\n",
+            // 每 60 帧一行性能汇总：logicMax 是游戏线程一帧逻辑的最长耗时，
+            // presentMax 是呈现路径的最长耗时，audioQ 是音频队列深度。
+            // 掉帧时看这两个最大值是谁造成的，比猜快得多。
+            HostLogf("perf n=%u logicAvg=%.1fms logicMax=%ums waitAvg=%.1fms waitMax=%ums presentAvg=%.1fms presentMax=%ums audioQ=%uKB",
                     sDiagFrameCount,
                     (double)DiagTicksToMs(sDiagLogicTicks) / (double)sDiagFrameCount,
+                    sDiagMaxLogicMs,
                     (double)DiagTicksToMs(sDiagWaitTicks) / (double)sDiagFrameCount,
                     sDiagMaxWaitMs,
                     (double)DiagTicksToMs(sDiagPresentTicks) / (double)sDiagFrameCount,
@@ -1674,6 +1801,7 @@ bool Platform_PresentFrame(void)
             sDiagPresentTicks = 0;
             sDiagMaxWaitMs = 0;
             sDiagMaxPresentMs = 0;
+            sDiagMaxLogicMs = 0;
         }
         sDiagLastPresentEnd = now;
     }
@@ -1737,6 +1865,66 @@ bool Platform_IsFastForward(void)
     return fastForward;
 }
 
+// 逐帧记录「时间 + 滚动 + 相机」，用来分辨「卡顿」到底是掉帧（dt 尖峰）
+// 还是画面步进不匀（scroll 每帧不是稳定地 +1）。单独一个文件、
+// 句柄只开一次，避免每帧 fopen 的抖动本身影响测量。
+static void HostFrameTrace(void)
+{
+    static FILE *traceFile;
+    static Uint64 lastCounter;
+    static Uint64 lastCpuUs;
+    static u32 line;
+
+    // 默认就记（不需要 PE_TRACE，省得作者为了一次取证再设环境变量），
+    // 上限 20000 帧（约 5 分钟），超出后自动停写，文件不会无限长大。
+    if (line >= 20000)
+        return;
+
+    if (traceFile == NULL)
+    {
+        // 每次运行单独一个文件（带进程号），这样连跑两次对比也不会互相覆盖。
+        char name[64];
+
+#ifdef _WIN32
+        snprintf(name, sizeof(name), "frame_trace_%lu.log", (unsigned long)GetCurrentProcessId());
+#else
+        snprintf(name, sizeof(name), "frame_trace_%lu.log", (unsigned long)0);
+#endif
+        traceFile = fopen(name, "w");
+        if (traceFile == NULL)
+            return;
+        fprintf(traceFile, "# n dtUs hofs1 vofs1 camX camY sprX sprY posX posY keys cpuUs\n");
+        lastCounter = SDL_GetPerformanceCounter();
+        lastCpuUs = DiagProcessCpuUs();
+    }
+
+    {
+        Uint64 now = SDL_GetPerformanceCounter();
+        Uint64 freq = SDL_GetPerformanceFrequency();
+        Uint64 cpuNowUs;
+        u32 dtUs = (freq != 0) ? (u32)(((now - lastCounter) * 1000000) / freq) : 0;
+        int posX = (gSaveBlock1Ptr != NULL) ? (int)gSaveBlock1Ptr->pos.x : -1;
+        int posY = (gSaveBlock1Ptr != NULL) ? (int)gSaveBlock1Ptr->pos.y : -1;
+
+        lastCounter = now;
+        // keys：当时按着的 GBA 按键（A=001 B=002 SELECT=004 START=008
+        // RIGHT=010 LEFT=020 UP=040 DOWN=080 R=100 L=200）。把 dt 尖峰和
+        // 按着的方向对上，才能判定卡顿是不是跟着某个方向走。
+        // cpuUs：这一帧进程实际烧掉的 CPU 时间（微秒）。
+        cpuNowUs = DiagProcessCpuUs();
+        fprintf(traceFile, "%u %u %u %u %d %d %d %d %d %d %03X %u\n",
+                line++, dtUs,
+                (unsigned)REG_BG1HOFS, (unsigned)REG_BG1VOFS,
+                (int)gTotalCameraPixelOffsetX, (int)gTotalCameraPixelOffsetY,
+                (int)gSpriteCoordOffsetX, (int)gSpriteCoordOffsetY,
+                posX, posY, (unsigned)Platform_GetKeyInput(),
+                (unsigned)(cpuNowUs - lastCpuUs));
+        lastCpuUs = cpuNowUs;
+        if ((line % 30) == 0)
+            fflush(traceFile);
+    }
+}
+
 void VBlankIntrWait(void)
 {
     Uint64 waitStart;
@@ -1748,7 +1936,13 @@ void VBlankIntrWait(void)
 
     waitStart = SDL_GetPerformanceCounter();
     if (sDiagLastPresentEnd != 0)
+    {
+        Uint32 logicMs = DiagTicksToMs(waitStart - sDiagLastPresentEnd);
+
         sDiagLogicTicks += waitStart - sDiagLastPresentEnd;
+        if (logicMs > sDiagMaxLogicMs)
+            sDiagMaxLogicMs = logicMs;
+    }
 
     SDL_AtomicSet(&sFramePending, 1);
     if (Platform_IsQuitRequested())
@@ -1762,6 +1956,8 @@ void VBlankIntrWait(void)
         sDiagMaxWaitMs = waitMs;
     if (waitMs > 25 && HostTraceEnabled())
         fprintf(stderr, "[host] long vblank wait: %ums\n", waitMs);
+
+    HostFrameTrace();
 }
 
 void SoftReset(u32 resetFlags)

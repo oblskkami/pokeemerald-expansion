@@ -69,3 +69,5 @@ __pycache__
 .map_version
 .porydaw/
 AGENTS.md
+*.zip
+dist/PokemonEmerald-PC/操作说明.txt

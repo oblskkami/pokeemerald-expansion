@@ -398,7 +398,18 @@ static void SoarHBlankCallback(void)
 		REG_BLDCNT = 0;
 	}
 
-	lam = sPlayerPosZ * ((1 << 16) / (currScanline - 32)) >> 12;  // .8*.16 /.12 = 20.12
+	if (currScanline == 32)
+	{
+		// 这一行的除数是 (currScanline - 32) == 0。GBA 上的软件除法除零只返回 0，
+		// 所以 GBA 版一直是“lam = 0”；宿主 x86 的 div 会抛 0xc0000094 直接闪退
+		// （实测使用无限之笛后崩在 SoarHBlankCallback）。这里显式按 GBA 的结果处理：
+		// lam = 0 → BG2 缩放为 0，这一行基本只有雾化。
+		lam = 0;
+	}
+	else
+	{
+		lam = sPlayerPosZ * ((1 << 16) / (currScanline - 32)) >> 12;  // .8*.16 /.12 = 20.12
+	}
 	lcf = lam * cosYaw >> 8;                     // .12*.8 /.8 = .12
 	lsf = lam * sinYaw >> 8;                     // .12*.8 /.8 = .12
 

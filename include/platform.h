@@ -21,6 +21,9 @@ void HostLogf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 // 请求在下一帧渲染完成后把画面/寄存器状态写进 crash.log（诊断用，
 // F1 键与地图初始化路径会调用它）。
 void Platform_RequestFrameDump(const char *reason);
+// 诊断用：把 OBJ VRAM 里从 tileNum 起 0x1000 字节（128 个 4bpp 图块）算一个加权校验和，
+// 用来判断"精灵图块内容有没有被别的图块表覆盖"。越界返回 0。
+u32 Platform_ObjTileChecksum(u32 tileNum);
 
 bool Platform_Init(const char *title, int scale, bool hidden);
 void Platform_Shutdown(void);
