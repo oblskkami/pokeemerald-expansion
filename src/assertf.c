@@ -1,4 +1,8 @@
+#ifdef _WIN32
+#include <malloc.h>
+#else
 #include <alloca.h>
+#endif
 #include <stdarg.h>
 #include "global.h"
 #include "bg.h"
@@ -10,17 +14,6 @@
 
 enum Mode { MODE_ASSERTF, MODE_FATALF };
 #define MODE_COUNT 2
-
-struct BitUnPackArgs
-{
-    u16 compressedSize;
-    u8 compressedBits;
-    u8 decompressedBits;
-    u32 dataOffset:31;
-    u32 offsetZeros:1;
-};
-
-extern void BitUnPack(const void *src, void *dest, const struct BitUnPackArgs *);
 
 static const u16 sPltts[MODE_COUNT][2] =
 {
@@ -313,8 +306,10 @@ static void BusyWaitForVBlank(void)
 {
     // Interrupts are disabled so we have to busy loop to wait for
     // v-blanks.
+#ifndef PORTABLE
     while (REG_VCOUNT < 160)
         ;
+#endif
 }
 
 struct Backup

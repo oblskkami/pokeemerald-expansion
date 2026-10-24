@@ -37,6 +37,11 @@ struct MemBlock
     // Next block pointer. Equals sHeapStart if this is the last block.
     struct MemBlock *next;
 
+#ifdef PORTABLE
+    // Host pointers cannot be reconstructed from the GBA ROM address bits.
+    const char *locationHost;
+#endif
+
     // Data in the memory block. (Arrays of length 0 are a GNU extension.)
     u8 data[0];
 };

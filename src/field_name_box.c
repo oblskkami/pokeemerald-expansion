@@ -17,6 +17,23 @@
 #include "constants/speaker_names.h"
 #include "data/speaker_names.h"
 
+#ifdef PORTABLE
+// The host linker places read-only script/text data above the GBA's fixed
+// 32 MiB ROM window under sanitizers. The image range still ends at .bss, so
+// this accepts real linked script data without accepting arbitrary pointers.
+#ifdef _WIN32
+extern const char _image_base__[];
+extern const char _bss_start__[];
+#define HOST_IMAGE_START _image_base__
+#define HOST_IMAGE_END _bss_start__
+#else
+extern const char __executable_start[];
+#define HOST_IMAGE_START __executable_start
+extern const char __bss_start[];
+#define HOST_IMAGE_END __bss_start
+#endif
+#endif
+
 static EWRAM_INIT u8 sNameboxWindowId = WINDOW_NONE;
 EWRAM_DATA const u8 *gSpeakerName = NULL;
 
@@ -187,8 +204,18 @@ void SetSpeaker(struct ScriptContext *ctx)
 
     if (arg < SP_NAME_COUNT)
         speaker = gSpeakerNamesTable[arg];
+#ifdef PORTABLE
+    else if ((uintptr_t)arg >= (uintptr_t)HOST_IMAGE_START
+          && (uintptr_t)arg < (uintptr_t)HOST_IMAGE_END)
+    {
+        speaker = (const u8 *)(uintptr_t)arg;
+    }
+#else
     else if (arg >= ROM_START && arg < ROM_END)
+    {
         speaker = (const u8 *)arg;
+    }
+#endif
 
     gSpeakerName = speaker;
 }

@@ -310,6 +310,9 @@ void ResetLinkRfuGFLayer(void)
 
 void InitRFU(void)
 {
+#ifdef PORTABLE
+    return;
+#else
     IntrFunc serialIntr = gIntrTable[1];
     IntrFunc timerIntr = gIntrTable[2];
     InitRFUAPI();
@@ -319,10 +322,14 @@ void InitRFU(void)
     gIntrTable[1] = serialIntr;
     gIntrTable[2] = timerIntr;
     REG_IME = INTR_FLAG_VBLANK;
+#endif
 }
 
 void InitRFUAPI(void)
 {
+#ifdef PORTABLE
+    return;
+#else
     if (!rfu_initializeAPI((void *)gRfuAPIBuffer, sizeof(gRfuAPIBuffer), &gIntrTable[1], TRUE))
     {
         gLinkType = 0;
@@ -331,6 +338,7 @@ void InitRFUAPI(void)
         ResetLinkRfuGFLayer();
         rfu_setTimerInterrupt(3, &gIntrTable[2]);
     }
+#endif
 }
 
 static void Task_ParentSearchForChildren(u8 taskId)
@@ -2615,24 +2623,39 @@ static void CB2_RfuIdle(void)
 
 void InitializeRfuLinkManager_LinkLeader(u32 groupMax)
 {
+#ifdef PORTABLE
+    (void)groupMax;
+    gRfu.parentChild = MODE_NEUTRAL;
+    RfuSetStatus(RFU_STATUS_CONNECTION_ERROR, 0);
+#else
     gRfu.parentChild = MODE_PARENT;
     SetHostRfuUsername();
     rfu_LMAN_initializeManager(LinkManagerCB_Parent, NULL);
     sRfuReqConfig = sRfuReqConfigTemplate;
     sRfuReqConfig.availSlot_flag = sAvailSlots[groupMax - 1];
     CreateTask_ParentSearchForChildren();
+#endif
 }
 
 void InitializeRfuLinkManager_JoinGroup(void)
 {
+#ifdef PORTABLE
+    gRfu.parentChild = MODE_NEUTRAL;
+    RfuSetStatus(RFU_STATUS_CONNECTION_ERROR, 0);
+#else
     gRfu.parentChild = MODE_CHILD;
     SetHostRfuUsername();
     rfu_LMAN_initializeManager(LinkManagerCB_Child, MSCCallback_Child);
     CreateTask_ChildSearchForParent();
+#endif
 }
 
 void InitializeRfuLinkManager_EnterUnionRoom(void)
 {
+#ifdef PORTABLE
+    gRfu.parentChild = MODE_NEUTRAL;
+    RfuSetStatus(RFU_STATUS_CONNECTION_ERROR, 0);
+#else
     gRfu.parentChild = MODE_P_C_SWITCH;
     SetHostRfuUsername();
     rfu_LMAN_initializeManager(LinkManagerCB_UnionRoom, NULL);
@@ -2640,6 +2663,7 @@ void InitializeRfuLinkManager_EnterUnionRoom(void)
     sRfuReqConfig.linkRecovery_enable = 0;
     sRfuReqConfig.linkRecovery_period = 600;
     gRfu.searchTaskId = CreateTask(Task_UnionRoomListen, 1);
+#endif
 }
 
 static u16 ReadU16(const void *ptr)

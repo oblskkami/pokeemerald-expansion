@@ -521,7 +521,7 @@ void ScrollWindow(u32 windowId, u8 direction, u8 distance, u8 fillValue)
 {
     struct WindowTemplate window = gWindows[windowId].window;
     u8 *tileData = gWindows[windowId].tileData;
-    u32 fillValue32 = (fillValue << 24) | (fillValue << 16) | (fillValue << 8) | fillValue;
+    u32 fillValue32 = ((u32)fillValue << 24) | ((u32)fillValue << 16) | ((u32)fillValue << 8) | fillValue;
     s32 size = window.height * window.width * 32;
     u32 width = window.width;
     s32 i;

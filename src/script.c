@@ -40,11 +40,54 @@ EWRAM_DATA u8 gMsgBoxIsCancelable = FALSE;
 
 extern ScrCmdFunc gScriptCmdTable[];
 extern ScrCmdFunc gScriptCmdTableEnd[];
+typedef u16 (*SpecialFunc)(void);
+extern const SpecialFunc gSpecials[];
+extern const SpecialFunc gSpecials_End[];
 
 void InitScriptStack(struct ScriptStack *stk)
 {
     stk->stackDepth = 0;
     memset(stk->stack, 0, (int)ARRAY_COUNT(stk->stack) * sizeof(u8*));
+}
+
+#ifdef PORTABLE
+#ifdef _WIN32
+extern const char _image_base__[];
+extern const char _bss_start__[];
+#define SCRIPT_HOST_IMAGE_START _image_base__
+#define SCRIPT_HOST_IMAGE_END _bss_start__
+#else
+extern const char __executable_start[];
+extern const char __bss_start[];
+#define SCRIPT_HOST_IMAGE_START __executable_start
+#define SCRIPT_HOST_IMAGE_END __bss_start
+#endif
+#endif
+
+bool32 Script_IsValidNativeAddress(uintptr_t address)
+{
+#ifdef PORTABLE
+    uintptr_t decoded = Script_DecodeEffectAddress(address);
+    uintptr_t start = (uintptr_t)SCRIPT_HOST_IMAGE_START;
+    uintptr_t end = (uintptr_t)SCRIPT_HOST_IMAGE_END;
+
+    return start != 0 && end > start && decoded >= start && decoded < end;
+#else
+    // On hardware the linker/ROM guarantees native pointers are in the
+    // executable image.  The effect-mirror requirement is checked separately
+    // by the analysis helpers above; runtime scripts use the ordinary address.
+    (void)address;
+    return TRUE;
+#endif
+}
+
+bool32 Script_IsValidSpecialIndex(u32 specialId)
+{
+    uintptr_t start = (uintptr_t)gSpecials;
+    uintptr_t end = (uintptr_t)gSpecials_End;
+
+    return end > start && (end - start) % sizeof(gSpecials[0]) == 0
+        && specialId < (end - start) / sizeof(gSpecials[0]);
 }
 
 void InitScriptContext(struct ScriptContext *ctx, void *cmdTable, void *cmdTableEnd)
@@ -108,7 +151,8 @@ bool8 RunScriptCommand(struct ScriptContext *ctx)
         while (1)
         {
             u8 cmdCode;
-            ScrCmdFunc *func;
+            ScrCmdFunc *funcEntry;
+            ScrCmdFunc func;
 
             if (ctx->scriptPtr == NULL)
             {
@@ -118,15 +162,16 @@ bool8 RunScriptCommand(struct ScriptContext *ctx)
 
             cmdCode = *(ctx->scriptPtr);
             ctx->scriptPtr++;
-            func = &ctx->cmdTable[cmdCode];
+            funcEntry = &ctx->cmdTable[cmdCode];
 
-            if (func >= ctx->cmdTableEnd)
+            if (funcEntry >= ctx->cmdTableEnd)
             {
                 ctx->mode = SCRIPT_MODE_STOPPED;
                 return FALSE;
             }
 
-            if ((*func)(ctx) == TRUE)
+            func = Script_DecodeEffectFunction(ScrCmdFunc, *funcEntry);
+            if (func(ctx) == TRUE)
                 return TRUE;
         }
     }
@@ -611,8 +656,7 @@ struct ScriptEffectContext *gScriptEffectContext = NULL;
 
 static bool32 Script_IsEffectInstrumentedCommand(ScrCmdFunc func)
 {
-    // In ROM mirror 1.
-    return (((uintptr_t)func) & 0xE000000) == 0xA000000;
+    return Script_IsEffectInstrumentedAddress((uintptr_t)func);
 }
 
 /* 'setjmp' and 'longjmp' cause link errors, so we use
@@ -625,7 +669,8 @@ static bool32 RunScriptImmediatelyUntilEffect_InternalLoop(struct ScriptContext 
         while (TRUE)
         {
             u32 cmdCode;
-            ScrCmdFunc *func;
+            ScrCmdFunc *funcEntry;
+            ScrCmdFunc func;
 
             gScriptEffectContext->nextCmd = ctx->scriptPtr;
 
@@ -634,17 +679,18 @@ static bool32 RunScriptImmediatelyUntilEffect_InternalLoop(struct ScriptContext 
 
             cmdCode = *ctx->scriptPtr;
             ctx->scriptPtr++;
-            func = &ctx->cmdTable[cmdCode];
+            funcEntry = &ctx->cmdTable[cmdCode];
 
             // Invalid script command.
-            if (func >= ctx->cmdTableEnd)
+            if (funcEntry >= ctx->cmdTableEnd)
                 return TRUE;
 
-            if (!Script_IsEffectInstrumentedCommand(*func))
+            if (!Script_IsEffectInstrumentedCommand(*funcEntry))
                 return TRUE;
 
             // Command which waits for a frame.
-            if ((*func)(ctx))
+            func = Script_DecodeEffectFunction(ScrCmdFunc, *funcEntry);
+            if (func(ctx))
             {
                 gScriptEffectContext->nextCmd = ctx->scriptPtr;
                 return TRUE;
@@ -715,9 +761,9 @@ bool32 Script_MatchesCallNative(const u8 *script, void *funcPtr, bool32 requestE
     if (script[0] != SCR_OP_CALLNATIVE)
         return FALSE;
     u32 callnativeFunc = (((((script[4] << 8) + script[3]) << 8) + script[2]) << 8) + script[1];
-    u32 targetFunc = (u32)funcPtr;
+    u32 targetFunc = (u32)(uintptr_t)funcPtr;
     if (requestEffects)
-        targetFunc |= 0xA000000;
+        targetFunc = (u32)Script_EncodeEffectAddress(funcPtr);
     if (callnativeFunc == targetFunc)
         return TRUE;
     return FALSE;
@@ -727,10 +773,13 @@ bool32 Script_MatchesSpecial(const u8 *script, void *funcPtr)
 {
     if (script[0] != SCR_OP_SPECIAL)
         return FALSE;
-    typedef u16 (*SpecialFunc)(void);
-    extern const SpecialFunc gSpecials[];
-    SpecialFunc specialFunc = gSpecials[(script[2] << 8) + script[1]];
-    if ((u32)specialFunc == ((u32)funcPtr))
+    u32 specialId = (script[2] << 8) + script[1];
+
+    if (!Script_IsValidSpecialIndex(specialId))
+        return FALSE;
+    SpecialFunc specialFunc = Script_DecodeEffectFunction(SpecialFunc,
+        gSpecials[specialId]);
+    if ((uintptr_t)specialFunc == (uintptr_t)funcPtr)
         return TRUE;
     return FALSE;
 }

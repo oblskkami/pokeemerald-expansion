@@ -6,6 +6,59 @@
 #include "siirtc.h"
 #include "config/general.h"
 
+#ifdef PORTABLE
+
+#include "platform.h"
+
+void SiiRtcUnprotect(void)
+{}
+
+void SiiRtcProtect(void)
+{}
+
+u8 SiiRtcProbe(void)
+{
+    struct SiiRtcInfo rtc;
+    return SiiRtcGetStatus(&rtc) ? 1 : 0;
+}
+
+bool8 SiiRtcReset(void)
+{
+    return Platform_RtcReset();
+}
+
+bool8 SiiRtcGetStatus(struct SiiRtcInfo *rtc)
+{
+    return Platform_RtcGetStatus(rtc);
+}
+
+bool8 SiiRtcSetStatus(struct SiiRtcInfo *rtc)
+{
+    return Platform_RtcSetStatus(rtc);
+}
+
+bool8 SiiRtcGetDateTime(struct SiiRtcInfo *rtc)
+{
+    return Platform_RtcGetDateTime(rtc);
+}
+
+bool8 SiiRtcSetDateTime(struct SiiRtcInfo *rtc)
+{
+    return Platform_RtcSetDateTime(rtc);
+}
+
+bool8 SiiRtcGetTime(struct SiiRtcInfo *rtc)
+{
+    return Platform_RtcGetTime(rtc);
+}
+
+bool8 SiiRtcSetTime(struct SiiRtcInfo *rtc)
+{
+    return Platform_RtcSetTime(rtc);
+}
+
+#else
+
 #define STATUS_INTFE  0x02 // frequency interrupt enable
 #define STATUS_INTME  0x08 // per-minute interrupt enable
 #define STATUS_INTAE  0x20 // alarm interrupt enable
@@ -406,3 +459,5 @@ static void DisableGpioPortRead()
 {
     GPIO_PORT_READ_ENABLE = FALSE;
 }
+
+#endif // PORTABLE

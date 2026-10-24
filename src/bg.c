@@ -482,6 +482,13 @@ bool32 IsDma3ManagerBusyWithBgCopy(void)
 {
     int i;
 
+#ifdef PORTABLE
+    // Map loading can call this predicate in a tight synchronous loop. On
+    // hardware DMA requests are drained by the VBlank interrupt; yield one
+    // host frame here so the SDL VBlank thread can process the same queue.
+    VBlankIntrWait();
+#endif
+
     for (i = 0; i < 0x80; i++)
     {
         u8 div = i / 0x20;
@@ -1202,10 +1209,9 @@ static u32 GetBgType(u32 bg)
 
 bool32 IsTileMapOutsideWram(u32 bg)
 {
+#ifndef PORTABLE
     if (sGpuBgConfigs2[bg].tilemap > (void *)IWRAM_END)
         return TRUE;
-    else if (sGpuBgConfigs2[bg].tilemap == NULL)
-        return TRUE;
-    else
-        return FALSE;
+#endif
+    return sGpuBgConfigs2[bg].tilemap == NULL;
 }

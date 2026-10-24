@@ -8508,7 +8508,8 @@ static void Cmd_displaydexinfo(void)
     case 2:
         if (!gPaletteFade.active
             && gMain.callback2 == BattleMainCB2
-            && !gTasks[gBattleCommunication[TASK_ID]].isActive)
+            && (gBattleCommunication[TASK_ID] >= NUM_TASKS
+             || !gTasks[gBattleCommunication[TASK_ID]].isActive))
         {
             SetVBlankCallback(VBlankCB_Battle);
             gBattleCommunication[0]++;

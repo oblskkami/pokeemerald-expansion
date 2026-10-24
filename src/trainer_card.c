@@ -329,6 +329,9 @@ static bool8 (*const sTrainerCardFlipTasks[])(struct Task *) =
 
 static void VblankCb_TrainerCard(void)
 {
+    if (sData == NULL)
+        return;
+
     LoadOam();
     ProcessSpriteCopyRequests();
     TransferPlttBuffer();
@@ -359,6 +362,10 @@ static void CB2_TrainerCard(void)
 
 static void CloseTrainerCard(u8 taskId)
 {
+    // Both callbacks can observe sData while the card is being torn down.
+    // Clear them before releasing the state they consume.
+    SetVBlankCallback(NULL);
+    SetHBlankCallback(NULL);
     SetMainCallback2(sData->callback2);
     FreeAllWindowBuffers();
     FREE_AND_SET_NULL(sData);

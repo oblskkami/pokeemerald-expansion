@@ -1,3 +1,34 @@
+#ifdef PORTABLE
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+static void FlyTrace(const char *fmt, ...)
+{
+    static FILE *logFile = NULL;
+    static int enabled = -1;
+    va_list args;
+
+    // Off unless PE_TRACE is set, so a normal build never litters the game folder.
+    if (enabled < 0)
+        enabled = getenv("PE_TRACE") != NULL;
+    if (!enabled)
+        return;
+    if (logFile == NULL)
+        logFile = fopen("fly_trace.log", "a");
+    if (logFile == NULL)
+        return;
+
+    fprintf(logFile, "[fly] ");
+    va_start(args, fmt);
+    vfprintf(logFile, fmt, args);
+    va_end(args);
+    fflush(logFile);
+}
+#define FLY_TRACE(...) FlyTrace(__VA_ARGS__)
+#else
+#define FLY_TRACE(...) do {} while (0)
+#endif
+
 #include "global.h"
 #include "main.h"
 #include "text.h"
@@ -824,6 +855,8 @@ void BlendRegionMap(u16 color, u32 coeff)
 
 void FreeRegionMapIconResources(void)
 {
+    u32 i;
+
     if (sRegionMap->cursorSprite != NULL)
     {
         DestroySprite(sRegionMap->cursorSprite);
@@ -835,6 +868,15 @@ void FreeRegionMapIconResources(void)
         DestroySprite(sRegionMap->playerIconSprite);
         FreeSpriteTilesByTag(sRegionMap->playerIconTileTag);
         FreeSpritePaletteByTag(sRegionMap->playerIconPaletteTag);
+    }
+
+    // The fly destination icons are created while the fly map is open and their
+    // callback reads sFlyMap, which this cleanup path releases a moment later.
+    // Destroy them here so no sprite survives into the field screen.
+    for (i = 0; i < MAX_SPRITES; i++)
+    {
+        if (gSprites[i].inUse && gSprites[i].callback == SpriteCB_FlyDestIcon)
+            DestroySprite(&gSprites[i]);
     }
 }
 
@@ -2092,6 +2134,7 @@ bool32 IsEventIslandMapSecId(mapsec_u8_t mapSecId)
 
 void CB2_OpenFlyMap(void)
 {
+    FLY_TRACE("CB2_OpenFlyMap state=%d\n", gMain.state);
     switch (gMain.state)
     {
     case 0:
@@ -2552,6 +2595,12 @@ static void TryCreateRedOutlineFlyDestIcons(void)
 // Flickers fly destination icon color (by hiding the fly icon sprite) if the cursor is currently on it
 static void SpriteCB_FlyDestIcon(struct Sprite *sprite)
 {
+    if (sFlyMap == NULL)
+    {
+        sprite->invisible = FALSE;
+        return;
+    }
+
     if (sFlyMap->regionMap.mapSecId == sprite->sIconMapSec)
     {
         if (++sprite->sFlickerTimer > 16)
@@ -2601,6 +2650,7 @@ static void CB_HandleFlyMapInput(void)
             DrawFlyDestTextWindow();
             break;
         case MAP_INPUT_A_BUTTON:
+            FLY_TRACE("A pressed mapSec=%d type=%d pos=%d\n", sFlyMap->regionMap.mapSecId, sFlyMap->regionMap.mapSecType, sFlyMap->regionMap.posWithinMapSec);
             if (sFlyMap->regionMap.mapSecType == MAPSECTYPE_CITY_CANFLY || sFlyMap->regionMap.mapSecType == MAPSECTYPE_BATTLE_FRONTIER)
             {
                 m4aSongNumStart(SE_SELECT);
@@ -2628,20 +2678,26 @@ static void CB_ExitFlyMap(void)
     case 1:
         if (!UpdatePaletteFade())
         {
+            FLY_TRACE("exit fly map chosen=%d mapSec=%d\n", sFlyMap->choseFlyLocation, sFlyMap->regionMap.mapSecId);
             FreeRegionMapIconResources();
+            FLY_TRACE("icon resources freed\n");
             if (sFlyMap->choseFlyLocation)
             {
                 struct RegionMap* tempRegionMap = &sFlyMap->regionMap;
 
                 SetFlyDestination(tempRegionMap);
+                FLY_TRACE("SetFlyDestination returned\n");
                 ReturnToFieldFromFlyMapSelect();
+                FLY_TRACE("ReturnToFieldFromFlyMapSelect returned\n");
             }
             else
             {
                 SetMainCallback2(CB2_ReturnToPartyMenuFromFlyMap);
             }
             TRY_FREE_AND_SET_NULL(sFlyMap);
+            FLY_TRACE("sFlyMap freed\n");
             FreeAllWindowBuffers();
+            FLY_TRACE("window buffers freed\n");
         }
         break;
     }
@@ -2670,6 +2726,9 @@ u32 FilterFlyDestination(struct RegionMap* regionMap)
 void SetFlyDestination(struct RegionMap* regionMap)
 {
     u32 flyDestination = FilterFlyDestination(regionMap);
+
+    FLY_TRACE("SetFlyDestination mapSec=%d dest=%d healRow=%d,%d,%d\n", regionMap->mapSecId, flyDestination,
+              sMapHealLocations[regionMap->mapSecId][0], sMapHealLocations[regionMap->mapSecId][1], sMapHealLocations[regionMap->mapSecId][2]);
 
     if (flyDestination != WARP_ID_NONE)
         SetWarpDestinationToHealLocation(flyDestination);

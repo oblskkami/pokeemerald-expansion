@@ -7,6 +7,9 @@
 #include "text.h"
 #include "battle_anim.h"
 #include "test/test.h"
+#ifdef PORTABLE
+#include "platform.h"
+#endif
 
 #define MAX_SPRITE_COPY_REQUESTS 64
 
@@ -367,10 +370,10 @@ void BuildOamBuffer(void)
 
         // y in [-128...159], so (159 - y) in [0..287].
         spritePriorities[toSort++]
-            = (sprite->oam.priority << 30)
-            | (sprite->subpriority << 22)
-            | (((159 - y) & 0x1FF) << 13)
-            | (index << 0);
+            = ((u32)sprite->oam.priority << 30)
+            | ((u32)sprite->subpriority << 22)
+            | ((u32)((159 - y) & 0x1FF) << 13)
+            | (u32)index;
     }
 
     SortSprites(spritePriorities, toSort);
@@ -1695,6 +1698,15 @@ u8 LoadSpritePaletteInSlot(const struct SpritePalette *palette, u8 paletteNum)
 
 void DoLoadSpritePalette(const u16 *src, u16 paletteOffset)
 {
+#ifdef PORTABLE
+    // 宿主没有 MMU：野指针会直接崩掉进程。坏调色板按全黑处理并记录到 crash.log。
+    if (src == NULL || !HostMemoryIsReadable(src, PLTT_SIZE_4BPP))
+    {
+        HostLogf("bad sprite palette src=%p off=%u", (const void *)src, (unsigned)paletteOffset);
+        FillPalette(0, OBJ_PLTT_OFFSET + paletteOffset, PLTT_SIZE_4BPP);
+        return;
+    }
+#endif
     LoadPaletteFast(src, OBJ_PLTT_OFFSET + paletteOffset, PLTT_SIZE_4BPP);
 }
 

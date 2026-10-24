@@ -1,3 +1,34 @@
+#ifdef PORTABLE
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+static void FlyTrace(const char *fmt, ...)
+{
+    static FILE *logFile = NULL;
+    static int enabled = -1;
+    va_list args;
+
+    // Off unless PE_TRACE is set, so a normal build never litters the game folder.
+    if (enabled < 0)
+        enabled = getenv("PE_TRACE") != NULL;
+    if (!enabled)
+        return;
+    if (logFile == NULL)
+        logFile = fopen("fly_trace.log", "a");
+    if (logFile == NULL)
+        return;
+
+    fprintf(logFile, "[fly] ");
+    va_start(args, fmt);
+    vfprintf(logFile, fmt, args);
+    va_end(args);
+    fflush(logFile);
+}
+#define FLY_TRACE(...) FlyTrace(__VA_ARGS__)
+#else
+#define FLY_TRACE(...) do {} while (0)
+#endif
+
 #include "global.h"
 #include "overworld.h"
 #include "battle_pyramid.h"
@@ -85,6 +116,9 @@
 #include "constants/songs.h"
 #include "constants/trainer_hill.h"
 #include "constants/weather.h"
+#ifdef PORTABLE
+#include "platform.h"
+#endif
 
 STATIC_ASSERT((B_FLAG_FOLLOWERS_DISABLED == 0 || OW_FOLLOWERS_ENABLED), FollowersFlagAssignedWithoutEnablingThem);
 
@@ -342,7 +376,7 @@ static const struct BgTemplate sOverworldBgTemplates[] =
 static const struct ScanlineEffectParams sFlashEffectParams =
 {
     &REG_WIN0H,
-    ((DMA_ENABLE | DMA_START_HBLANK | DMA_REPEAT | DMA_DEST_RELOAD) << 16) | 1,
+    ((u32)(DMA_ENABLE | DMA_START_HBLANK | DMA_REPEAT | DMA_DEST_RELOAD) << 16) | 1,
     1,
     0,
 };
@@ -705,6 +739,7 @@ static void SetPlayerCoordsFromWarp(void)
 
 void WarpIntoMap(void)
 {
+    FLY_TRACE("WarpIntoMap dest group=%d num=%d warpId=%d x=%d y=%d\n", sWarpDestination.mapGroup, sWarpDestination.mapNum, sWarpDestination.warpId, sWarpDestination.x, sWarpDestination.y);
     ApplyCurrentWarp();
     LoadCurrentMapData();
     SetPlayerCoordsFromWarp();
@@ -738,6 +773,7 @@ void SetWarpDestinationToDynamicWarp(u8 unusedWarpId)
 void SetWarpDestinationToHealLocation(u8 healLocationId)
 {
     const struct HealLocation *healLocation = GetHealLocation(healLocationId);
+    FLY_TRACE("SetWarpDestinationToHealLocation id=%d found=%d\n", healLocationId, healLocation != NULL);
     if (healLocation)
         SetWarpDestination(healLocation->mapGroup, healLocation->mapNum, WARP_ID_NONE, healLocation->x, healLocation->y);
 }
@@ -2381,25 +2417,31 @@ static bool32 ReturnToFieldLocal(u8 *state)
     switch (*state)
     {
     case 0:
+        FLY_TRACE("RTF 0: reset screen\n");
         ResetMirageTowerAndSaveBlockPtrs();
         ResetScreenForMapLoad();
         ResumeMap(FALSE);
         InitObjectEventsReturnToField();
+        FLY_TRACE("RTF 0: object events resumed\n");
         if (gFieldCallback == FieldCallback_UseFly)
             RemoveFollowingPokemon();
         else
             UpdateFollowingPokemon();
+        FLY_TRACE("RTF 0: follower handled\n");
         SetCameraToTrackPlayer();
         (*state)++;
         break;
     case 1:
+        FLY_TRACE("RTF 1: view graphics\n");
         InitViewGraphics();
         TryLoadTrainerHillEReaderPalette();
         FollowerNPC_BindToSurfBlobOnReloadScreen();
         ResumeORASDowseFieldEffect();
+        FLY_TRACE("RTF 1 done\n");
         (*state)++;
         break;
     case 2:
+        FLY_TRACE("RTF 2: run field callback\n");
         if (RunFieldCallback())
             (*state)++;
         break;
@@ -2515,6 +2557,11 @@ static void InitViewGraphics(void)
     InitOverworldGraphicsRegisters();
     InitTextBoxGfxAndPrinters();
     InitMapView();
+#ifdef PORTABLE
+    // 每次进地图/从电脑返回都会走到这里，自动做一次画面快照，
+    // 便于对比「正常地图」与「箱子退出后」的显存/寄存器状态。
+    Platform_RequestFrameDump("InitViewGraphics");
+#endif
 }
 
 static void InitOverworldGraphicsRegisters(void)

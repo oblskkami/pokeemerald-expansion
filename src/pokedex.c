@@ -2712,7 +2712,9 @@ static u32 CreatePokedexMonSprite(u16 num, s16 x, s16 y)
     {
         if (sPokedexView->monSpriteIds[i] == 0xFFFF)
         {
-            u8 spriteId = CreateMonSpriteFromNationalDexNumber(num, x, y, i);
+            u16 spriteId = CreateMonSpriteFromNationalDexNumber(num, x, y, i);
+            if (spriteId >= MAX_SPRITES)
+                return 0xFFFF;
 
             gSprites[spriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;
             gSprites[spriteId].oam.priority = 3;
@@ -3275,7 +3277,10 @@ void Task_LoadInfoScreen(u8 taskId)
         if (!gTasks[taskId].tMonSpriteDone)
         {
             gTasks[taskId].tMonSpriteId = (u16)CreateMonSpriteFromNationalDexNumber(sPokedexListItem->dexNum, MON_PAGE_X, MON_PAGE_Y, 0);
-            gSprites[gTasks[taskId].tMonSpriteId].oam.priority = 0;
+            if (gTasks[taskId].tMonSpriteId < MAX_SPRITES)
+                gSprites[gTasks[taskId].tMonSpriteId].oam.priority = 0;
+            else
+                gTasks[taskId].tMonSpriteId = SPRITE_NONE;
         }
         gMain.state++;
         break;
@@ -3285,7 +3290,7 @@ void Task_LoadInfoScreen(u8 taskId)
 
             if (gTasks[taskId].tBgLoaded)
                 preservedPalettes = 0x14; // each bit represents a palette index
-            if (gTasks[taskId].tMonSpriteDone)
+            if (gTasks[taskId].tMonSpriteDone && gTasks[taskId].tMonSpriteId < MAX_SPRITES)
                 preservedPalettes |= (1 << (gSprites[gTasks[taskId].tMonSpriteId].oam.paletteNum + 16));
             BeginNormalPaletteFade(~preservedPalettes, 0, 16, 0, RGB_BLACK);
             SetVBlankCallback(gPokedexVBlankCB);
@@ -3309,6 +3314,7 @@ void Task_LoadInfoScreen(u8 taskId)
             gMain.state++;
             if (!gTasks[taskId].tSkipCry)
             {
+                gTasks[taskId].data[14] = 0;
                 StopCryAndClearCrySongs();
                 PlayCry_NormalNoDucking(NationalPokedexNumToSpeciesForm(sPokedexListItem->dexNum), 0, CRY_VOLUME_RS, CRY_PRIORITY_NORMAL);
             }
@@ -3319,7 +3325,10 @@ void Task_LoadInfoScreen(u8 taskId)
         }
         break;
     case 9:
-        if (!IsCryPlayingOrClearCrySongs())
+        // A damaged/unsupported host cry must not hold the info screen
+        // forever. Normal cries finish well within this window; after the
+        // timeout continue with the same state as a cleared cry.
+        if (!IsCryPlayingOrClearCrySongs() || ++gTasks[taskId].data[14] > 180)
             gMain.state++;
         break;
     case 10:
@@ -3607,7 +3616,10 @@ void Task_LoadCryScreen(u8 taskId)
         break;
     case 5:
         gTasks[taskId].tMonSpriteId = CreateMonSpriteFromNationalDexNumber(sPokedexListItem->dexNum, MON_PAGE_X, MON_PAGE_Y, 0);
-        gSprites[gTasks[taskId].tMonSpriteId].oam.priority = 0;
+        if (gTasks[taskId].tMonSpriteId < MAX_SPRITES)
+            gSprites[gTasks[taskId].tMonSpriteId].oam.priority = 0;
+        else
+            gTasks[taskId].tMonSpriteId = SPRITE_NONE;
         gDexCryScreenState = 0;
         gMain.state++;
         break;
@@ -3820,6 +3832,13 @@ void Task_LoadSizeScreen(u8 taskId)
         break;
     case 5:
         spriteId = CreateSizeScreenTrainerPic(PlayerGenderToFrontTrainerPicId(gSaveBlock2Ptr->playerGender), 152, 56, 0);
+        if (spriteId >= MAX_SPRITES)
+        {
+            gTasks[taskId].tTrainerSpriteId = SPRITE_NONE;
+            gTasks[taskId].tMonSpriteId = SPRITE_NONE;
+            gMain.state = 7;
+            break;
+        }
         gSprites[spriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;
         gSprites[spriteId].oam.matrixNum = 1;
         gSprites[spriteId].oam.priority = 0;
@@ -3831,6 +3850,12 @@ void Task_LoadSizeScreen(u8 taskId)
         break;
     case 6:
         spriteId = CreateMonSpriteFromNationalDexNumber(sPokedexListItem->dexNum, 88, 56, 1);
+        if (spriteId >= MAX_SPRITES)
+        {
+            gTasks[taskId].tMonSpriteId = SPRITE_NONE;
+            gMain.state = 7;
+            break;
+        }
         gSprites[spriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;
         gSprites[spriteId].oam.matrixNum = 2;
         gSprites[spriteId].oam.priority = 0;
@@ -3991,7 +4016,11 @@ static void HighlightSubmenuScreenSelectBarItem(u8 a, u16 b)
 
 u8 DisplayCaughtMonDexPage(enum Species species, bool32 isShiny, u32 personality)
 {
-    u8 taskId = 0;
+    u8 taskId;
+
+    if (GetTaskCount() >= NUM_TASKS)
+        return TASK_NONE;
+
     if (POKEDEX_PLUS_HGSS)
         taskId = CreateTask(Task_DisplayCaughtMonDexPageHGSS, 0);
     else
@@ -4007,6 +4036,9 @@ u8 DisplayCaughtMonDexPage(enum Species species, bool32 isShiny, u32 personality
 
 static void LoadDexMonPalette(u32 taskId, bool32 isShiny)
 {
+    if (taskId >= NUM_TASKS || gTasks[taskId].tMonSpriteId >= MAX_SPRITES)
+        return;
+
     const u16 *paletteData = GetMonSpritePalFromSpeciesAndPersonality(gTasks[taskId].tSpecies, isShiny, GetWordTaskArg(taskId, tPersonalityLo));
     u32 paletteNum = gSprites[gTasks[taskId].tMonSpriteId].oam.paletteNum;
     LoadPalette(paletteData, OBJ_PLTT_ID(paletteNum), PLTT_SIZE_4BPP);
@@ -4017,7 +4049,10 @@ u32 Pokedex_CreateCaughtMonSprite(enum Species species, s32 x, s32 y)
     u32 spriteId;
 
     SetMultiuseSpriteTemplateToPokemon(species, GetCatchingBattler());
-    spriteId = CreateSprite(&gMultiuseSpriteTemplate, x, y, 0);
+    spriteId = CreateSpriteUnchecked(&gMultiuseSpriteTemplate, x, y, 0);
+    if (spriteId >= MAX_SPRITES)
+        return SPRITE_NONE;
+
     gSprites[spriteId].oam.priority = 0;
     gSprites[spriteId].callback = SpriteCallbackDummy;
     return spriteId;
@@ -4073,8 +4108,11 @@ static void Task_DisplayCaughtMonDexPage(u8 taskId)
         // We're using a different mon sprite creation method, because we don't have enough memory to safely use CreateMonPicSprite.
         spriteId = Pokedex_CreateCaughtMonSprite(species, MON_PAGE_X, MON_PAGE_Y);
         gTasks[taskId].tMonSpriteId = spriteId;
-        LoadDexMonPalette(taskId, FALSE);
-        gSprites[spriteId].oam.priority = 0;
+        if (spriteId < MAX_SPRITES)
+        {
+            LoadDexMonPalette(taskId, FALSE);
+            gSprites[spriteId].oam.priority = 0;
+        }
         BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
         SetVBlankCallback(gPokedexVBlankCB);
         gTasks[taskId].tState++;
@@ -4104,7 +4142,8 @@ void Task_HandleCaughtMonPageInput(u8 taskId)
     if (JOY_NEW(A_BUTTON | B_BUTTON))
     {
         BeginNormalPaletteFade(PALETTES_BG, 0, 0, 16, RGB_BLACK);
-        gSprites[gTasks[taskId].tMonSpriteId].callback = SpriteCB_SlideCaughtMonToCenter;
+        if (gTasks[taskId].tMonSpriteId < MAX_SPRITES)
+            gSprites[gTasks[taskId].tMonSpriteId].callback = SpriteCB_SlideCaughtMonToCenter;
         gTasks[taskId].func = Task_ExitCaughtMonPage;
         HandleCaughtMonPageTypeIcons_HGSS();
     }
@@ -4508,6 +4547,12 @@ s8 GetSetPokedexFlag(enum NationalDexOrder nationalDexNo, u8 caseID)
 {
     u32 index, bit, mask;
     s8 retVal = 0;
+
+    // National dex order 0 is the NONE sentinel.  Reject it (and malformed
+    // values above the configured dex) before the unsigned decrement below
+    // can wrap into an out-of-bounds save-block access.
+    if (nationalDexNo == NATIONAL_DEX_NONE || nationalDexNo > NATIONAL_DEX_COUNT)
+        return 0;
 
     nationalDexNo--;
     index = nationalDexNo / 8;

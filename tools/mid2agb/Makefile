@@ -21,7 +21,10 @@ all: mid2agb$(EXE)
 	@:
 
 mid2agb$(EXE): $(SRCS) $(HEADERS) $(EXPANSION_BATTLE_CONFIG)
-	$(CXX) $(CXXFLAGS) $(SRCS) -o $@ $(LDFLAGS)
+	@rm -f $@.tmp
+	$(CXX) $(CXXFLAGS) $(SRCS) -o $@.tmp $(LDFLAGS)
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
 
 clean:
 	$(RM) mid2agb mid2agb.exe

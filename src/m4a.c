@@ -1,6 +1,10 @@
 #include "global.h"
 #include "gba/m4a_internal.h"
 #include "global.h"
+#ifdef PORTABLE
+#include "platform.h"
+#include "platform/cgb_audio.h"
+#endif
 
 extern const u8 gCgb3Vol[];
 
@@ -23,12 +27,12 @@ u32 MidiKeyToFreq(struct WaveData *wav, u8 key, u8 fineAdjust)
 {
     u32 val1;
     u32 val2;
-    u32 fineAdjustShifted = fineAdjust << 24;
+    u32 fineAdjustShifted = (u32)fineAdjust << 24;
 
     if (key > 178)
     {
         key = 178;
-        fineAdjustShifted = 255 << 24;
+        fineAdjustShifted = 255u << 24;
     }
 
     val1 = gScaleTable[key];
@@ -98,7 +102,41 @@ void m4aSoundInit(void)
 
 void m4aSoundMain(void)
 {
+#ifdef PORTABLE
+    struct SoundInfo *soundInfo = SOUND_INFO_PTR;
+
+    if (soundInfo == NULL || soundInfo->ident != ID_NUMBER)
+        return;
+    soundInfo->ident = ID_NUMBER + 1;
+    if (soundInfo->MPlayMainHead != NULL)
+        soundInfo->MPlayMainHead(soundInfo->musicPlayerHead);
+    HostMixDirectSound(soundInfo);
+    HostApplyDirectSoundRouting(soundInfo);
+    HostMixCgbAudio(soundInfo);
+#ifdef PLATFORM_SDL2
+    if (soundInfo->pcmSamplesPerVBlank > 0
+     && soundInfo->pcmSamplesPerVBlank <= PCM_DMA_BUF_SIZE
+     && soundInfo->pcmDmaPeriod != 0
+     && soundInfo->pcmFreq > 0)
+    {
+        u32 sampleCount = (u32)soundInfo->pcmSamplesPerVBlank;
+        u32 block = soundInfo->pcmDmaCounter > 1
+            ? soundInfo->pcmDmaPeriod - (soundInfo->pcmDmaCounter - 1)
+            : 0;
+        u32 offset = block * sampleCount;
+
+        if (offset < PCM_DMA_BUF_SIZE && sampleCount <= PCM_DMA_BUF_SIZE - offset)
+        {
+            Platform_QueueAudio(soundInfo->pcmBuffer + offset,
+                                soundInfo->pcmBuffer + PCM_DMA_BUF_SIZE + offset,
+                                sampleCount, (u32)soundInfo->pcmFreq);
+        }
+    }
+#endif
+    soundInfo->ident = ID_NUMBER;
+#else
     SoundMain();
+#endif
 }
 
 void m4aSongNumStart(u16 n)
@@ -313,8 +351,19 @@ void MPlayExtender(struct CgbChannel *cgbChans)
 
 static void UNUSED MusicPlayerJumpTableCopy(void)
 {
+#ifndef PORTABLE
     asm("swi 0x2A");
+#endif
 }
+
+#ifdef PORTABLE
+extern void *const gMPlayJumpTableTemplate[];
+
+void MPlayJumpTableCopy(MPlayFunc *mplayJumpTable)
+{
+    memcpy(mplayJumpTable, gMPlayJumpTableTemplate, 36 * sizeof(void *));
+}
+#endif
 
 void ClearChain(void *x)
 {
@@ -340,11 +389,11 @@ void SoundInit(struct SoundInfo *soundInfo)
 {
     soundInfo->ident = 0;
 
-    if (REG_DMA1CNT & (DMA_REPEAT << 16))
-        REG_DMA1CNT = ((DMA_ENABLE | DMA_START_NOW | DMA_32BIT | DMA_SRC_INC | DMA_DEST_FIXED) << 16) | 4;
+    if (REG_DMA1CNT & ((u32)DMA_REPEAT << 16))
+        REG_DMA1CNT = ((u32)(DMA_ENABLE | DMA_START_NOW | DMA_32BIT | DMA_SRC_INC | DMA_DEST_FIXED) << 16) | 4;
 
-    if (REG_DMA2CNT & (DMA_REPEAT << 16))
-        REG_DMA2CNT = ((DMA_ENABLE | DMA_START_NOW | DMA_32BIT | DMA_SRC_INC | DMA_DEST_FIXED) << 16) | 4;
+    if (REG_DMA2CNT & ((u32)DMA_REPEAT << 16))
+        REG_DMA2CNT = ((u32)(DMA_ENABLE | DMA_START_NOW | DMA_32BIT | DMA_SRC_INC | DMA_DEST_FIXED) << 16) | 4;
 
     REG_DMA1CNT_H = DMA_32BIT;
     REG_DMA2CNT_H = DMA_32BIT;
@@ -388,6 +437,12 @@ void SampleFreqSet(u32 freq)
     struct SoundInfo *soundInfo = SOUND_INFO_PTR;
 
     freq = (freq & 0xF0000) >> 16;
+    // The table is indexed by the encoded 1-based frequency selector.  A
+    // malformed sound-mode word used to underflow here and corrupt the PCM
+    // timing state before the first VBlank.  Keep the documented 13.379 kHz
+    // mode as a safe fallback on both host and hardware.
+    if (freq == 0 || freq > (SOUND_MODE_FREQ_42048 >> SOUND_MODE_FREQ_SHIFT))
+        freq = SOUND_MODE_FREQ_13379 >> SOUND_MODE_FREQ_SHIFT;
     soundInfo->freq = freq;
     soundInfo->pcmSamplesPerVBlank = gPcmSamplesPerVBlankTable[freq - 1];
     soundInfo->pcmDmaPeriod = PCM_DMA_BUF_SIZE / soundInfo->pcmSamplesPerVBlank;
@@ -406,11 +461,13 @@ void SampleFreqSet(u32 freq)
 
     m4aSoundVSyncOn();
 
+#ifndef PORTABLE
     while (*(vu8 *)REG_ADDR_VCOUNT == 159)
         ;
 
     while (*(vu8 *)REG_ADDR_VCOUNT != 159)
         ;
+#endif
 
     REG_TM0CNT_H = TIMER_ENABLE | TIMER_1CLK;
 }
@@ -481,11 +538,11 @@ void m4aSoundVSyncOff(void)
     {
         soundInfo->ident += 10;
 
-        if (REG_DMA1CNT & (DMA_REPEAT << 16))
-            REG_DMA1CNT = ((DMA_ENABLE | DMA_START_NOW | DMA_32BIT | DMA_SRC_INC | DMA_DEST_FIXED) << 16) | 4;
+        if (REG_DMA1CNT & ((u32)DMA_REPEAT << 16))
+            REG_DMA1CNT = ((u32)(DMA_ENABLE | DMA_START_NOW | DMA_32BIT | DMA_SRC_INC | DMA_DEST_FIXED) << 16) | 4;
 
-        if (REG_DMA2CNT & (DMA_REPEAT << 16))
-            REG_DMA2CNT = ((DMA_ENABLE | DMA_START_NOW | DMA_32BIT | DMA_SRC_INC | DMA_DEST_FIXED) << 16) | 4;
+        if (REG_DMA2CNT & ((u32)DMA_REPEAT << 16))
+            REG_DMA2CNT = ((u32)(DMA_ENABLE | DMA_START_NOW | DMA_32BIT | DMA_SRC_INC | DMA_DEST_FIXED) << 16) | 4;
 
         REG_DMA1CNT_H = DMA_32BIT;
         REG_DMA2CNT_H = DMA_32BIT;
@@ -740,8 +797,8 @@ void TrkVolPitSet(struct MusicPlayerInfo *mplayInfo, struct MusicPlayerTrack *tr
         s32 bend = track->bend * track->bendRange;
         s32 x = (track->tune + bend)
               * 4
-              + (track->keyShift << 8)
-              + (track->keyShiftX << 8)
+              + track->keyShift * 0x100
+              + track->keyShiftX * 0x100
               + track->pitX;
 
         if (track->modT == 0)
@@ -1412,7 +1469,7 @@ void ply_xxx(struct MusicPlayerInfo *mplayInfo, struct MusicPlayerTrack *track)
 {                                    \
     u32 byte = track->cmdPtr[(n)]; \
     byte <<= n * 8;                  \
-    (var) &= ~(0xFF << (n * 8));     \
+    (var) &= ~(0xFFu << (n * 8));    \
     (var) |= byte;                   \
 }
 
@@ -1609,9 +1666,12 @@ void SetPokemonCryProgress(u32 val)
 
 bool32 IsPokemonCryPlaying(struct MusicPlayerInfo *mplayInfo)
 {
+    if (mplayInfo == NULL || mplayInfo->tracks == NULL)
+        return FALSE;
+
     struct MusicPlayerTrack *track = mplayInfo->tracks;
 
-    if (track->chan && track->chan->track == track)
+    if (track->chan != NULL && track->chan->track == track)
         return TRUE;
     else
         return FALSE;

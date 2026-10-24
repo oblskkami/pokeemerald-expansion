@@ -398,16 +398,18 @@ static IWRAM_DATA u8 sBitIndex = 0;
 static IWRAM_DATA const u32 *sDataPtr = 0;
 static IWRAM_DATA u32 sCurrState = 0;
 
+#ifndef PORTABLE
 // 33 because of FastUnsafeCopy32, we divide by 4 because the buffer is an array of u32
 #define FUNC_BUFFER_SIZE(funcStart, funcEnd)(((u32)(funcEnd) - (u32)(funcStart) + 33) / 4)
 
 extern void FastUnsafeCopy32(void *, const void *, u32 size);
 
-//  Dark Egg magic
+// Dark Egg magic: the GBA path copies a short routine to IWRAM before calling it.
 static inline void CopyFuncToIwram(void *funcBuffer, const void *funcStartAddress, const void *funcEndAdress)
 {
     FastUnsafeCopy32(funcBuffer, funcStartAddress, funcEndAdress - funcStartAddress);
 }
+#endif
 
 // The reason for macros and unrolling the loops stems from the following:
 // currK can be max 6, meaning in the worst case scenario it takes minimum 4 loop iterations, where we don't need to check if bitIndex is >= 32, because it's mathematically impossible for it to be.
@@ -510,11 +512,13 @@ LOOP_STORE:
     sDataPtr = data - 1;
 }
 
+#ifndef PORTABLE
 //  Dark Egg magic
 ARM_FUNC __attribute__((no_reorder)) static void SwitchToArmCallLOtANS(const u32 *data, u32 *ykTable, void *resultVec, void *resultVecEnd, void (*decodeFunction)(const u32 *data, u32 *ykTable, void *resultVec, void *resultVecEnd))
 {
     decodeFunction(data, ykTable, resultVec, resultVecEnd);
 }
+#endif
 
 //  Function that decodes tANS encoded LO data, resulting data is u8 values
 static void DecodeLOtANS(const u32 *data, const u32 *pFreqs, u8 *resultVec, u32 count)
@@ -524,10 +528,14 @@ static void DecodeLOtANS(const u32 *data, const u32 *pFreqs, u8 *resultVec, u32 
     // We want to store in packs of 2, so count needs to be divisible by 2
     u32 remainingCount = count % 2;
 
+#ifndef PORTABLE
     u32 funcBuffer[FUNC_BUFFER_SIZE(DecodeLOtANSLoop, SwitchToArmCallLOtANS)];
 
     CopyFuncToIwram(funcBuffer, DecodeLOtANSLoop, SwitchToArmCallLOtANS);
     SwitchToArmCallLOtANS(data, sWorkingYkTable, resultVec, &resultVec[count - remainingCount], (void *) funcBuffer);
+#else
+    DecodeLOtANSLoop(data, sWorkingYkTable, resultVec, &resultVec[count - remainingCount]);
+#endif
 
     if (remainingCount)
     {
@@ -591,19 +599,25 @@ ARM_FUNC __attribute__((flatten, noinline, no_reorder)) __attribute__((optimize(
     sDataPtr = data - 1;
 }
 
+#ifndef PORTABLE
 ARM_FUNC __attribute__((no_reorder)) static void SwitchToArmCallDecodeSymtANS(const u32 *data, u32 *ykTable, u16 *resultVec, u16 *resultVecEnd, void (*decodeFunction)(const u32 *data, u32 *ykTable, u16 *resultVec, u16 *resultVecEnd))
 {
     decodeFunction(data, ykTable, resultVec, resultVecEnd);
 }
+#endif
 
 static void DecodeSymtANS(const u32 *data, const u32 *pFreqs, u16 *resultVec, u32 count)
 {
     BuildDecompressionTable(pFreqs, sWorkingYkTable);
 
+#ifndef PORTABLE
     u32 funcBuffer[FUNC_BUFFER_SIZE(DecodeLOtANSLoop, SwitchToArmCallLOtANS)];
     // CopyFuncToIwram(funcBuffer, DecodeSymtANSLoop, SwitchToArmCallDecodeSymtANS);
     CopyFuncToIwram(funcBuffer, DecodeLOtANSLoop, SwitchToArmCallLOtANS);
     SwitchToArmCallDecodeSymtANS(data, sWorkingYkTable, resultVec, &resultVec[count], (void *) funcBuffer);
+#else
+    DecodeSymtANSLoop(data, sWorkingYkTable, resultVec, &resultVec[count]);
+#endif
 }
 
 #define ANS_LOOP_MAIN(nibble)   \
@@ -766,11 +780,13 @@ ARM_FUNC __attribute__((flatten, noinline, no_reorder)) __attribute__((optimize(
     return currSymbol;
 }
 
+#ifndef PORTABLE
 //  Dark Egg magic
 ARM_FUNC __attribute__((no_reorder)) static u32 SwitchToArmCallSymDeltaANS(const u32 *data, u32 *ykTable, u16 *resultVec, u16 *resultVecEnd, u32 (*decodeFunction)(const u32 *data, u32 *ykTable, u16 *resultVec, u16 *resultVecEnd))
 {
     return decodeFunction(data, ykTable, resultVec, resultVecEnd);
 }
+#endif
 
 static void DecodeSymDeltatANS(const u32 *data, const u32 *pFreqs, u16 *resultVec, u32 count)
 {
@@ -779,9 +795,13 @@ static void DecodeSymDeltatANS(const u32 *data, const u32 *pFreqs, u16 *resultVe
     // We want to store in packs of 2, so count needs to be divisible by 2
     u32 remainingCount = count % 2;
 
+#ifndef PORTABLE
     u32 funcBuffer[FUNC_BUFFER_SIZE(DecodeSymDeltatANSLoop, SwitchToArmCallSymDeltaANS)];
     CopyFuncToIwram(funcBuffer, DecodeSymDeltatANSLoop, SwitchToArmCallSymDeltaANS);
     u32 currSymbol = SwitchToArmCallSymDeltaANS(data, sWorkingYkTable, resultVec, &resultVec[count - remainingCount], (void *) funcBuffer);
+#else
+    u32 currSymbol = DecodeSymDeltatANSLoop(data, sWorkingYkTable, resultVec, &resultVec[count - remainingCount]);
+#endif
 
     if (remainingCount)
     {
@@ -926,19 +946,25 @@ ARM_FUNC __attribute__((flatten, noinline, no_reorder)) __attribute__((optimize(
     } while (loVec < loVecEnd);
 }
 
+#ifndef PORTABLE
 //  Dark Egg magic
 ARM_FUNC __attribute__((no_reorder)) static void SwitchToArmCallDecodeInstructions(u32 headerLoSize, const u8 *loVec, const u16 *symVec, void *dest, void (*decodeFunction)(u32 headerLoSize, const u8 *loVec, const u16 *symVec, void *dest))
 {
     decodeFunction(headerLoSize, loVec, symVec, dest);
 }
+#endif
 
 //  Dark Egg magic
 static void DecodeInstructionsIwram(u32 headerLoSize, const u8 *loVec, const u16 *symVec, void *dest)
 {
+#ifndef PORTABLE
     u32 funcBuffer[FUNC_BUFFER_SIZE(DecodeInstructions, SwitchToArmCallDecodeInstructions)];
 
     CopyFuncToIwram(funcBuffer, DecodeInstructions, SwitchToArmCallDecodeInstructions);
     SwitchToArmCallDecodeInstructions(headerLoSize, loVec, symVec, dest, (void *) funcBuffer);
+#else
+    DecodeInstructions(headerLoSize, loVec, symVec, dest);
+#endif
 }
 
 //  Entrance point for smol compressed data
@@ -1075,10 +1101,12 @@ ARM_FUNC __attribute__((flatten, noinline, no_reorder)) __attribute__((optimize(
     }
 }
 
+#ifndef PORTABLE
 ARM_FUNC __attribute__((no_reorder)) static void SwitchToArmCallDecodeTileNumbers(u16 *tileNumbers, u32 arraySize, void (*decodeFunction)(u16 *tileNumbers, u32 arraySize))
 {
     decodeFunction(tileNumbers, arraySize);
 }
+#endif
 
 static void SmolDecompressTilemap(const struct SmolTilemapHeader *header, const u32 *data, u16 *dest)
 {
@@ -1091,10 +1119,14 @@ static void SmolDecompressTilemap(const struct SmolTilemapHeader *header, const 
     DecodeInstructionsIwram(header->tileNumberSize, loVec, symVec, dest);
     u32 arraySize = header->tilemapSize/2;
 
+#ifndef PORTABLE
     u32 funcBuffer[FUNC_BUFFER_SIZE(DeltaDecodeTileNumbers, SwitchToArmCallDecodeTileNumbers)];
 
     CopyFuncToIwram(funcBuffer, DeltaDecodeTileNumbers, SwitchToArmCallDecodeTileNumbers);
     SwitchToArmCallDecodeTileNumbers(deltaDest, arraySize, (void *) funcBuffer);
+#else
+    DeltaDecodeTileNumbers(deltaDest, arraySize);
+#endif
 }
 
 //  Helper functions for determining modes
@@ -1388,6 +1420,7 @@ bool8 LoadCompressedSpriteSheetUsingHeap(const struct CompressedSpriteSheet *src
     return FALSE;
 }
 
+#ifndef PORTABLE
 extern const u32 LZ77UnCompWRAMOptimized[];
 extern const u32 LZ77UnCompWRAMOptimized_end[];
 
@@ -1395,11 +1428,16 @@ ARM_FUNC static void SwitchToArmCallFastLZ77(const u32 *src, void *dest, void (*
 {
     funcPtr(src, dest);
 }
+#endif
 
 void FastLZ77UnCompWram(const u32 *src, void *dest)
 {
+#ifdef PORTABLE
+    LZ77UnCompWram(src, dest);
+#else
     u32 funcBuffer[200];
 
     CopyFuncToIwram(funcBuffer, LZ77UnCompWRAMOptimized, LZ77UnCompWRAMOptimized_end);
     SwitchToArmCallFastLZ77(src, dest, (void *) funcBuffer);
+#endif
 }

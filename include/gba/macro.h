@@ -66,9 +66,9 @@
                CPU_FAST_SET_SRC_FIXED | ((size)/(32/8) & 0x1FFFFF)); \
 }
 
-#define CpuFastFill16(value, dest, size) CpuFastFill(((value) << 16) | (value), (dest), (size))
+#define CpuFastFill16(value, dest, size) CpuFastFill(((u32)(value) << 16) | (u32)(value), (dest), (size))
 
-#define CpuFastFill8(value, dest, size) CpuFastFill(((value) << 24) | ((value) << 16) | ((value) << 8) | (value), (dest), (size))
+#define CpuFastFill8(value, dest, size) CpuFastFill(((u32)(value) << 24) | ((u32)(value) << 16) | ((u32)(value) << 8) | (u32)(value), (dest), (size))
 
 #define CpuSmartFill(value, dest, size) \
 { \
@@ -90,6 +90,9 @@
 
 #define CpuFastCopy(src, dest, size) CpuFastSet(src, dest, ((size)/(32/8) & 0x1FFFFF))
 
+#ifdef PORTABLE
+void DmaSet(int dmaNum, const void *src, void *dest, u32 control);
+#else
 #define DmaSetUnchecked(dmaNum, src, dest, control) \
 {                                                 \
     vu32 *dmaRegs = (vu32 *)REG_ADDR_DMA##dmaNum; \
@@ -98,8 +101,9 @@
     dmaRegs[2] = (vu32)(control);                 \
     dmaRegs[2];                                   \
 }
+#endif
 
-#if MODERN
+#if MODERN && !defined(PORTABLE)
 // NOTE: Assumes 16-bit DMAs.
 #define DmaSet(dmaNum, src, dest, control) \
     do \
@@ -108,7 +112,7 @@
         _Static_assert(_Alignof(dest) >= __builtin_choose_expr(__builtin_constant_p(control), ((control) & (DMA_32BIT << 16)) ? 4 : 2, 2), "destination potentially unaligned"); \
         DmaSetUnchecked(dmaNum, src, dest, control); \
     } while (0)
-#else
+#elif !defined(PORTABLE)
 #define DmaSet(dmaNum, src, dest, control) \
     DmaSetUnchecked(dmaNum, src, dest, control)
 #endif
@@ -119,7 +123,7 @@
     DmaSet(dmaNum,                                                                            \
            &tmp,                                                                              \
            dest,                                                                              \
-           (DMA_ENABLE | DMA_START_NOW | DMA_##bit##BIT | DMA_SRC_FIXED | DMA_DEST_INC) << 16 \
+           (u32)(DMA_ENABLE | DMA_START_NOW | DMA_##bit##BIT | DMA_SRC_FIXED | DMA_DEST_INC) << 16 \
          | ((size)/(bit/8)));                                                                 \
 }
 
@@ -167,7 +171,7 @@
     DmaSet(dmaNum,                                                                          \
            src,                                                                             \
            dest,                                                                            \
-           (DMA_ENABLE | DMA_START_NOW | DMA_##bit##BIT | DMA_SRC_INC | DMA_DEST_INC) << 16 \
+           (u32)(DMA_ENABLE | DMA_START_NOW | DMA_##bit##BIT | DMA_SRC_INC | DMA_DEST_INC) << 16 \
          | ((size)/(bit/8)))
 
 #if MODERN

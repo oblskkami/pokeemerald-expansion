@@ -33,7 +33,7 @@
 #include "string_parser.h"
 #include "io.h"
 
-CFile::CFile(const char * filenameCStr, bool isStdin, const char * graphicsRootCStr)
+CFile::CFile(const char * filenameCStr, bool isStdin, const char * graphicsRootCStr, bool hostOutput)
 {
     if (isStdin)
         m_location.filename = std::string{"<stdin>/"}.append(filenameCStr);
@@ -46,6 +46,7 @@ CFile::CFile(const char * filenameCStr, bool isStdin, const char * graphicsRootC
 
     m_pos = 0;
     m_isStdin = isStdin;
+    m_hostOutput = hostOutput;
     m_graphicsRoot = graphicsRootCStr;
     if (m_graphicsRoot.empty()) m_graphicsRoot = "./";
     if (m_graphicsRoot[m_graphicsRoot.length() - 1] != '/') m_graphicsRoot.push_back('/');
@@ -57,6 +58,7 @@ CFile::CFile(CFile&& other) : m_location(std::move(other.m_location))
     m_pos = other.m_pos;
     m_size = other.m_size;
     m_isStdin = other.m_isStdin;
+    m_hostOutput = other.m_hostOutput;
 
     other.m_buffer = NULL;
 }
@@ -201,6 +203,19 @@ linemarker_error:
     // 'ld' optimization for 'SHF_MERGE | SHF_STRINGS').
     for (auto it : m_compoundStrings)
     {
+        if (m_hostOutput)
+        {
+            std::printf("static const unsigned char sCompoundString_%016" PRIx64 "[] = {", it.second);
+            if (it.first.size() > 0)
+            {
+                std::printf(" 0x%02X", it.first[0]);
+                for (std::size_t i = 1; i < it.first.size(); i++)
+                    std::printf(", 0x%02X", it.first[i]);
+            }
+            std::printf(" };\n");
+            continue;
+        }
+
         // HINT: GCC puts the section name into the assembly without any
         // validation, so we're able to apply the 'SHF_MERGE' flag and
         // our own 'sh_entsize' by using '@' to comment out what GCC
@@ -452,20 +467,20 @@ std::unique_ptr<unsigned char[]> CFile::ReadWholeFile(const std::string& path, i
     return buffer;
 }
 
-int ExtractData(const std::unique_ptr<unsigned char[]>& buffer, int offset, int size)
+std::uint32_t ExtractData(const std::unique_ptr<unsigned char[]>& buffer, int offset, int size)
 {
     switch (size)
     {
     case 1:
         return buffer[offset];
     case 2:
-        return (buffer[offset + 1] << 8)
-            | buffer[offset];
+        return (std::uint32_t(buffer[offset + 1]) << 8)
+            | std::uint32_t(buffer[offset]);
     case 4:
-        return (buffer[offset + 3] << 24)
-            | (buffer[offset + 2] << 16)
-            | (buffer[offset + 1] << 8)
-            | buffer[offset];
+        return (std::uint32_t(buffer[offset + 3]) << 24)
+            | (std::uint32_t(buffer[offset + 2]) << 16)
+            | (std::uint32_t(buffer[offset + 1]) << 8)
+            | std::uint32_t(buffer[offset]);
     default:
         FATAL_ERROR("Invalid size passed to ExtractData.\n");
     }
@@ -489,6 +504,7 @@ void CFile::TryConvertIncbin()
         return;
 
     int size = incbinType < 3 ? 1 << incbinType : 4;
+    bool needsHostGuard = false;
 
     long oldPos = m_pos;
     auto oldLocation = m_location;
@@ -517,6 +533,8 @@ void CFile::TryConvertIncbin()
         // INCBIN_COMP; include *compressed* version of file
         if (incbinType == 3)
             path = path.append(".smol");
+        if (path.find(".smol") != std::string::npos)
+            needsHostGuard = true;
 
         int fileSize;
         std::unique_ptr<unsigned char[]> buffer = ReadWholeFile(path, fileSize);
@@ -529,7 +547,7 @@ void CFile::TryConvertIncbin()
 
         for (int i = 0; i < count; i++)
         {
-            int data = ExtractData(buffer, offset, size);
+            std::uint32_t data = ExtractData(buffer, offset, size);
             offset += size;
             printf("%uu,", data);
         }
@@ -546,6 +564,14 @@ void CFile::TryConvertIncbin()
         RaiseError("expected ')'");
 
     m_pos++;
+
+    // The tANS decoder may refill one word after consuming its final symbol.
+    // GBA data sections provide adjacent bytes; standalone host arrays must own it.
+    if (m_hostOutput && needsHostGuard)
+    {
+        for (int i = 0; i < 4 / size; i++)
+            printf("0u,");
+    }
 
     printf("}");
 }
@@ -646,9 +672,15 @@ void CFile::TryConvertIncgfx()
     int offset = 0;
     for (int i = 0; i < count; i++)
     {
-        int data = ExtractData(buffer, offset, size);
+        std::uint32_t data = ExtractData(buffer, offset, size);
         offset += size;
         printf("%uu,", data);
+    }
+
+    if (m_hostOutput && extensions.find(".smol") != std::string::npos)
+    {
+        for (int i = 0; i < 4 / size; i++)
+            printf("0u,");
     }
 
     printf("}");

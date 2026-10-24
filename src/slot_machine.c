@@ -1111,6 +1111,9 @@ static void CB2_SlotMachine(void)
 
 static void SlotMachine_VBlankCB(void)
 {
+    if (sSlotMachine == NULL)
+        return;
+
     LoadOam();
     ProcessSpriteCopyRequests();
     TransferPlttBuffer();
@@ -1752,6 +1755,10 @@ static bool8 SlotTask_FreeDataStructures(struct Task *task)
 {
     if (!gPaletteFade.active)
     {
+        // The VBlank callback reads sSlotMachine every frame.  Disable it
+        // before releasing the state, especially on the host where rendering
+        // runs on a separate thread.
+        SetVBlankCallback(NULL);
         SetMainCallback2(sSlotMachine->prevMainCb);
         FREE_AND_SET_NULL(sImageTable_DigitalDisplay_Reel);
         FREE_AND_SET_NULL(sImageTable_DigitalDisplay_Time);

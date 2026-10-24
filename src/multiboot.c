@@ -2,6 +2,49 @@
 #include "gba/gba.h"
 #include "multiboot.h"
 
+#ifdef PORTABLE
+
+void MultiBootInit(struct MultiBootParam *mp)
+{
+    if (mp == NULL)
+        return;
+
+    mp->client_bit = 0;
+    mp->probe_count = 0;
+    mp->response_bit = 0;
+    mp->check_wait = MULTIBOOT_CONNECTION_CHECK_WAIT;
+    mp->sendflag = 0;
+    mp->handshake_timeout = 0;
+}
+
+int MultiBootMain(struct MultiBootParam *mp)
+{
+    (void)mp;
+    return MULTIBOOT_ERROR_BOOT_FAILURE;
+}
+
+void MultiBootStartProbe(struct MultiBootParam *mp)
+{
+    MultiBootInit(mp);
+}
+
+void MultiBootStartMaster(struct MultiBootParam *mp, const u8 *srcp, int length, u8 palette_color, s8 palette_speed)
+{
+    (void)srcp;
+    (void)length;
+    (void)palette_color;
+    (void)palette_speed;
+    MultiBootInit(mp);
+}
+
+int MultiBootCheckComplete(struct MultiBootParam *mp)
+{
+    (void)mp;
+    return FALSE;
+}
+
+#else
+
 static u16 MultiBoot_required_data[MULTIBOOT_NCHILD];
 
 static int MultiBootSend(struct MultiBootParam *mp, u16 data);
@@ -469,3 +512,5 @@ static void MultiBootWaitSendDone(void)
 
     MultiBootWaitCycles(600);
 }
+
+#endif // PORTABLE

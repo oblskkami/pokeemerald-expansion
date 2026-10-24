@@ -1,7 +1,11 @@
 #ifndef GUARD_GBA_FLASH_INTERNAL_H
 #define GUARD_GBA_FLASH_INTERNAL_H
 
+#ifdef PORTABLE
+extern u8 FLASH_BASE[131072];
+#else
 #define FLASH_BASE ((u8 *)0xE000000)
+#endif
 
 #define FLASH_WRITE(addr, data) ((*(vu8 *)(FLASH_BASE + (addr))) = (data))
 
@@ -59,6 +63,9 @@ extern u8 gFlashTimeoutFlag;
 extern const struct FlashSetupInfo MX29L010;
 extern const struct FlashSetupInfo LE26FV10N1TS;
 extern const struct FlashSetupInfo DefaultFlash;
+#ifdef PORTABLE
+extern const struct FlashSetupInfo gPortableFlash;
+#endif
 
 void SwitchFlashBank(u8 bankNum);
 u16 ReadFlashId(void);
@@ -73,5 +80,13 @@ u16 EraseFlashChip_MX(void);
 u16 EraseFlashSector_MX(u16 sectorNum);
 u16 ProgramFlashByte_MX(u16 sectorNum, u32 offset, u8 data);
 u16 ProgramFlashSector_MX(u16 sectorNum, u8 *src);
+
+#ifdef PORTABLE
+u16 WaitForFlashWrite_Portable(u8 phase, u8 *addr, u8 lastData);
+u16 EraseFlashChip_Portable(void);
+u16 EraseFlashSector_Portable(u16 sectorNum);
+u16 ProgramFlashByte_Portable(u16 sectorNum, u32 offset, u8 data);
+u16 ProgramFlashSector_Portable(u16 sectorNum, u8 *src);
+#endif
 
 #endif // GUARD_GBA_FLASH_INTERNAL_H

@@ -11,7 +11,16 @@
 #define RESET_REGS       0x80
 #define RESET_ALL        0xFF
 
-void SoftReset(u32 resetFlags);
+struct BitUnPackArgs
+{
+    u16 compressedSize;
+    u8 compressedBits;
+    u8 decompressedBits;
+    u32 dataOffset:31;
+    u32 offsetZeros:1;
+};
+
+void SoftReset(u32 resetFlags) __attribute__((noreturn));
 
 void RegisterRamReset(u32 resetFlags);
 
@@ -27,7 +36,7 @@ u16 ArcTan2(s16 x, s16 y);
 
 void CpuSet(const void *src, void *dest, u32 control);
 
-#if MODERN
+#if MODERN && !defined(PORTABLE)
 // NOTE: Assumes 16-bit CpuSets unless control is a constant and has
 // CPU_SET_32BIT set.
 #define CpuSet(src, dest, control) \
@@ -43,7 +52,7 @@ void CpuSet(const void *src, void *dest, u32 control);
 
 void CpuFastSet(const void *src, void *dest, u32 control);
 
-#if MODERN
+#if MODERN && !defined(PORTABLE)
 #define CpuFastSet(src, dest, control) \
     do \
     { \
@@ -64,6 +73,8 @@ void LZ77UnCompVram(const u32 *src, void *dest);
 void RLUnCompWram(const u32 *src, void *dest);
 
 void RLUnCompVram(const u32 *src, void *dest);
+
+void BitUnPack(const void *src, void *dest, const struct BitUnPackArgs *args);
 
 int MultiBoot(struct MultiBootParam *mp);
 

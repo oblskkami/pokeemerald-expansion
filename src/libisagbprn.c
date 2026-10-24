@@ -163,7 +163,11 @@ void AGBAssert(const char *pFile, int nLine, const char *pExpression, int nStopP
     {
         AGBPrintf("ASSERTION FAILED  FILE=[%s] LINE=[%d]  EXP=[%s] \n", pFile, nLine, pExpression);
         AGBPrintFlush();
+#ifdef PORTABLE
+        __builtin_trap();
+#else
         asm(".hword 0xEFFF");
+#endif
     }
     else
     {
@@ -200,7 +204,11 @@ void NoCashGBAAssert(const char *pFile, s32 nLine, const char *pExpression, bool
     if (nStopProgram)
     {
         NoCashGBAPrintf("ASSERTION FAILED  FILE=[%s] LINE=[%d]  EXP=[%s]", pFile, nLine, pExpression);
+#ifdef PORTABLE
+        __builtin_trap();
+#else
         asm(".hword 0xEFFF");
+#endif
     }
     else
     {
@@ -215,13 +223,19 @@ void NoCashGBAAssert(const char *pFile, s32 nLine, const char *pExpression, bool
 
 bool32 MgbaOpen(void)
 {
+#ifdef PORTABLE
+    return FALSE;
+#else
     *REG_DEBUG_ENABLE = 0xC0DE;
     return *REG_DEBUG_ENABLE == 0x1DEA;
+#endif
 }
 
 void MgbaClose(void)
 {
+#ifndef PORTABLE
     *REG_DEBUG_ENABLE = 0;
+#endif
 }
 
 void MgbaPrintf(s32 level, const char *ptr, ...)
@@ -230,6 +244,13 @@ void MgbaPrintf(s32 level, const char *ptr, ...)
 
     level &= 0x7;
     va_start(args, ptr);
+#ifdef PORTABLE
+    {
+        char buffer[MGBA_REG_DEBUG_MAX];
+        vsnprintf(buffer, sizeof(buffer), ptr, args);
+        fprintf(stderr, "[mgba:%d] %s\n", level, buffer);
+    }
+#else
     #if (PRETTY_PRINT_HANDLER == PRETTY_PRINT_MINI_PRINTF)
     mini_vsnprintf(REG_DEBUG_STRING, MGBA_REG_DEBUG_MAX, ptr, args);
     #elif (PRETTY_PRINT_HANDLER == PRETTY_PRINT_LIBC)
@@ -237,8 +258,9 @@ void MgbaPrintf(s32 level, const char *ptr, ...)
     #else
     #error "unspecified pretty printing handler."
     #endif
-    va_end(args);
     *REG_DEBUG_FLAGS = level | 0x100;
+#endif
+    va_end(args);
 }
 
 void MgbaAssert(const char *pFile, s32 nLine, const char *pExpression, bool32 nStopProgram)
@@ -246,7 +268,11 @@ void MgbaAssert(const char *pFile, s32 nLine, const char *pExpression, bool32 nS
     if (nStopProgram)
     {
         MgbaPrintf(MGBA_LOG_ERROR, "ASSERTION FAILED  FILE=[%s] LINE=[%d]  EXP=[%s]", pFile, nLine, pExpression);
+#ifdef PORTABLE
+        __builtin_trap();
+#else
         asm(".hword 0xEFFF");
+#endif
     }
     else
     {

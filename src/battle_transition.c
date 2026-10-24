@@ -29,7 +29,7 @@
 
 #define PALTAG_UNUSED_MUGSHOT 0x100A
 
-#define B_TRANS_DMA_FLAGS (1 | ((DMA_SRC_INC | DMA_DEST_FIXED | DMA_REPEAT | DMA_16BIT | DMA_START_HBLANK | DMA_ENABLE) << 16))
+#define B_TRANS_DMA_FLAGS (1 | ((u32)(DMA_SRC_INC | DMA_DEST_FIXED | DMA_REPEAT | DMA_16BIT | DMA_START_HBLANK | DMA_ENABLE) << 16))
 
 // Used by each transition task to determine which of its functions to call
 #define tState          data[0]
@@ -96,6 +96,8 @@ static bool8 Transition_StartMain(struct Task *);
 static bool8 Transition_WaitForMain(struct Task *);
 
 static void LaunchBattleTransitionTask(u8);
+static void DestroyTransitionTask(TaskFunc);
+static void FreeTransitionData(void);
 static void Task_BattleTransition(u8);
 static void Task_Intro(u8);
 static void Task_Blur(u8);
@@ -293,6 +295,12 @@ static u8 sTestingTransitionState;
 static struct RectangularSpiralLine sRectangularSpiralLines[4];
 
 EWRAM_DATA static struct TransitionData *sTransitionData = NULL;
+
+// Host presentation callbacks run independently of transition tasks.  A
+// final callback can arrive after the task has published its state as done;
+// make every callback harmless during that handoff.
+#define RETURN_IF_NO_TRANSITION_DATA() \
+    do { if (sTransitionData == NULL) return; } while (0)
 
 static const u32 sBigPokeball_Tileset[] = INCGFX_U32("graphics/battle_transitions/big_pokeball.png", ".4bpp");
 static const u32 sPokeballTrail_Tileset[] = INCGFX_U32("graphics/battle_transitions/pokeball_trail.png", ".4bpp");
@@ -1012,6 +1020,37 @@ void BattleTransition_Start(u8 transitionId)
     LaunchBattleTransitionTask(transitionId);
 }
 
+static void DestroyTransitionTask(TaskFunc func)
+{
+    u8 taskId = FindTaskIdByFunc(func);
+
+    if (taskId != TASK_NONE)
+        DestroyTask(taskId);
+}
+
+static void FreeTransitionData(void)
+{
+    struct TransitionData *data = sTransitionData;
+
+    // Publish the null state before releasing the allocation. A host VBlank
+    // callback that is already queued can then bail out instead of observing
+    // a dangling non-null pointer between Free() and pointer clearing.
+    sTransitionData = NULL;
+    // Completed transition callbacks can still be running on the host
+    // presentation path after the game thread has observed completion. Keep
+    // the allocation retired and never recycle it while the process is
+    // running; TransitionData is tiny, and this is safer than freeing memory
+    // that an in-flight VBlank callback may still read.
+#ifdef PORTABLE
+    // Deliberately retain the completed allocation. See the comment above:
+    // an in-flight presentation callback may still hold this pointer.
+    (void)data;
+#else
+    if (data != NULL)
+        Free(data);
+#endif
+}
+
 // main task that launches sub-tasks for phase1 and phase2
 #define tTransitionId   data[1]
 #define tTransitionDone data[15]
@@ -1019,10 +1058,31 @@ void BattleTransition_Start(u8 transitionId)
 bool8 IsBattleTransitionDone(void)
 {
     u8 taskId = FindTaskIdByFunc(Task_BattleTransition);
+
+    // A transition task can disappear while the host render thread is
+    // finishing its last frame. Treat the missing task as completed instead
+    // of indexing gTasks with TASK_NONE (0xFF).
+    if (taskId == TASK_NONE)
+    {
+#ifdef PORTABLE
+        SetVBlankCallback(NULL);
+        SetHBlankCallback(NULL);
+#endif
+        FreeTransitionData();
+        return TRUE;
+    }
+
     if (gTasks[taskId].tTransitionDone)
     {
+#ifdef PORTABLE
+        // The host presents frames on a separate SDL thread. Clear both
+        // scanline callbacks before releasing the transition state so a
+        // final VBlank cannot dereference the freed sTransitionData.
+        SetVBlankCallback(NULL);
+        SetHBlankCallback(NULL);
+#endif
         DestroyTask(taskId);
-        FREE_AND_SET_NULL(sTransitionData);
+        FreeTransitionData();
         return TRUE;
     }
     else
@@ -1033,9 +1093,20 @@ bool8 IsBattleTransitionDone(void)
 
 static void LaunchBattleTransitionTask(u8 transitionId)
 {
-    u8 taskId = CreateTask(Task_BattleTransition, 2);
-    gTasks[taskId].tTransitionId = transitionId;
+    u8 taskId;
+
+    if (GetTaskCount() >= NUM_TASKS)
+        return;
+
+    taskId = CreateTask(Task_BattleTransition, 2);
     sTransitionData = AllocZeroed(sizeof(*sTransitionData));
+    if (sTransitionData == NULL)
+    {
+        DestroyTask(taskId);
+        return;
+    }
+
+    gTasks[taskId].tTransitionId = transitionId;
 }
 
 static void Task_BattleTransition(u8 taskId)
@@ -1052,6 +1123,12 @@ static bool8 Transition_StartIntro(struct Task *task)
     CpuCopy32(gPlttBufferFaded, gPlttBufferUnfaded, PLTT_SIZE);
     if (sTasks_Intro[task->tTransitionId] != NULL)
     {
+        if (GetTaskCount() >= NUM_TASKS)
+        {
+            task->tState = 2;
+            return TRUE;
+        }
+
         CreateTask(sTasks_Intro[task->tTransitionId], 4);
         task->tState++;
         return FALSE;
@@ -1078,6 +1155,12 @@ static bool8 Transition_WaitForIntro(struct Task *task)
 
 static bool8 Transition_StartMain(struct Task *task)
 {
+    if (GetTaskCount() >= NUM_TASKS)
+    {
+        task->tTransitionDone = TRUE;
+        return FALSE;
+    }
+
     CreateTask(sTasks_Main[task->tTransitionId], 0);
     task->tState++;
     return FALSE;
@@ -1151,8 +1234,7 @@ static bool8 Blur_End(struct Task *task)
 {
     if (!gPaletteFade.active)
     {
-        u8 taskId = FindTaskIdByFunc(Task_Blur);
-        DestroyTask(taskId);
+        DestroyTransitionTask(Task_Blur);
     }
     return FALSE;
 }
@@ -1198,8 +1280,7 @@ static bool8 Swirl_End(struct Task *task)
 
     if (!gPaletteFade.active)
     {
-        u8 taskId = FindTaskIdByFunc(Task_Swirl);
-        DestroyTask(taskId);
+        DestroyTransitionTask(Task_Swirl);
     }
 
     sTransitionData->VBlank_DMA++;
@@ -1208,6 +1289,7 @@ static bool8 Swirl_End(struct Task *task)
 
 static void VBlankCB_Swirl(void)
 {
+    RETURN_IF_NO_TRANSITION_DATA();
     VBlankCB_BattleTransition();
     if (sTransitionData->VBlank_DMA)
         DmaCopy16(3, gScanlineEffectRegBuffers[0], gScanlineEffectRegBuffers[1], DISPLAY_HEIGHT * 2);
@@ -1215,6 +1297,7 @@ static void VBlankCB_Swirl(void)
 
 static void HBlankCB_Swirl(void)
 {
+    RETURN_IF_NO_TRANSITION_DATA();
     u16 var = gScanlineEffectRegBuffers[1][REG_VCOUNT];
     REG_BG1HOFS = var;
     REG_BG2HOFS = var;
@@ -1271,7 +1354,7 @@ static bool8 Shuffle_End(struct Task *task)
     }
 
     if (!gPaletteFade.active)
-        DestroyTask(FindTaskIdByFunc(Task_Shuffle));
+        DestroyTransitionTask(Task_Shuffle);
 
     sTransitionData->VBlank_DMA++;
     return FALSE;
@@ -1279,6 +1362,7 @@ static bool8 Shuffle_End(struct Task *task)
 
 static void VBlankCB_Shuffle(void)
 {
+    RETURN_IF_NO_TRANSITION_DATA();
     VBlankCB_BattleTransition();
     if (sTransitionData->VBlank_DMA)
         DmaCopy16(3, gScanlineEffectRegBuffers[0], gScanlineEffectRegBuffers[1], DISPLAY_HEIGHT * 2);
@@ -1286,6 +1370,7 @@ static void VBlankCB_Shuffle(void)
 
 static void HBlankCB_Shuffle(void)
 {
+    RETURN_IF_NO_TRANSITION_DATA();
     u16 var = gScanlineEffectRegBuffers[1][REG_VCOUNT];
     REG_BG1VOFS = var;
     REG_BG2VOFS = var;
@@ -1581,7 +1666,7 @@ static bool8 WeatherDuo_End(struct Task *task)
     {
         DmaStop(0);
         FadeScreenBlack();
-        DestroyTask(FindTaskIdByFunc(task->func));
+        DestroyTransitionTask(task->func);
     }
     return FALSE;
 }
@@ -1690,7 +1775,7 @@ static bool8 PatternWeave_CircularMask(struct Task *task)
         SetVBlankCallback(NULL);
         DmaStop(0);
         FadeScreenBlack();
-        DestroyTask(FindTaskIdByFunc(task->func));
+        DestroyTransitionTask(task->func);
     }
     else
     {
@@ -1706,6 +1791,7 @@ static bool8 PatternWeave_CircularMask(struct Task *task)
 
 static void VBlankCB_SetWinAndBlend(void)
 {
+    RETURN_IF_NO_TRANSITION_DATA();
     DmaStop(0);
     VBlankCB_BattleTransition();
     if (sTransitionData->VBlank_DMA)
@@ -1793,14 +1879,22 @@ static bool8 PokeballsTrail_End(struct Task *task)
     if (!FieldEffectActiveListContains(FLDEFF_POKEBALL_TRAIL))
     {
         FadeScreenBlack();
-        DestroyTask(FindTaskIdByFunc(Task_PokeballsTrail));
+        DestroyTransitionTask(Task_PokeballsTrail);
     }
     return FALSE;
 }
 
 bool8 FldEff_PokeballTrail(void)
 {
-    u8 spriteId = CreateSpriteAtEnd(&sSpriteTemplate_Pokeball, gFieldEffectArguments[0], gFieldEffectArguments[1], 0);
+    u32 spriteId = CreateSpriteAtEndUnchecked(&sSpriteTemplate_Pokeball, gFieldEffectArguments[0], gFieldEffectArguments[1], 0);
+    if (spriteId >= MAX_SPRITES)
+    {
+        // FieldEffectStart marks the effect active before calling the native
+        // function.  Remove that mark when the optional transition sprite
+        // cannot be allocated, otherwise the transition waits forever.
+        FieldEffectActiveListRemove(FLDEFF_POKEBALL_TRAIL);
+        return FALSE;
+    }
     gSprites[spriteId].oam.priority = 0;
     gSprites[spriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;
     gSprites[spriteId].sSide = gFieldEffectArguments[2];
@@ -2031,12 +2125,13 @@ static bool8 ClockwiseWipe_End(struct Task *task)
 {
     DmaStop(0);
     FadeScreenBlack();
-    DestroyTask(FindTaskIdByFunc(Task_ClockwiseWipe));
+    DestroyTransitionTask(Task_ClockwiseWipe);
     return FALSE;
 }
 
 static void VBlankCB_ClockwiseWipe(void)
 {
+    RETURN_IF_NO_TRANSITION_DATA();
     DmaStop(0);
     VBlankCB_BattleTransition();
     if (sTransitionData->VBlank_DMA != 0)
@@ -2109,7 +2204,7 @@ static bool8 Ripple_Main(struct Task *task)
     }
 
     if (task->tFadeStarted && !gPaletteFade.active)
-        DestroyTask(FindTaskIdByFunc(Task_Ripple));
+        DestroyTransitionTask(Task_Ripple);
 
     sTransitionData->VBlank_DMA++;
     return FALSE;
@@ -2117,6 +2212,7 @@ static bool8 Ripple_Main(struct Task *task)
 
 static void VBlankCB_Ripple(void)
 {
+    RETURN_IF_NO_TRANSITION_DATA();
     VBlankCB_BattleTransition();
     if (sTransitionData->VBlank_DMA)
         DmaCopy16(3, gScanlineEffectRegBuffers[0], gScanlineEffectRegBuffers[1], DISPLAY_HEIGHT * 2);
@@ -2124,6 +2220,7 @@ static void VBlankCB_Ripple(void)
 
 static void HBlankCB_Ripple(void)
 {
+    RETURN_IF_NO_TRANSITION_DATA();
     u16 var = gScanlineEffectRegBuffers[1][REG_VCOUNT];
     REG_BG1VOFS = var;
     REG_BG2VOFS = var;
@@ -2202,12 +2299,13 @@ static bool8 Wave_End(struct Task *task)
 {
     DmaStop(0);
     FadeScreenBlack();
-    DestroyTask(FindTaskIdByFunc(Task_Wave));
+    DestroyTransitionTask(Task_Wave);
     return FALSE;
 }
 
 static void VBlankCB_Wave(void)
 {
+    RETURN_IF_NO_TRANSITION_DATA();
     DmaStop(0);
     VBlankCB_BattleTransition();
     if (sTransitionData->VBlank_DMA != 0)
@@ -2542,12 +2640,13 @@ static bool8 Mugshot_End(struct Task *task)
 {
     DmaStop(0);
     FadeScreenBlack();
-    DestroyTask(FindTaskIdByFunc(task->func));
+    DestroyTransitionTask(task->func);
     return FALSE;
 }
 
 static void VBlankCB_Mugshots(void)
 {
+    RETURN_IF_NO_TRANSITION_DATA();
     DmaStop(0);
     VBlankCB_BattleTransition();
     if (sTransitionData->VBlank_DMA != 0)
@@ -2561,6 +2660,7 @@ static void VBlankCB_Mugshots(void)
 
 static void VBlankCB_MugshotsFadeOut(void)
 {
+    RETURN_IF_NO_TRANSITION_DATA();
     DmaStop(0);
     VBlankCB_BattleTransition();
     if (sTransitionData->VBlank_DMA != 0)
@@ -2571,6 +2671,7 @@ static void VBlankCB_MugshotsFadeOut(void)
 
 static void HBlankCB_Mugshots(void)
 {
+    RETURN_IF_NO_TRANSITION_DATA();
     if (REG_VCOUNT < DISPLAY_HEIGHT / 2)
         REG_BG0HOFS = sTransitionData->BG0HOFS_Lower;
     else
@@ -2861,12 +2962,14 @@ static bool8 Slice_End(struct Task *task)
 {
     DmaStop(0);
     FadeScreenBlack();
-    DestroyTask(FindTaskIdByFunc(Task_Slice));
+    DestroyTransitionTask(Task_Slice);
     return FALSE;
 }
 
 static void VBlankCB_Slice(void)
 {
+    RETURN_IF_NO_TRANSITION_DATA();
+
     DmaStop(0);
     VBlankCB_BattleTransition();
     REG_WININ = sTransitionData->WININ;
@@ -2879,6 +2982,7 @@ static void VBlankCB_Slice(void)
 
 static void HBlankCB_Slice(void)
 {
+    RETURN_IF_NO_TRANSITION_DATA();
     if (REG_VCOUNT < DISPLAY_HEIGHT)
     {
         u16 var = gScanlineEffectRegBuffers[1][REG_VCOUNT];
@@ -3053,7 +3157,7 @@ static bool8 ShredSplit_End(struct Task *task)
 {
     DmaStop(0);
     FadeScreenBlack();
-    DestroyTask(FindTaskIdByFunc(Task_ShredSplit));
+    DestroyTransitionTask(Task_ShredSplit);
     return FALSE;
 }
 
@@ -3114,7 +3218,7 @@ static bool8 Blackhole_GrowEnd(struct Task *task)
     {
         DmaStop(0);
         SetVBlankCallback(NULL);
-        DestroyTask(FindTaskIdByFunc(task->func));
+        DestroyTransitionTask(task->func);
     }
     else
     {
@@ -3183,7 +3287,7 @@ static bool8 BlackholePulsate_Main(struct Task *task)
     {
         DmaStop(0);
         FadeScreenBlack();
-        DestroyTask(FindTaskIdByFunc(task->func));
+        DestroyTransitionTask(task->func);
     }
 
     index = task->tSinIndex;
@@ -3316,7 +3420,7 @@ static bool8 RectangularSpiral_End(struct Task *task)
 {
     DmaStop(0);
     FadeScreenBlack();
-    DestroyTask(FindTaskIdByFunc(task->func));
+    DestroyTransitionTask(task->func);
     return FALSE;
 }
 
@@ -3593,6 +3697,7 @@ static bool8 Rayquaza_TriRing(struct Task *task)
 
 static void VBlankCB_Rayquaza(void)
 {
+    RETURN_IF_NO_TRANSITION_DATA();
     void *dmaSrc;
 
     DmaStop(0);
@@ -3714,13 +3819,14 @@ static bool8 WhiteBarsFade_End(struct Task *task)
    if (++sTransitionData->BLDY > 16)
    {
        FadeScreenBlack();
-       DestroyTask(FindTaskIdByFunc(Task_WhiteBarsFade));
+       DestroyTransitionTask(Task_WhiteBarsFade);
    }
    return FALSE;
 }
 
 static void VBlankCB_WhiteBarsFade(void)
 {
+    RETURN_IF_NO_TRANSITION_DATA();
     DmaStop(0);
     VBlankCB_BattleTransition();
     REG_BLDCNT = sTransitionData->BLDCNT;
@@ -3734,6 +3840,7 @@ static void VBlankCB_WhiteBarsFade(void)
 
 static void VBlankCB_WhiteBarsFade_Blend(void)
 {
+    RETURN_IF_NO_TRANSITION_DATA();
     VBlankCB_BattleTransition();
     REG_BLDY = sTransitionData->BLDY;
     REG_BLDCNT = sTransitionData->BLDCNT;
@@ -3750,6 +3857,12 @@ static void HBlankCB_WhiteBarsFade(void)
 
 static void SpriteCB_WhiteBarFade(struct Sprite *sprite)
 {
+    if (sTransitionData == NULL)
+    {
+        DestroySprite(sprite);
+        return;
+    }
+
     if (sprite->sDelay)
     {
         sprite->sDelay--;
@@ -3850,7 +3963,7 @@ static bool8 GridSquares_End(struct Task *task)
     if (--task->tDelay == 0)
     {
         FadeScreenBlack();
-        DestroyTask(FindTaskIdByFunc(Task_GridSquares));
+        DestroyTransitionTask(Task_GridSquares);
     }
     return FALSE;
 }
@@ -3959,7 +4072,7 @@ static bool8 AngledWipes_TryEnd(struct Task *task)
         // End transition
         DmaStop(0);
         FadeScreenBlack();
-        DestroyTask(FindTaskIdByFunc(Task_AngledWipes));
+        DestroyTransitionTask(Task_AngledWipes);
         return FALSE;
     }
 }
@@ -3978,6 +4091,7 @@ static bool8 AngledWipes_StartNext(struct Task *task)
 
 static void VBlankCB_AngledWipes(void)
 {
+    RETURN_IF_NO_TRANSITION_DATA();
     DmaStop(0);
     VBlankCB_BattleTransition();
     if (sTransitionData->VBlank_DMA)
@@ -4009,7 +4123,12 @@ static void VBlankCB_AngledWipes(void)
 
 static void CreateIntroTask(s16 fadeToGrayDelay, s16 fadeFromGrayDelay, s16 numFades, s16 fadeToGrayIncrement, s16 fadeFromGrayIncrement)
 {
-    u8 taskId = CreateTask(Task_BattleTransition_Intro, 3);
+    u8 taskId;
+
+    if (GetTaskCount() >= NUM_TASKS)
+        return;
+
+    taskId = CreateTask(Task_BattleTransition_Intro, 3);
     gTasks[taskId].tFadeToGrayDelay = fadeToGrayDelay;
     gTasks[taskId].tFadeFromGrayDelay = fadeFromGrayDelay;
     gTasks[taskId].tNumFades = numFades;
@@ -4084,7 +4203,7 @@ static bool8 TransitionIntro_FadeFromGray(struct Task *task)
         if (--task->tNumFades == 0)
         {
             // All fades done, end intro
-            DestroyTask(FindTaskIdByFunc(Task_BattleTransition_Intro));
+            DestroyTransitionTask(Task_BattleTransition_Intro);
         }
         else
         {
@@ -4450,7 +4569,7 @@ static bool8 FrontierLogoWave_Main(struct Task *task)
     }
 
     if (task->tStartedFade && !gPaletteFade.active)
-        DestroyTask(FindTaskIdByFunc(Task_FrontierLogoWave));
+        DestroyTransitionTask(Task_FrontierLogoWave);
 
     task->tSinDecrement -= 17;
     sTransitionData->VBlank_DMA++;
@@ -4459,6 +4578,7 @@ static bool8 FrontierLogoWave_Main(struct Task *task)
 
 static void VBlankCB_FrontierLogoWave(void)
 {
+    RETURN_IF_NO_TRANSITION_DATA();
     VBlankCB_BattleTransition();
     REG_BLDCNT = sTransitionData->BLDCNT;
     REG_BLDALPHA = sTransitionData->BLDALPHA;
@@ -4469,6 +4589,7 @@ static void VBlankCB_FrontierLogoWave(void)
 
 static void HBlankCB_FrontierLogoWave(void)
 {
+    RETURN_IF_NO_TRANSITION_DATA();
     u16 var = gScanlineEffectRegBuffers[1][REG_VCOUNT];
     REG_BG0VOFS = var;
 }
@@ -4696,7 +4817,7 @@ static bool8 FrontierSquares_End(struct Task *task)
     FillBgTilemapBufferRect_Palette0(0, 1, 0, 0, 32, 32);
     CopyBgTilemapBufferToVram(0);
     BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
-    DestroyTask(FindTaskIdByFunc(task->func));
+    DestroyTransitionTask(task->func);
     return FALSE;
 }
 
@@ -4739,6 +4860,12 @@ static bool8 FrontierSquaresScroll_Init(struct Task *task)
     task->tSquareNum = 0;
 
     // Start scrolling bg in a random direction.
+    if (GetTaskCount() >= NUM_TASKS)
+    {
+        task->tState++;
+        return FALSE;
+    }
+
     taskId = CreateTask(Task_ScrollBg, 1);
     switch (Random() % 4)
     {
@@ -4808,7 +4935,7 @@ static bool8 FrontierSquaresScroll_Erase(struct Task *task)
 
     if (++task->tSquareNum >= (int)ARRAY_COUNT(sFrontierSquaresScroll_Positions))
     {
-        DestroyTask(FindTaskIdByFunc(Task_ScrollBg));
+        DestroyTransitionTask(Task_ScrollBg);
         task->tState++;
     }
 
@@ -4826,7 +4953,7 @@ static bool8 FrontierSquaresScroll_End(struct Task *task)
     CopyBgTilemapBufferToVram(0);
     BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
 
-    DestroyTask(FindTaskIdByFunc(task->func));
+    DestroyTransitionTask(task->func);
     task->tState++; // Changing value of a destroyed task
 
     return FALSE;

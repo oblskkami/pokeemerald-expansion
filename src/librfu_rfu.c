@@ -133,6 +133,15 @@ static const char str_checkMbootLL[] = "RFU-MBOOT";
 
 u16 rfu_initializeAPI(u32 *APIBuffer, u16 buffByteSize, IntrFunc *sioIntrTable_p, bool8 copyInterruptToRam)
 {
+#ifdef PORTABLE
+    // The RFU protocol is GBA hardware-only. Keep callers from installing
+    // host pointers into the hardware-oriented state machine.
+    (void)APIBuffer;
+    (void)buffByteSize;
+    (void)sioIntrTable_p;
+    (void)copyInterruptToRam;
+    return ERR_RFU_API_BUFF_ADR;
+#else
     u16 i;
     u16 buffByteSizeMax;
 
@@ -197,6 +206,7 @@ u16 rfu_initializeAPI(u32 *APIBuffer, u16 buffByteSize, IntrFunc *sioIntrTable_p
 #endif
     gRfuFixed->fastCopyPtr = (void *)gRfuFixed->fastCopyBuffer + 1;
     return 0;
+#endif
 }
 
 static void rfu_STC_clearAPIVariables(void)
@@ -303,8 +313,12 @@ static void rfu_CB_defaultCallback(u8 reqCommand, u16 reqResult)
 
 u16 rfu_waitREQComplete(void)
 {
+#ifdef PORTABLE
+    return 0;
+#else
     STWI_poll_CommandEnd();
     return gRfuStatic->reqResult;
+#endif
 }
 
 void rfu_REQ_RFUStatus(void)
@@ -326,6 +340,9 @@ u16 rfu_getRFUStatus(u8 *rfuState)
 
 void rfu_REQ_stopMode(void)
 {
+#ifdef PORTABLE
+    return;
+#else
     vu32 *timerReg;
 
     if (REG_IME == 0)
@@ -354,6 +371,7 @@ void rfu_REQ_stopMode(void)
             rfu_STC_REQ_callback(ID_STOP_MODE_REQ, 0);
         }
     }
+#endif
 }
 
 static void rfu_CB_stopMode(u8 reqCommand, u16 reqResult)
@@ -365,6 +383,9 @@ static void rfu_CB_stopMode(u8 reqCommand, u16 reqResult)
 
 u32 rfu_REQBN_softReset_and_checkID(void)
 {
+#ifdef PORTABLE
+    return ERR_ID_CHECK_IME_DISABLE;
+#else
     u32 id;
 
     if (REG_IME == 0)
@@ -374,6 +395,7 @@ u32 rfu_REQBN_softReset_and_checkID(void)
     if ((id = AgbRFU_checkID(30)) == 0)
         REG_SIOCNT = SIO_MULTI_MODE;
     return id;
+#endif
 }
 
 void rfu_REQ_reset(void)

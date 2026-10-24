@@ -1116,12 +1116,14 @@ static u8 SetUpCopyrightScreen(void)
         {
             if (gMultibootProgramStruct.gcmb_field_2 == 2)
             {
+#ifndef PORTABLE
                 // check the multiboot ROM header game code to see if we already did this
                 if (*(u32 *)(EWRAM_START + 0xAC) == COLOSSEUM_GAME_CODE)
                 {
                     CpuCopy16(&gMultiBootProgram_PokemonColosseum_Start, (void *)EWRAM_START, sizeof(gMultiBootProgram_PokemonColosseum_Start));
                     *(u32 *)(EWRAM_START + 0xAC) = COLOSSEUM_GAME_CODE;
                 }
+#endif
                 GameCubeMultiBoot_ExecuteProgram(&gMultibootProgramStruct);
             }
         }
@@ -1302,21 +1304,21 @@ static void Task_Scene1_PanUp(u8 taskId)
         s32 offset;
 
         // Slide bg 2 downward
-        offset = (gTasks[taskId].tBg2PosHi << 16) + (u16)gTasks[taskId].tBg2PosLo;
+        offset = (s32)gTasks[taskId].tBg2PosHi * 0x10000 + (u16)gTasks[taskId].tBg2PosLo;
         offset -= 0x6000;
         gTasks[taskId].tBg2PosHi = offset >> 16;
         gTasks[taskId].tBg2PosLo = offset;
         SetGpuReg(REG_OFFSET_BG2VOFS, gTasks[taskId].tBg2PosHi);
 
         // Slide bg 1 downward
-        offset = (gTasks[taskId].tBg1PosHi << 16) + (u16)gTasks[taskId].tBg1PosLo;
+        offset = (s32)gTasks[taskId].tBg1PosHi * 0x10000 + (u16)gTasks[taskId].tBg1PosLo;
         offset -= 0x8000;
         gTasks[taskId].tBg1PosHi = offset >> 16;
         gTasks[taskId].tBg1PosLo = offset;
         SetGpuReg(REG_OFFSET_BG1VOFS, gTasks[taskId].tBg1PosHi);
 
         // Slide bg 3 downward
-        offset = (gTasks[taskId].tBg3PosHi << 16) + (u16)gTasks[taskId].tBg3PosLo;
+        offset = (s32)gTasks[taskId].tBg3PosHi * 0x10000 + (u16)gTasks[taskId].tBg3PosLo;
         offset -= 0xC000;
         gTasks[taskId].tBg3PosHi = offset >> 16;
         gTasks[taskId].tBg3PosLo = offset;

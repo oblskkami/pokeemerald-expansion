@@ -909,6 +909,9 @@ static void ClampCandidateCursor(void)
 
 static void CreateNamingScreenTask(void)
 {
+    if (GetTaskCount() >= NUM_TASKS)
+        return;
+
     CreateTask(Task_NamingScreen, 2);
     SetVBlankCallback(VBlankCB_NamingScreen);
     SetMainCallback2(CB2_NamingScreen);
@@ -957,6 +960,10 @@ static void Task_NamingScreen(u8 taskId)
             else
                 SetMainCallback2(sNamingScreen->returnCallback);
             DestroyTask(taskId);
+#ifdef PORTABLE
+            // Sprite callbacks may still run during the host frame transition.
+            ResetSpriteData();
+#endif
             FreeAllWindowBuffers();
             FREE_AND_SET_NULL(sNamingScreen);
         }

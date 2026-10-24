@@ -3,15 +3,29 @@
 
 KEEP_SECTION USED static const char AgbLibFlashVersion[] = "FLASH1M_V103";
 
+#ifndef PORTABLE
 static const struct FlashSetupInfo *const sSetupInfos[] =
 {
     &MX29L010,
     &LE26FV10N1TS,
     &DefaultFlash
 };
+#endif
 
 u16 IdentifyFlash(void)
 {
+#ifdef PORTABLE
+    const struct FlashSetupInfo *setupInfo = &gPortableFlash;
+
+    ProgramFlashByte = setupInfo->programFlashByte;
+    ProgramFlashSector = setupInfo->programFlashSector;
+    EraseFlashChip = setupInfo->eraseFlashChip;
+    EraseFlashSector = setupInfo->eraseFlashSector;
+    WaitForFlashWrite = setupInfo->WaitForFlashWrite;
+    gFlashMaxTime = setupInfo->maxTime;
+    gFlash = &setupInfo->type;
+    return 0;
+#else
     u16 result;
     u16 flashId;
     const struct FlashSetupInfo *const *setupInfo;
@@ -46,6 +60,7 @@ u16 IdentifyFlash(void)
     gFlash = &(*setupInfo)->type;
 
     return result;
+#endif
 }
 
 u16 WaitForFlashWrite_Common(u8 phase, u8 *addr, u8 lastData)

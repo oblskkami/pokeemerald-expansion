@@ -155,9 +155,9 @@ void PreprocAsmFile(std::string filename, bool isStdin, bool doEnum, bool doSize
     }
 }
 
-void PreprocCFile(const char * filename, bool isStdin, const char * graphicsRoot)
+void PreprocCFile(const char * filename, bool isStdin, const char * graphicsRoot, bool hostOutput)
 {
-    CFile cFile(filename, isStdin, graphicsRoot);
+    CFile cFile(filename, isStdin, graphicsRoot, hostOutput);
     cFile.Preproc();
 }
 
@@ -184,7 +184,7 @@ const char* GetFileExtension(const char* filename)
 
 static void UsageAndExit(const char *program)
 {
-    std::fprintf(stderr, "Usage: %s [-i] [-e] [-g PATH] [-s] SRC_FILE CHARMAP_FILE\nwhere -i denotes if input is from stdin\n      -e enables enum handling\n      -g specifies the root for INCGFX\n      -s enables '.size' handling\n", program);
+    std::fprintf(stderr, "Usage: %s [-i] [-e] [-H] [-g PATH] [-s] SRC_FILE CHARMAP_FILE\nwhere -i denotes if input is from stdin\n      -e enables enum handling\n      -H emits host-compatible compound strings\n      -g specifies the root for INCGFX\n      -s enables '.size' handling\n", program);
     std::exit(EXIT_FAILURE);
 }
 
@@ -197,9 +197,10 @@ int main(int argc, char **argv)
     bool doEnum = false;
     const char *graphicsRoot = "";
     bool doSize = false;
+    bool hostOutput = false;
 
-    /* preproc [-i] [-e] [-s] SRC_FILE CHARMAP_FILE */
-    while ((opt = getopt(argc, argv, "ieg:s")) != -1)
+    /* preproc [-i] [-e] [-H] [-s] SRC_FILE CHARMAP_FILE */
+    while ((opt = getopt(argc, argv, "ieg:Hs")) != -1)
     {
         switch (opt)
         {
@@ -211,6 +212,9 @@ int main(int argc, char **argv)
             break;
         case 's':
             doSize = true;
+            break;
+        case 'H':
+            hostOutput = true;
             break;
         case 'g':
             graphicsRoot = optarg;
@@ -247,7 +251,7 @@ int main(int argc, char **argv)
     {
         if (doEnum)
             FATAL_ERROR("-e is invalid for C sources\n");
-        PreprocCFile(source, isStdin, graphicsRoot);
+        PreprocCFile(source, isStdin, graphicsRoot, hostOutput);
     }
     else
     {

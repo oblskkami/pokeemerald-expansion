@@ -9,6 +9,9 @@
 #include "task.h"
 #include "constants/field_weather.h"
 #include "constants/rgb.h"
+#ifdef PORTABLE
+#include "platform.h"
+#endif
 
 enum
 {
@@ -46,6 +49,15 @@ static const u8 sRoundedDownGrayscaleMap[] = {
 
 void LoadPalette(const void *src, u32 offset, u32 size)
 {
+#ifdef PORTABLE
+    // GBA 上读到未映射地址只是拿到总线垃圾；宿主会直接崩溃，
+    // 遇到野指针时按全黑调色板处理，保证不闪退。
+    if (src != NULL && !HostMemoryIsReadable(src, size))
+    {
+        FillPalette(0, offset, size);
+        return;
+    }
+#endif
     CpuCopy16(src, &gPlttBufferUnfaded[offset], size);
     CpuCopy16(src, &gPlttBufferFaded[offset], size);
 }
@@ -53,6 +65,13 @@ void LoadPalette(const void *src, u32 offset, u32 size)
 // Drop in replacement for LoadPalette, uses CpuFastCopy, size must be 0 % 32
 void LoadPaletteFast(const void *src, u32 offset, u32 size)
 {
+#ifdef PORTABLE
+    if (src != NULL && !HostMemoryIsReadable(src, size))
+    {
+        FillPalette(0, offset, size);
+        return;
+    }
+#endif
     if ((u32)src & 3) // In case palette is not 4 byte aligned
         return LoadPalette(src, offset, size);
     CpuFastCopy(src, &gPlttBufferUnfaded[offset], size);

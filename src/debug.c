@@ -1920,9 +1920,22 @@ static u8 *ConvertQ22_10ToDecimalString(u8 *string, u32 q22_10, u32 decimalDigit
 void CheckROMSize(struct ScriptContext *ctx)
 {
     extern u8 __rom_end[];
+#ifdef PORTABLE
+    const u32 romCapacity = ROM_END - ROM_START;
+    const uintptr_t romEnd = (uintptr_t)__rom_end;
+    u32 currROMSizeB;
+
+    if (romEnd <= ROM_START)
+        currROMSizeB = 0;
+    else if (romEnd >= ROM_END)
+        currROMSizeB = romCapacity;
+    else
+        currROMSizeB = romEnd - ROM_START;
+#else
     u32 currROMSizeB = __rom_end - (const u8 *)ROM_START;
+#endif
     u32 currROMSizeKB = (currROMSizeB + 1023) / 1024;
-    u32 currROMFreeKB = ((const u8 *)ROM_END - __rom_end) / 1024;
+    u32 currROMFreeKB = ((ROM_END - ROM_START) - currROMSizeB) / 1024;
     ConvertQ22_10ToDecimalString(gStringVar1, currROMSizeKB, 2, ROUND_CEILING);
     ConvertQ22_10ToDecimalString(gStringVar2, currROMFreeKB, 2, ROUND_FLOOR);
 }

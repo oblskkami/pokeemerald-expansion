@@ -46,6 +46,9 @@
 #include "constants/pokemon_icon.h"
 #include "chooseboxmon.h"
 #include "party_menu.h"
+#ifdef PORTABLE
+#include "platform.h"
+#endif
 
 /*
     NOTE: This file is large. Some general groups of functions have
@@ -1925,6 +1928,10 @@ static void ChooseBoxMenu_PrintInfo(void)
 
 static void SpriteCB_ChooseBoxArrow(struct Sprite *sprite)
 {
+    // 退出箱子时 sStorage 已被释放，而精灵回调还会再跑几帧；
+    // GBA 上读 0x0000 区只是拿到 BIOS 垃圾，宿主上会直接崩溃。
+    if (sStorage == NULL)
+        return;
     if (++sprite->data[1] > 3)
     {
         sprite->data[1] = 0;
@@ -1985,6 +1992,12 @@ static void EnterPokeStorage(u8 boxOption)
     {
         sStorage->boxOption = boxOption;
         sStorage->isReopening = FALSE;
+        // 显式初始化展示位：宿主堆是复用的，未初始化字段可能残留野指针
+        sStorage->displayMonPalette = NULL;
+        sStorage->displayMonSpecies = SPECIES_NONE;
+#ifdef PORTABLE
+        HostLogf("sStorage=%p alloc=%s", (void *)sStorage, "init");
+#endif
         sMovingItemId = ITEM_NONE;
         sStorage->state = 0;
         sStorage->taskId = CreateTask(Task_InitPokeStorage, 3);
@@ -1999,7 +2012,8 @@ static void CB2_ReturnToPokeStorage(void)
     sStorage = Alloc(sizeof(*sStorage));
     if (sStorage == NULL)
     {
-        if (sStorage->boxOption == OPTION_SELECT_MON)
+        // 这里 sStorage 就是 NULL，只能用保存的选项；原代码解引用会崩。
+        if (sCurrentBoxOption == OPTION_SELECT_MON)
             SetMainCallback2(CB2_ReturnToFieldContinueScript);
         else
             SetMainCallback2(CB2_ExitPokeStorage);
@@ -2007,6 +2021,11 @@ static void CB2_ReturnToPokeStorage(void)
     else
     {
         sStorage->boxOption = sCurrentBoxOption;
+        sStorage->displayMonPalette = NULL;
+        sStorage->displayMonSpecies = SPECIES_NONE;
+#ifdef PORTABLE
+        HostLogf("sStorage=%p alloc=%s", (void *)sStorage, "reopen");
+#endif
         sStorage->isReopening = TRUE;
         sStorage->state = 0;
         sStorage->taskId = CreateTask(Task_InitPokeStorage, 3);
@@ -2129,6 +2148,11 @@ static void Task_InitPokeStorage(u8 taskId)
         }
         break;
     case 6:
+        // 首次进入时 displayMon* 字段还没被设置过（displayMonPalette 为 NULL、
+        // displayMonNameText 等文本缓冲区没有 EOS），CreateDisplayMonSprite /
+        // PrintDisplayMonInfo 会读到非法指针。先按“没有宝可梦”状态初始化一次。
+        if (!sStorage->isReopening)
+            SetDisplayMonData(NULL, MODE_MOVE);
         InitPalettesAndSprites();
         break;
     case 7:
@@ -3940,6 +3964,10 @@ static u8 IsDisplayMosaicActive(void)
 
 static void SpriteCB_DisplayMonMosaic(struct Sprite *sprite)
 {
+    // 退出箱子时 sStorage 已被释放，而精灵回调还会再跑几帧；
+    // GBA 上读 0x0000 区只是拿到 BIOS 垃圾，宿主上会直接崩溃。
+    if (sStorage == NULL)
+        return;
     sprite->data[0] -= sprite->data[1];
     if (sprite->data[0] < 0)
         sprite->data[0] = 0;
@@ -3957,9 +3985,21 @@ static void CreateDisplayMonSprite(void)
     u16 tileStart;
     u8 palSlot;
     u8 spriteId;
+    const u16 *displayPal = sStorage->displayMonPalette;
     struct SpriteSheet sheet = {sStorage->tileBuffer, MON_PIC_SIZE, GFXTAG_DISPLAY_MON};
-    struct SpritePalette palette = {sStorage->displayMonPalette, PALTAG_DISPLAY_MON};
+    struct SpritePalette palette = {displayPal, PALTAG_DISPLAY_MON};
     struct SpriteTemplate template = sSpriteTemplate_DisplayMon;
+
+#ifdef PORTABLE
+    // 没有要展示的宝可梦（或指针被宿主堆复用污染）时用灰色调色板占位。
+    if (displayPal == NULL || !HostMemoryIsReadable(displayPal, PLTT_SIZE_4BPP))
+    {
+        HostLogf("displayMonPalette unusable src=%p species=%d mode=%s",
+                 (const void *)displayPal, sStorage->displayMonSpecies,
+                 sStorage->isReopening ? "reopen" : "init");
+        palette.data = sPkmnDataGray_Pal;
+    }
+#endif
 
     for (i = 0; i < MON_PIC_SIZE; i++)
         sStorage->tileBuffer[i] = 0;
@@ -4454,7 +4494,8 @@ static void CreateMovingMonIcon(void)
     bool32 isEgg = GetMonData(&sStorage->movingMon, MON_DATA_IS_EGG);
 
     sStorage->movingMonSprite = CreateMonIconSprite(species, personality, 0, 0, priority, 7, isEgg);
-    sStorage->movingMonSprite->callback = SpriteCB_HeldMon;
+    if (sStorage->movingMonSprite != NULL)
+        sStorage->movingMonSprite->callback = SpriteCB_HeldMon;
 }
 
 static bool32 ShouldBoxmonSpriteBeTransparent(u32 boxId, u32 boxPosition)
@@ -4543,6 +4584,10 @@ static void StartBoxMonIconsScrollOut(s16 speed)
 
 static void SpriteCB_BoxMonIconScrollIn(struct Sprite *sprite)
 {
+    // 退出箱子时 sStorage 已被释放，而精灵回调还会再跑几帧；
+    // GBA 上读 0x0000 区只是拿到 BIOS 垃圾，宿主上会直接崩溃。
+    if (sStorage == NULL)
+        return;
     if (sprite->sDistance != 0)
     {
         // Icon moving
@@ -4560,6 +4605,10 @@ static void SpriteCB_BoxMonIconScrollIn(struct Sprite *sprite)
 
 static void SpriteCB_BoxMonIconScrollOut(struct Sprite *sprite)
 {
+    // 退出箱子时 sStorage 已被释放，而精灵回调还会再跑几帧；
+    // GBA 上读 0x0000 区只是拿到 BIOS 垃圾，宿主上会直接崩溃。
+    if (sStorage == NULL)
+        return;
     if (sprite->sDelay != 0)
     {
         sprite->sDelay--;
@@ -4878,6 +4927,10 @@ static void MovePartySpriteToNextSlot(struct Sprite *sprite, u16 partyId)
 
 static void SpriteCB_MovePartyMonToNextSlot(struct Sprite *sprite)
 {
+    // 退出箱子时 sStorage 已被释放，而精灵回调还会再跑几帧；
+    // GBA 上读 0x0000 区只是拿到 BIOS 垃圾，宿主上会直接崩溃。
+    if (sStorage == NULL)
+        return;
     if (sprite->sMoveSteps != 0)
     {
         s16 x = sprite->sMonX += sprite->sSpeedX;
@@ -5126,11 +5179,18 @@ static bool8 ResetReleaseMonSpritePtr(void)
 
 static void SetMovingMonPriority(u8 priority)
 {
-    sStorage->movingMonSprite->oam.priority = priority;
+    // 还没拿起宝可梦时 movingMonSprite 是 NULL。GBA 上这里会往 BIOS 区
+    // (地址 5) 写一字节，被硬件直接丢弃所以从没暴露；宿主上就是空指针崩溃。
+    if (sStorage->movingMonSprite != NULL)
+        sStorage->movingMonSprite->oam.priority = priority;
 }
 
 static void SpriteCB_HeldMon(struct Sprite *sprite)
 {
+    // 退出箱子时 sStorage 已被释放，而精灵回调还会再跑几帧；
+    // GBA 上读 0x0000 区只是拿到 BIOS 垃圾，宿主上会直接崩溃。
+    if (sStorage == NULL || sStorage->cursorSprite == NULL)
+        return;
     sprite->x = sStorage->cursorSprite->x;
     sprite->y = sStorage->cursorSprite->y + sStorage->cursorSprite->y2 + 4;
 }
@@ -5657,6 +5717,10 @@ static void CycleBoxTitleSprites(void)
 
 static void SpriteCB_IncomingBoxTitle(struct Sprite *sprite)
 {
+    // 退出箱子时 sStorage 已被释放，而精灵回调还会再跑几帧；
+    // GBA 上读 0x0000 区只是拿到 BIOS 垃圾，宿主上会直接崩溃。
+    if (sStorage == NULL)
+        return;
     if (sprite->sIncomingDelay != 0)
         sprite->sIncomingDelay--;
     else if ((sprite->x += sprite->sSpeed) == sprite->sIncomingX)
@@ -5665,6 +5729,10 @@ static void SpriteCB_IncomingBoxTitle(struct Sprite *sprite)
 
 static void SpriteCB_OutgoingBoxTitle(struct Sprite *sprite)
 {
+    // 退出箱子时 sStorage 已被释放，而精灵回调还会再跑几帧；
+    // GBA 上读 0x0000 区只是拿到 BIOS 垃圾，宿主上会直接崩溃。
+    if (sStorage == NULL)
+        return;
     if (sprite->sOutgoingDelay != 0)
     {
         sprite->sOutgoingDelay--;
@@ -5798,6 +5866,10 @@ static void AnimateBoxScrollArrows(bool8 animate)
 
 static void SpriteCB_Arrow(struct Sprite *sprite)
 {
+    // 退出箱子时 sStorage 已被释放，而精灵回调还会再跑几帧；
+    // GBA 上读 0x0000 区只是拿到 BIOS 垃圾，宿主上会直接崩溃。
+    if (sStorage == NULL)
+        return;
     switch (sprite->sState)
     {
     case 0:
@@ -7872,6 +7944,10 @@ static bool8 SetMenuTexts_Item(void)
 
 static void SpriteCB_CursorShadow(struct Sprite *sprite)
 {
+    // 退出箱子时 sStorage 已被释放，而精灵回调还会再跑几帧；
+    // GBA 上读 0x0000 区只是拿到 BIOS 垃圾，宿主上会直接崩溃。
+    if (sStorage == NULL || sStorage->cursorSprite == NULL)
+        return;
     sprite->x = sStorage->cursorSprite->x;
     sprite->y = sStorage->cursorSprite->y + 20;
 }
@@ -9393,6 +9469,10 @@ static void DrawItemInfoWindow(u32 x)
 
 static void SpriteCB_ItemIcon_WaitAnim(struct Sprite *sprite)
 {
+    // 退出箱子时 sStorage 已被释放，而精灵回调还会再跑几帧；
+    // GBA 上读 0x0000 区只是拿到 BIOS 垃圾，宿主上会直接崩溃。
+    if (sStorage == NULL)
+        return;
     if (sprite->affineAnimEnded)
     {
         SetItemIconActive(sprite->sItemIconId, FALSE);
@@ -9402,6 +9482,10 @@ static void SpriteCB_ItemIcon_WaitAnim(struct Sprite *sprite)
 
 static void SpriteCB_ItemIcon_ToHand(struct Sprite *sprite)
 {
+    // 退出箱子时 sStorage 已被释放，而精灵回调还会再跑几帧；
+    // GBA 上读 0x0000 区只是拿到 BIOS 垃圾，宿主上会直接崩溃。
+    if (sStorage == NULL)
+        return;
     switch (sprite->sState)
     {
     case 0:
@@ -9424,6 +9508,10 @@ static void SpriteCB_ItemIcon_ToHand(struct Sprite *sprite)
 
 static void SpriteCB_ItemIcon_SetPosToCursor(struct Sprite *sprite)
 {
+    // 退出箱子时 sStorage 已被释放，而精灵回调还会再跑几帧；
+    // GBA 上读 0x0000 区只是拿到 BIOS 垃圾，宿主上会直接崩溃。
+    if (sStorage == NULL)
+        return;
     sprite->x = sStorage->cursorSprite->x + 4;
     sprite->y = sStorage->cursorSprite->y + sStorage->cursorSprite->y2 + 8;
     sprite->oam.priority = sStorage->cursorSprite->oam.priority;
@@ -9431,6 +9519,10 @@ static void SpriteCB_ItemIcon_SetPosToCursor(struct Sprite *sprite)
 
 static void SpriteCB_ItemIcon_ToMon(struct Sprite *sprite)
 {
+    // 退出箱子时 sStorage 已被释放，而精灵回调还会再跑几帧；
+    // GBA 上读 0x0000 区只是拿到 BIOS 垃圾，宿主上会直接崩溃。
+    if (sStorage == NULL)
+        return;
     switch (sprite->sState)
     {
     case 0:
@@ -9456,6 +9548,10 @@ static void SpriteCB_ItemIcon_ToMon(struct Sprite *sprite)
 
 static void SpriteCB_ItemIcon_SwapToHand(struct Sprite *sprite)
 {
+    // 退出箱子时 sStorage 已被释放，而精灵回调还会再跑几帧；
+    // GBA 上读 0x0000 区只是拿到 BIOS 垃圾，宿主上会直接崩溃。
+    if (sStorage == NULL)
+        return;
     switch (sprite->sState)
     {
     case 0:
@@ -9483,6 +9579,10 @@ static void SpriteCB_ItemIcon_SwapToHand(struct Sprite *sprite)
 
 static void SpriteCB_ItemIcon_SwapToMon(struct Sprite *sprite)
 {
+    // 退出箱子时 sStorage 已被释放，而精灵回调还会再跑几帧；
+    // GBA 上读 0x0000 区只是拿到 BIOS 垃圾，宿主上会直接崩溃。
+    if (sStorage == NULL)
+        return;
     switch (sprite->sState)
     {
     case 0:
@@ -9510,6 +9610,10 @@ static void SpriteCB_ItemIcon_SwapToMon(struct Sprite *sprite)
 
 static void SpriteCB_ItemIcon_HideParty(struct Sprite *sprite)
 {
+    // 退出箱子时 sStorage 已被释放，而精灵回调还会再跑几帧；
+    // GBA 上读 0x0000 区只是拿到 BIOS 垃圾，宿主上会直接崩溃。
+    if (sStorage == NULL)
+        return;
     sprite->y -= 8;
     if (sprite->y + sprite->y2 < -16)
     {

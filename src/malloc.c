@@ -20,6 +20,9 @@ void PutMemBlockHeader(void *block, struct MemBlock *prev, struct MemBlock *next
     header->locationLo = 0;
     header->prev = prev;
     header->next = next;
+#ifdef PORTABLE
+    header->locationHost = NULL;
+#endif
 }
 
 void PutFirstMemBlockHeader(void *block, u32 size)
@@ -74,8 +77,16 @@ static void *AllocInternal(void *heapStart, u32 size, const char *location)
                         splitBlock->next->prev = splitBlock;
                 }
 
+#ifdef PORTABLE
+                pos->locationHost = location;
+                // 宿主堆复用会留下上一份数据的指针，未初始化的结构体字段
+                // （例如储存系统的 displayMonPalette）会变成野指针并导致崩溃。
+                // GBA 上读野地址只是读到总线垃圾，不会崩；这里按 0 填充保持一致。
+                memset(pos->data, 0, size);
+#else
                 pos->locationHi = ((uintptr_t)location) >> 14;
                 pos->locationLo = (uintptr_t)location;
+#endif
 
                 return pos->data;
             }
@@ -222,5 +233,9 @@ const char *MemBlockLocation(const struct MemBlock *block)
     if (!block->allocated)
         return NULL;
 
+#ifdef PORTABLE
+    return block->locationHost;
+#else
     return (const char *)(ROM_START | (block->locationHi << 14) | block->locationLo);
+#endif
 }

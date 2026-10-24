@@ -74,6 +74,11 @@
 #define max(a, b) ((a) >= (b) ? (a) : (b))
 
 #if MODERN
+#ifdef PORTABLE
+// MinGW's <stdlib.h> declares abs(). Pull it in before the macro below shadows the
+// name, otherwise its declaration breaks for translation units that include it later.
+#include <stdlib.h>
+#endif
 #define abs(x) (((x) < 0) ? -(x) : (x))
 #endif
 
@@ -113,13 +118,13 @@
 // each of the files that were worked on.
 #define T1_READ_8(ptr)  ((ptr)[0])
 #define T1_READ_16(ptr) ((ptr)[0] | ((ptr)[1] << 8))
-#define T1_READ_32(ptr) ((ptr)[0] | ((ptr)[1] << 8) | ((ptr)[2] << 16) | ((ptr)[3] << 24))
+#define T1_READ_32(ptr) ((u32)(ptr)[0] | ((u32)(ptr)[1] << 8) | ((u32)(ptr)[2] << 16) | ((u32)(ptr)[3] << 24))
 #define T1_READ_PTR(ptr) (u8 *) T1_READ_32(ptr)
 
 // T2_READ_8 is a duplicate to remain consistent with each group.
 #define T2_READ_8(ptr)  ((ptr)[0])
 #define T2_READ_16(ptr) ((ptr)[0] + ((ptr)[1] << 8))
-#define T2_READ_32(ptr) ((ptr)[0] + ((ptr)[1] << 8) + ((ptr)[2] << 16) + ((ptr)[3] << 24))
+#define T2_READ_32(ptr) ((u32)(ptr)[0] + ((u32)(ptr)[1] << 8) + ((u32)(ptr)[2] << 16) + ((u32)(ptr)[3] << 24))
 #define T2_READ_PTR(ptr) (void *) T2_READ_32(ptr)
 
 #define PACK(data, shift, mask)   ( ((data) << (shift)) & (mask) )
@@ -159,6 +164,20 @@
 #define READ_OTID_FROM_SAVE T1_READ_32(gSaveBlock2Ptr->playerTrainerId)
 
 // NOTE: This uses hardware timers 2 and 3; this will not work during active link connections or with the eReader
+#ifdef PORTABLE
+void Platform_CycleCountStart(void);
+u32 Platform_CycleCountEnd(void);
+
+static inline void CycleCountStart(void)
+{
+    Platform_CycleCountStart();
+}
+
+static inline u32 CycleCountEnd(void)
+{
+    return Platform_CycleCountEnd();
+}
+#else
 static inline void CycleCountStart()
 {
     REG_TM2CNT_H = 0;
@@ -181,6 +200,7 @@ static inline u32 CycleCountEnd()
     // return result
     return REG_TM2CNT_L | (REG_TM3CNT_L << 16u);
 }
+#endif
 
 struct Coords8
 {

@@ -680,6 +680,12 @@ void InitHostRfuGameData(struct RfuGameData *data, u8 activity, bool32 startedAc
 
 bool8 Rfu_GetCompatiblePlayerData(struct RfuGameData *gameData, u8 *username, u8 idx)
 {
+#ifdef PORTABLE
+    (void)idx;
+    memset(gameData, 0, RFU_GAME_NAME_LENGTH);
+    memset(username, 0, RFU_USER_NAME_LENGTH);
+    return FALSE;
+#else
     bool8 retVal;
 
     if (lman.parent_child == MODE_PARENT)
@@ -711,10 +717,17 @@ bool8 Rfu_GetCompatiblePlayerData(struct RfuGameData *gameData, u8 *username, u8
         }
     }
     return retVal;
+#endif
 }
 
 bool8 Rfu_GetWonderDistributorPlayerData(struct RfuGameData *gameData, u8 *username, u8 idx)
 {
+#ifdef PORTABLE
+    (void)idx;
+    memset(gameData, 0, RFU_GAME_NAME_LENGTH);
+    memset(username, 0, RFU_USER_NAME_LENGTH);
+    return FALSE;
+#else
     bool8 retVal = FALSE;
     if (gRfuLinkStatus->partner[idx].serialNo == RFU_SERIAL_WONDER_DISTRIBUTOR)
     {
@@ -728,6 +741,7 @@ bool8 Rfu_GetWonderDistributorPlayerData(struct RfuGameData *gameData, u8 *usern
         memset(username, 0, RFU_USER_NAME_LENGTH);
     }
     return retVal;
+#endif
 }
 
 void CopyHostRfuGameDataAndUsername(struct RfuGameData *gameData, u8 *username)

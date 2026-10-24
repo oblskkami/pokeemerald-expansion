@@ -234,6 +234,13 @@ bool8 LoadCryWaveformWindow(struct CryScreenWindow *window, u8 windowId)
         if (!sDexCryScreen)
         {
             sDexCryScreen = AllocZeroed(sizeof(*sDexCryScreen));
+            if (!sDexCryScreen)
+            {
+                // The waveform is auxiliary; let the cry page continue
+                // without it if the host heap is exhausted.
+                gDexCryScreenState = 0;
+                return TRUE;
+            }
             sCryWaveformWindowTiledata = (u8 *)GetWindowAttribute(windowId, WINDOW_TILE_DATA);
         }
 
@@ -269,6 +276,9 @@ bool8 LoadCryWaveformWindow(struct CryScreenWindow *window, u8 windowId)
 void UpdateCryWaveformWindow(u8 windowId)
 {
     u8 waveformIdx;
+
+    if (!sDexCryScreen)
+        return;
 
     DrawWaveformWindow(windowId);
     AdvancePlayhead(windowId);
@@ -324,6 +334,9 @@ void UpdateCryWaveformWindow(u8 windowId)
 
 void CryScreenPlayButton(enum Species species)
 {
+    if (!sDexCryScreen)
+        return;
+
     if (gMPlayInfo_BGM.status & MUSICPLAYER_STATUS_PAUSE && !sDexCryScreen->cryOverrideCountdown)
     {
         if (!sDexCryScreen->cryRepeatDelay)
@@ -354,11 +367,22 @@ static void BufferCryWaveformSegment(void)
     u8 i;
     s8 *baseBuffer;
     s8 *buffer;
+    u32 offset = 0;
+    u32 samples = gSoundInfo.pcmSamplesPerVBlank;
+    u32 period = gSoundInfo.pcmDmaPeriod;
+    u32 counter = gPcmDmaCounter;
+    u32 required = PCM_DMA_BUF_SIZE + ARRAY_COUNT(sDexCryScreen->cryWaveformBuffer) * 2;
 
-    if (gPcmDmaCounter < 2)
-        baseBuffer = gSoundInfo.pcmBuffer;
-    else
-        baseBuffer = gSoundInfo.pcmBuffer + (gSoundInfo.pcmDmaPeriod + 1 - gPcmDmaCounter) * gSoundInfo.pcmSamplesPerVBlank;
+    if (counter >= 2 && period != 0 && counter <= period + 1 && samples != 0
+     && samples <= PCM_DMA_BUF_SIZE)
+        offset = (period + 1 - counter) * samples;
+
+    // Keep the diagnostic waveform inside the two target PCM halves even if
+    // the audio device is paused or its DMA counters are partially reset.
+    if (offset > PCM_DMA_BUF_SIZE * 2 - required)
+        offset = 0;
+
+    baseBuffer = gSoundInfo.pcmBuffer + offset;
 
     buffer = baseBuffer + PCM_DMA_BUF_SIZE;
     for (i = 0; i < ARRAY_COUNT(sDexCryScreen->cryWaveformBuffer); i++)
@@ -454,8 +478,22 @@ bool8 LoadCryMeter(struct CryScreenWindow *window, u8 windowId)
     switch (gDexCryScreenState)
     {
     case 0:
+        if (!sDexCryScreen)
+        {
+            gDexCryScreenState++;
+            return TRUE;
+        }
         if (!sCryMeterNeedle)
             sCryMeterNeedle = AllocZeroed(sizeof(*sCryMeterNeedle));
+
+        // The meter is auxiliary UI. If its state allocation fails, allow
+        // the cry page to continue without a needle instead of dereferencing
+        // a null object on the next state.
+        if (!sCryMeterNeedle)
+        {
+            gDexCryScreenState++;
+            return TRUE;
+        }
 
         CopyToWindowPixelBuffer(windowId, sCryMeter_Gfx, 0, 0);
         LoadPalette(sCryMeter_Pal, BG_PLTT_ID(window->paletteNo), PLTT_SIZE_4BPP);
@@ -464,7 +502,13 @@ bool8 LoadCryMeter(struct CryScreenWindow *window, u8 windowId)
     case 1:
         LoadSpriteSheets(sCryMeterNeedleSpriteSheets);
         LoadSpritePalettes(sCryMeterNeedleSpritePalettes);
-        sCryMeterNeedle->spriteId = CreateSprite(&sCryMeterNeedleSpriteTemplate, 40 + window->xPos * 8, 56 + window->yPos * 8, 1);
+        sCryMeterNeedle->spriteId = CreateSpriteUnchecked(&sCryMeterNeedleSpriteTemplate, 40 + window->xPos * 8, 56 + window->yPos * 8, 1);
+        if (sCryMeterNeedle->spriteId >= MAX_SPRITES)
+        {
+            FREE_AND_SET_NULL(sCryMeterNeedle);
+            finished = TRUE;
+            break;
+        }
         sCryMeterNeedle->rotation = MIN_NEEDLE_POS;
         sCryMeterNeedle->targetRotation = MIN_NEEDLE_POS;
         sCryMeterNeedle->moveIncrement = 0;
@@ -477,8 +521,14 @@ bool8 LoadCryMeter(struct CryScreenWindow *window, u8 windowId)
 
 void FreeCryScreen(void)
 {
-    FreeSpritePaletteByTag(GetSpritePaletteTagByPaletteNum(gSprites[sCryMeterNeedle->spriteId].oam.paletteNum));
-    DestroySprite(gSprites + sCryMeterNeedle->spriteId);
+    if (sCryMeterNeedle)
+    {
+        if (sCryMeterNeedle->spriteId < MAX_SPRITES)
+        {
+            FreeSpritePaletteByTag(GetSpritePaletteTagByPaletteNum(gSprites[sCryMeterNeedle->spriteId].oam.paletteNum));
+            DestroySprite(gSprites + sCryMeterNeedle->spriteId);
+        }
+    }
     FREE_AND_SET_NULL(sDexCryScreen);
     FREE_AND_SET_NULL(sCryMeterNeedle);
 }
@@ -492,6 +542,12 @@ static void SpriteCB_CryMeterNeedle(struct Sprite *sprite)
     struct ObjAffineSrcData affine;
     struct OamMatrix matrix;
     u8 amplitude;
+
+    if (!sDexCryScreen || !sCryMeterNeedle || sCryMeterNeedle->spriteId >= MAX_SPRITES)
+    {
+        sprite->invisible = TRUE;
+        return;
+    }
 
     gSprites[sCryMeterNeedle->spriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;
     gSprites[sCryMeterNeedle->spriteId].oam.affineParam = 0;

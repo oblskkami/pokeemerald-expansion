@@ -150,7 +150,8 @@ static u16 CreatePicSprite(u16 species, bool8 isShiny, u32 personality, bool8 is
     }
     if (DecompressPic(species, personality, isFrontPic, framePics, isTrainer))
     {
-        // debug trap?
+        Free(images);
+        Free(framePics);
         return 0xFFFF;
     }
     for (j = 0; j < MAX_PIC_FRAMES; j ++)
@@ -165,7 +166,15 @@ static u16 CreatePicSprite(u16 species, bool8 isShiny, u32 personality, bool8 is
     sCreatingSpriteTemplate.affineAnims = gDummySpriteAffineAnimTable;
     sCreatingSpriteTemplate.callback = DummyPicSpriteCallback;
     LoadPicPaletteByTagOrSlot(species, isShiny, personality, paletteSlot, paletteTag, isTrainer);
-    spriteId = CreateSprite(&sCreatingSpriteTemplate, x, y, 0);
+    spriteId = CreateSpriteUnchecked(&sCreatingSpriteTemplate, x, y, 0);
+    if (spriteId >= MAX_SPRITES)
+    {
+        if (paletteTag != TAG_NONE)
+            FreeSpritePaletteByTag(sCreatingSpriteTemplate.paletteTag);
+        Free(images);
+        Free(framePics);
+        return 0xFFFF;
+    }
     if (paletteTag == TAG_NONE)
         gSprites[spriteId].oam.paletteNum = paletteSlot;
     sSpritePics[i].frames = framePics;
@@ -215,7 +224,8 @@ u16 CreateMonPicSprite_Affine(enum Species species, bool8 isShiny, u32 personali
     }
     if (DecompressPic(species, personality, flags, framePics, FALSE))
     {
-        // debug trap?
+        Free(images);
+        Free(framePics);
         return 0xFFFF;
     }
     for (j = 0; j < MAX_MON_PIC_FRAMES; j ++)
@@ -243,7 +253,15 @@ u16 CreateMonPicSprite_Affine(enum Species species, bool8 isShiny, u32 personali
     }
     sCreatingSpriteTemplate.callback = DummyPicSpriteCallback;
     LoadPicPaletteByTagOrSlot(species, isShiny, personality, paletteSlot, paletteTag, FALSE);
-    spriteId = CreateSprite(&sCreatingSpriteTemplate, x, y, 0);
+    spriteId = CreateSpriteUnchecked(&sCreatingSpriteTemplate, x, y, 0);
+    if (spriteId >= MAX_SPRITES)
+    {
+        if (paletteTag != TAG_NONE)
+            FreeSpritePaletteByTag(sCreatingSpriteTemplate.paletteTag);
+        Free(images);
+        Free(framePics);
+        return 0xFFFF;
+    }
     if (paletteTag == TAG_NONE)
         gSprites[spriteId].oam.paletteNum = paletteSlot;
     sSpritePics[i].frames = framePics;

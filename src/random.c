@@ -1,7 +1,11 @@
 #include "global.h"
 #include "random.h"
 #if MODERN
+#ifdef _WIN32
+#include <malloc.h>
+#else
 #include <alloca.h>
+#endif
 #endif
 
 // IWRAM common
@@ -39,9 +43,19 @@ static void SFC32_Seed(struct Sfc32State *state, u32 seed, u8 stream)
     }
 }
 
-/*This ASM implementation uses some shortcuts and is generally faster on the GBA.
-* It's not necessarily faster if inlined, or on other platforms.
-* In addition, it's extremely non-portable. */
+/* This ASM implementation uses some shortcuts and is generally faster on the GBA. */
+#ifdef PORTABLE
+u32 Random32(void)
+{
+    struct Sfc32State *state = &gRngValue;
+    u32 result = state->a + state->b + state->ctr;
+    state->ctr += STREAM1;
+    state->a = state->b ^ (state->b >> 9);
+    state->b = state->c * 9;
+    state->c = result + ((state->c << 21) | (state->c >> 11));
+    return result;
+}
+#else
 u32 NAKED Random32(void)
 {
     asm(".thumb\n\
@@ -69,6 +83,7 @@ u32 NAKED Random32(void)
     .ltorg"
     );
 }
+#endif
 
 u32 Random2_32(void)
 {

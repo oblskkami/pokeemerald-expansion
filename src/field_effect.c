@@ -1,3 +1,34 @@
+#ifdef PORTABLE
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+static void FlyTrace(const char *fmt, ...)
+{
+    static FILE *logFile = NULL;
+    static int enabled = -1;
+    va_list args;
+
+    // Off unless PE_TRACE is set, so a normal build never litters the game folder.
+    if (enabled < 0)
+        enabled = getenv("PE_TRACE") != NULL;
+    if (!enabled)
+        return;
+    if (logFile == NULL)
+        logFile = fopen("fly_trace.log", "a");
+    if (logFile == NULL)
+        return;
+
+    fprintf(logFile, "[fly] ");
+    va_start(args, fmt);
+    vfprintf(logFile, fmt, args);
+    va_end(args);
+    fflush(logFile);
+}
+#define FLY_TRACE(...) FlyTrace(__VA_ARGS__)
+#else
+#define FLY_TRACE(...) do {} while (0)
+#endif
+
 #include "global.h"
 #include "data.h"
 #include "decompress.h"
@@ -268,6 +299,7 @@ static u8 sActiveList[32];
 
 // External declarations
 extern u8 *gFieldEffectScriptPointers[];
+extern u8 *gFieldEffectScriptPointers_End[];
 extern const struct SpriteTemplate *const gFieldEffectObjectTemplatePointers[];
 
 static const u32 sNewGameBirch_Gfx[] = INCGFX_U32("graphics/birch_speech/birch.png", ".4bpp");
@@ -774,13 +806,20 @@ static void (*const sEscapeRopeWarpOutEffectFuncs[])(struct Task *) =
 u32 FieldEffectStart(u8 id)
 {
     u8 *script;
-    u32 val;
+    u32 val = 0;
+    uintptr_t tableStart = (uintptr_t)gFieldEffectScriptPointers;
+    uintptr_t tableEnd = (uintptr_t)gFieldEffectScriptPointers_End;
+
+    if (tableEnd <= tableStart
+     || id >= (tableEnd - tableStart) / sizeof(*gFieldEffectScriptPointers))
+        return 0;
 
     FieldEffectActiveListAdd(id);
 
     script = gFieldEffectScriptPointers[id];
 
-    while (gFieldEffectScriptFuncs[*script](&script, &val))
+    while (*script < ARRAY_COUNT(gFieldEffectScriptFuncs)
+        && gFieldEffectScriptFuncs[*script](&script, &val))
         ;
 
     return val;
@@ -1032,21 +1071,19 @@ u8 AddNewGameBirchObject(s16 x, s16 y, u8 subpriority)
 u8 CreateMonSprite_PicBox(enum Species species, s16 x, s16 y, u8 subpriority)
 {
     s32 spriteId = CreateMonPicSprite(species, FALSE, 0x8000, TRUE, x, y, 0, species);
-    PreservePaletteInWeather(IndexOfSpritePaletteTag(species) + 0x10);
     if (spriteId == 0xFFFF)
         return MAX_SPRITES;
-    else
-        return spriteId;
+    PreservePaletteInWeather(IndexOfSpritePaletteTag(species) + 0x10);
+    return spriteId;
 }
 
 u8 CreateMonSprite_FieldMove(enum Species species, bool8 isShiny, u32 personality, s16 x, s16 y, u8 subpriority)
 {
     u16 spriteId = CreateMonPicSprite(species, isShiny, personality, TRUE, x, y, 0, species);
-    PreservePaletteInWeather(gSprites[spriteId].oam.paletteNum + 0x10);
     if (spriteId == 0xFFFF)
         return MAX_SPRITES;
-    else
-        return spriteId;
+    PreservePaletteInWeather(gSprites[spriteId].oam.paletteNum + 0x10);
+    return spriteId;
 }
 
 void FreeResourcesAndDestroySprite(struct Sprite *sprite, u8 spriteId)
@@ -1482,12 +1519,14 @@ static void SpriteCB_HallOfFameMonitorFrlg(struct Sprite *sprite)
 
 void ReturnToFieldFromFlyMapSelect(void)
 {
+    FLY_TRACE("ReturnToFieldFromFlyMapSelect\n");
     SetMainCallback2(CB2_ReturnToField);
     gFieldCallback = FieldCallback_UseFly;
 }
 
 void FieldCallback_UseFly(void)
 {
+    FLY_TRACE("FieldCallback_UseFly\n");
     FadeInFromBlack();
     CreateTask(Task_UseFly, 0);
     LockPlayerFieldControls();
@@ -1503,6 +1542,7 @@ static void Task_UseFly(u8 taskId)
     struct ObjectEvent *follower = &gObjectEvents[GetFollowerNPCObjectId()];
     struct Task *task;
     task = &gTasks[taskId];
+    FLY_TRACE("Task_UseFly state=%d\n", taskState);
     if (taskState == 0)
     {
         if (!PlayerHasFollowerNPC())
@@ -1530,6 +1570,7 @@ static void Task_UseFly(u8 taskId)
             if (!IsWeatherNotFadingIn())
                 return;
 
+            FLY_TRACE("start FLDEFF_USE_FLY mon=%d\n", GetCursorSelectionMonId());
             gFieldEffectArguments[0] = GetCursorSelectionMonId();
             if ((int)gFieldEffectArguments[0] > PARTY_SIZE - 1)
                 gFieldEffectArguments[0] = 0;
@@ -1539,8 +1580,11 @@ static void Task_UseFly(u8 taskId)
         }
         if (!FieldEffectActiveListContains(FLDEFF_USE_FLY))
         {
+            FLY_TRACE("FLDEFF_USE_FLY done, warping\n");
             Overworld_ResetStateAfterFly();
+            FLY_TRACE("state reset after fly\n");
             WarpIntoMap();
+            FLY_TRACE("warped\n");
             SetMainCallback2(CB2_LoadMap);
             gFieldCallback = FieldCallback_FlyIntoMap;
             DestroyTask(taskId);
@@ -1552,6 +1596,7 @@ static void Task_UseFly(u8 taskId)
 
 static void FieldCallback_FlyIntoMap(void)
 {
+    FLY_TRACE("FieldCallback_FlyIntoMap\n");
     Overworld_PlaySpecialMapMusic();
     FadeInFromBlack();
     CreateTask(Task_FlyIntoMap, 0);
@@ -3084,20 +3129,34 @@ static void FieldMoveShowMonOutdoorsEffect_RestoreBg(struct Task *task)
 static void FieldMoveShowMonOutdoorsEffect_End(struct Task *task)
 {
     IntrCallback callback;
+    u8 taskId;
+
     LoadWordFromTwoHalfwords((u16 *)&task->data[13], (u32 *)&callback);
-    SetVBlankCallback(callback);
+    // Do not let a host render frame fetch this task while its sprite/state is
+    // being released. Restore the previous callback only after destruction.
+    SetVBlankCallback(NULL);
     InitTextBoxGfxAndPrinters();
     FreeResourcesAndDestroySprite(&gSprites[task->tMonSpriteId], task->tMonSpriteId);
     FieldEffectActiveListRemove(FLDEFF_FIELD_MOVE_SHOW_MON);
-    DestroyTask(FindTaskIdByFunc(Task_FieldMoveShowMonOutdoors));
+    taskId = FindTaskIdByFunc(Task_FieldMoveShowMonOutdoors);
+    if (taskId != TASK_NONE)
+        DestroyTask(taskId);
+    SetVBlankCallback(callback);
 }
 
 static void VBlankCB_FieldMoveShowMonOutdoors(void)
 {
     IntrCallback callback;
-    struct Task *task = &gTasks[FindTaskIdByFunc(Task_FieldMoveShowMonOutdoors)];
+    u8 taskId = FindTaskIdByFunc(Task_FieldMoveShowMonOutdoors);
+    struct Task *task;
+
+    if (taskId == TASK_NONE)
+        return;
+
+    task = &gTasks[taskId];
     LoadWordFromTwoHalfwords((u16 *)&task->data[13], (u32 *)&callback);
-    callback();
+    if (callback != NULL)
+        callback();
     SetGpuReg(REG_OFFSET_WIN0H, task->tWinHoriz);
     SetGpuReg(REG_OFFSET_WIN0V, task->tWinVert);
     SetGpuReg(REG_OFFSET_WININ, task->tWinIn);
@@ -3210,24 +3269,34 @@ static void FieldMoveShowMonIndoorsEffect_SlideBannerOff(struct Task *task)
 static void FieldMoveShowMonIndoorsEffect_End(struct Task *task)
 {
     IntrCallback intrCallback;
+    u8 taskId;
     u16 bg0cnt;
     bg0cnt = (REG_BG0CNT >> 8) << 11;
     CpuFill32(0, (void *)VRAM + bg0cnt, 0x800);
     LoadWordFromTwoHalfwords((u16 *)&task->data[13], (u32 *)&intrCallback);
-    SetVBlankCallback(intrCallback);
+    SetVBlankCallback(NULL);
     InitTextBoxGfxAndPrinters();
     FreeResourcesAndDestroySprite(&gSprites[task->tMonSpriteId], task->tMonSpriteId);
     FieldEffectActiveListRemove(FLDEFF_FIELD_MOVE_SHOW_MON);
-    DestroyTask(FindTaskIdByFunc(Task_FieldMoveShowMonIndoors));
+    taskId = FindTaskIdByFunc(Task_FieldMoveShowMonIndoors);
+    if (taskId != TASK_NONE)
+        DestroyTask(taskId);
+    SetVBlankCallback(intrCallback);
 }
 
 static void VBlankCB_FieldMoveShowMonIndoors(void)
 {
     IntrCallback intrCallback;
+    u8 taskId = FindTaskIdByFunc(Task_FieldMoveShowMonIndoors);
     struct Task *task;
-    task = &gTasks[FindTaskIdByFunc(Task_FieldMoveShowMonIndoors)];
+
+    if (taskId == TASK_NONE)
+        return;
+
+    task = &gTasks[taskId];
     LoadWordFromTwoHalfwords((u16 *)&task->data[13], (u32 *)&intrCallback);
-    intrCallback();
+    if (intrCallback != NULL)
+        intrCallback();
     SetGpuReg(REG_OFFSET_BG0HOFS, task->tBgHoriz);
     SetGpuReg(REG_OFFSET_BG0VOFS, task->tBgVert);
 }

@@ -48,8 +48,13 @@ struct WaveData
 
 #define TONEDATA_TYPE_CGB    0x07
 #define TONEDATA_TYPE_FIX    0x08
+#define TONEDATA_TYPE_REV    0x10
+#define TONEDATA_TYPE_CMP    0x20
 #define TONEDATA_TYPE_SPL    0x40 // key split
 #define TONEDATA_TYPE_RHY    0x80 // rhythm
+
+// SoundInfo.status contains the target WaveData flags byte in its high byte.
+#define WAVE_DATA_FLAG_LOOP  (0xC0 << 8)
 
 #define TONEDATA_P_S_PAN    0xc0
 #define TONEDATA_P_S_PAM    TONEDATA_P_S_PAN
@@ -69,6 +74,7 @@ struct ToneData
 
 #define SOUND_CHANNEL_SF_START       0x80
 #define SOUND_CHANNEL_SF_STOP        0x40
+#define SOUND_CHANNEL_SF_SPECIAL     0x20
 #define SOUND_CHANNEL_SF_LOOP        0x10
 #define SOUND_CHANNEL_SF_IEC         0x04
 #define SOUND_CHANNEL_SF_ENV         0x03
@@ -394,6 +400,7 @@ extern struct CgbChannel gCgbChans[];
 extern const u8 gScaleTable[];
 extern const u32 gFreqTable[];
 extern const u16 gPcmSamplesPerVBlankTable[];
+extern const u8 gClockTable[];
 
 extern const u8 gCgbScaleTable[];
 extern const s16 gCgbFreqTable[];
@@ -403,15 +410,25 @@ extern const struct PokemonCrySong gPokemonCrySongTemplate;
 
 extern const struct ToneData voicegroup_dummy;
 
+#ifndef PORTABLE
 extern char gNumMusicPlayers[];
 extern char gMaxLines[];
 
 #define NUM_MUSIC_PLAYERS ((u16)gNumMusicPlayers)
 #define MAX_LINES ((u32)gMaxLines)
+#else
+#define NUM_MUSIC_PLAYERS 4
+#define MAX_LINES 0
+#endif
 
 u32 umul3232H32(u32 multiplier, u32 multiplicand);
+u32 MidiKeyToFreq(struct WaveData *wav, u8 key, u8 fineAdjust);
 void SoundMain(void);
+#ifdef PORTABLE
+void SoundMainBTM(void *addr);
+#else
 void SoundMainBTM(void);
+#endif
 void TrackStop(struct MusicPlayerInfo *mplayInfo, struct MusicPlayerTrack *track);
 void MPlayMain(struct MusicPlayerInfo *);
 void RealClearChain(void *x);
@@ -437,6 +454,15 @@ void MPlayJumpTableCopy(MPlayFunc *mplayJumpTable);
 void SampleFreqSet(u32 freq);
 void m4aSoundVSyncOn(void);
 void m4aSoundVSyncOff(void);
+
+#ifdef PORTABLE
+// Renders only target-layout DirectSound channels into SoundInfo.pcmBuffer.
+// CGB channels and host audio-device queueing are intentionally outside this
+// sidecar's contract. The routing step applies SOUNDCNT_H to the two FIFO
+// halves before CGB audio is mixed into the output halves.
+void HostMixDirectSound(struct SoundInfo *soundInfo);
+void HostApplyDirectSoundRouting(struct SoundInfo *soundInfo);
+#endif
 
 void m4aMPlayTempoControl(struct MusicPlayerInfo *mplayInfo, u16 tempo);
 void m4aMPlayVolumeControl(struct MusicPlayerInfo *mplayInfo, u16 trackBits, u16 volume);

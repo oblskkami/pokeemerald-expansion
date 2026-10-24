@@ -25,6 +25,9 @@
 #include "trainer_hill.h"
 #include "test_runner.h"
 #include "constants/rgb.h"
+#ifdef PORTABLE
+#include "platform.h"
+#endif
 
 static void VBlankIntr(void);
 static void HBlankIntr(void);
@@ -32,9 +35,12 @@ static void VCountIntr(void);
 static void SerialIntr(void);
 static void IntrDummy(void);
 
+#ifndef PORTABLE
 // Defined in the linker script so that the test build can override it.
 extern void gInitialMainCB2(void);
+#endif
 extern void CB2_FlashNotDetectedScreen(void);
+extern void CB2_InitCopyrightScreenAfterBootup(void);
 
 const enum GameVersion gGameVersion = GAME_VERSION;
 
@@ -73,6 +79,9 @@ COMMON_DATA s8 gPcmDmaCounter = 0;
 COMMON_DATA void *gAgbMainLoop_sp = NULL;
 
 static EWRAM_DATA u16 sTrainerId = 0;
+#ifdef PORTABLE
+static u64 sTrainerIdTimerStart;
+#endif
 
 //EWRAM_DATA void (**gFlashTimerIntrFunc)(void) = NULL;
 
@@ -100,7 +109,9 @@ void AgbMain(void)
     InitIntrHandlers();
     m4aSoundInit();
     EnableVCountIntrAtLine150();
+#ifndef PORTABLE
     InitRFU();
+#endif
     RtcInit();
     CheckForFlashMemory();
     InitMainCallbacks();
@@ -135,14 +146,20 @@ void AgbMainLoop(void)
 {
     for (;;)
     {
+#if defined(PLATFORM_SDL2)
+        if (Platform_IsQuitRequested())
+            break;
+#endif
         ReadKeys();
 
         if (gSoftResetDisabled == FALSE
          && JOY_HELD_RAW(A_BUTTON)
          && JOY_HELD_RAW(B_START_SELECT) == B_START_SELECT)
         {
+#ifndef PORTABLE
             rfu_REQ_stopMode();
             rfu_waitREQComplete();
+#endif
             DoSoftReset();
         }
 
@@ -185,7 +202,11 @@ static void InitMainCallbacks(void)
     gTrainerHillVBlankCounter = NULL;
     gMain.vblankCounter2 = 0;
     gMain.callback1 = NULL;
+#ifdef PORTABLE
+    SetMainCallback2(CB2_InitCopyrightScreenAfterBootup);
+#else
     SetMainCallback2(gInitialMainCB2);
+#endif
     gSaveBlock2Ptr = &gSaveblock2.block;
     gPokemonStoragePtr = &gPokemonStorage.block;
 }
@@ -207,16 +228,25 @@ void SetMainCallback2(MainCallback callback)
 
 void StartTimer1(void)
 {
-
     REG_TM2CNT_L = 0;
     REG_TM2CNT_H = TIMER_ENABLE | TIMER_COUNTUP;
     REG_TM1CNT_H = TIMER_ENABLE;
+#ifdef PORTABLE
+    REG_TM1CNT_L = 0;
+    sTrainerIdTimerStart = Platform_GetGbaCycleCount();
+#endif
 }
 
 void SeedRngAndSetTrainerId(void)
 {
     u32 val;
 
+#ifdef PORTABLE
+    u32 cycles = (u32)(Platform_GetGbaCycleCount() - sTrainerIdTimerStart);
+
+    REG_TM1CNT_L = cycles;
+    REG_TM2CNT_L = cycles >> 16;
+#endif
     REG_TM1CNT_H = 0;
     REG_TM2CNT_H = 0;
     val = ((u32)REG_TM2CNT_L) << 16;
@@ -268,7 +298,11 @@ void InitKeys(void)
 
 static void ReadKeys(void)
 {
+#ifdef PORTABLE
+    u16 keyInput = Platform_GetKeyInput();
+#else
     u16 keyInput = REG_KEYINPUT ^ KEYS_MASK;
+#endif
     gMain.newKeysRaw = keyInput & ~gMain.heldKeysRaw;
     gMain.newKeys = gMain.newKeysRaw;
     gMain.newAndRepeatedKeys = gMain.newKeysRaw;
@@ -421,6 +455,12 @@ static void IntrDummy(void)
 
 static void WaitForVBlank(void)
 {
+#ifdef PORTABLE
+    // The host frame thread signals VBlank through the SDL semaphore. The
+    // GBA wireless path below waits on an interrupt flag that does not exist
+    // on the host and can spin forever during the opening-to-field transition.
+    VBlankIntrWait();
+#else
     gMain.intrCheck &= ~INTR_FLAG_VBLANK;
 
     if (gWirelessCommType != 0)
@@ -434,6 +474,7 @@ static void WaitForVBlank(void)
     {
         VBlankIntrWait();
     }
+#endif
 }
 
 void SetTrainerHillVBlankCounter(u32 *counter)

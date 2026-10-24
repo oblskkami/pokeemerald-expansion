@@ -1,5 +1,8 @@
 #include "gba/gba.h"
 #include "gba/flash_internal.h"
+#ifdef PORTABLE
+#include "platform.h"
+#endif
 
 static u8 sTimerNum;
 static u16 sTimerCount;
@@ -21,10 +24,14 @@ void SetReadFlash1(u16 *dest);
 
 void SwitchFlashBank(u8 bankNum)
 {
+#ifdef PORTABLE
+    (void)bankNum;
+#else
     FLASH_WRITE(0x5555, 0xAA);
     FLASH_WRITE(0x2AAA, 0x55);
     FLASH_WRITE(0x5555, 0xB0);
     FLASH_WRITE(0x0000, bankNum);
+#endif
 }
 
 #define DELAY()                  \
@@ -138,6 +145,9 @@ void ReadFlash_Core(vu8 *src, u8 *dest, u32 size)
 
 void ReadFlash(u16 sectorNum, u32 offset, u8 *dest, u32 size)
 {
+#ifdef PORTABLE
+    Platform_ReadFlash(sectorNum, offset, dest, size);
+#else
     u8 *src;
     u16 i;
     vu16 readFlash_Core_Buffer[0x40];
@@ -170,6 +180,7 @@ void ReadFlash(u16 sectorNum, u32 offset, u8 *dest, u32 size)
     src = FLASH_BASE + (sectorNum << gFlash->sector.shift) + offset;
 
     readFlash_Core(src, dest, size);
+#endif
 }
 
 u32 VerifyFlashSector_Core(u8 *src, u8 *tgt, u32 size)
@@ -185,6 +196,10 @@ u32 VerifyFlashSector_Core(u8 *src, u8 *tgt, u32 size)
 
 u32 VerifyFlashSector(u16 sectorNum, u8 *src)
 {
+#ifdef PORTABLE
+    u8 *target = FLASH_BASE + (sectorNum << gFlash->sector.shift);
+    return VerifyFlashSector_Core(src, target, gFlash->sector.size);
+#else
     u16 i;
     vu16 verifyFlashSector_Core_Buffer[0x80];
     vu16 *funcSrc;
@@ -219,10 +234,15 @@ u32 VerifyFlashSector(u16 sectorNum, u8 *src)
     size = gFlash->sector.size;
 
     return verifyFlashSector_Core(src, tgt, size);
+#endif
 }
 
 u32 VerifyFlashSectorNBytes(u16 sectorNum, u8 *src, u32 n)
 {
+#ifdef PORTABLE
+    u8 *target = FLASH_BASE + (sectorNum << gFlash->sector.shift);
+    return VerifyFlashSector_Core(src, target, n);
+#else
     u16 i;
     vu16 verifyFlashSector_Core_Buffer[0x80];
     vu16 *funcSrc;
@@ -255,6 +275,7 @@ u32 VerifyFlashSectorNBytes(u16 sectorNum, u8 *src, u32 n)
     tgt = FLASH_BASE + (sectorNum << gFlash->sector.shift);
 
     return verifyFlashSector_Core(src, tgt, n);
+#endif
 }
 
 u32 ProgramFlashSectorAndVerify(u16 sectorNum, u8 *src)

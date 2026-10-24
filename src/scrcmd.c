@@ -127,11 +127,19 @@ bool8 ScrCmd_end(struct ScriptContext *ctx)
 
 bool8 ScrCmd_gotonative(struct ScriptContext *ctx)
 {
-    bool8 (*addr)(void) = (bool8 (*)(void))ScriptReadWord(ctx);
+    uintptr_t rawAddress = ScriptReadWord(ctx);
+    bool8 (*addr)(void) = (bool8 (*)(void))rawAddress;
 
     Script_RequestEffects(SCREFF_V1);
     Script_CheckEffectInstrumentedGotoNative(addr);
 
+    if (!Script_IsValidNativeAddress(rawAddress))
+    {
+        StopScript(ctx);
+        return FALSE;
+    }
+
+    addr = Script_DecodeEffectFunction(bool8 (*)(void), addr);
     SetupNativeScript(ctx, addr);
     return TRUE;
 }
@@ -143,7 +151,14 @@ bool8 ScrCmd_special(struct ScriptContext *ctx)
     Script_RequestEffects(SCREFF_V1);
     Script_CheckEffectInstrumentedSpecial(index);
 
-    gSpecials[index]();
+    if (!Script_IsValidSpecialIndex(index)
+     || !Script_IsValidNativeAddress((uintptr_t)gSpecials[index]))
+    {
+        StopScript(ctx);
+        return FALSE;
+    }
+
+    Script_DecodeEffectFunction(SpecialFunc, gSpecials[index])();
     return FALSE;
 }
 
@@ -157,7 +172,14 @@ bool8 ScrCmd_specialvar(struct ScriptContext *ctx)
     Script_RequestWriteVar(varId);
     Script_CheckEffectInstrumentedSpecial(index);
 
-    *ptr = gSpecials[index]();
+    if (!Script_IsValidSpecialIndex(index)
+     || !Script_IsValidNativeAddress((uintptr_t)gSpecials[index]))
+    {
+        StopScript(ctx);
+        return FALSE;
+    }
+
+    *ptr = Script_DecodeEffectFunction(SpecialFunc, gSpecials[index])();
     return FALSE;
 }
 
@@ -168,8 +190,14 @@ bool8 ScrCmd_callnative(struct ScriptContext *ctx)
     Script_RequestEffects(SCREFF_V1);
     Script_CheckEffectInstrumentedCallNative(func);
 
+    if (!Script_IsValidNativeAddress((uintptr_t)func))
+    {
+        StopScript(ctx);
+        return FALSE;
+    }
+
     ctx->waitAfterCallNative = FALSE;
-    func(ctx);
+    Script_DecodeEffectFunction(NativeFunc, func)(ctx);
     return ctx->waitAfterCallNative;
 }
 

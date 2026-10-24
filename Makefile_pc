@@ -1,0 +1,511 @@
+SHELL := /bin/bash
+.SHELLFLAGS := -o pipefail -c
+
+WINDOWS ?= 0
+WINDOWS_PREFIX ?= i686-w64-mingw32-
+WINDOWS_SYSROOT ?= /usr/i686-w64-mingw32
+WINDOWS_SDL_DIR ?= $(WINDOWS_SYSROOT)
+
+ifeq ($(WINDOWS),1)
+DEFAULT_NATIVE_BUILD_DIR := build/windows/native
+else ifneq ($(filter 1,$(SANITIZE) $(HOST_SANITIZE)),)
+DEFAULT_NATIVE_BUILD_DIR := build/native-san
+else
+DEFAULT_NATIVE_BUILD_DIR := build/native
+endif
+NATIVE_BUILD_DIR ?= $(DEFAULT_NATIVE_BUILD_DIR)
+HOST_AUDIT_BUILD_DIR ?= $(NATIVE_BUILD_DIR)/full
+HOST_OBJECT_BUILD_DIR ?= $(NATIVE_BUILD_DIR)/objects
+HOST_DATA_BUILD_DIR ?= $(NATIVE_BUILD_DIR)/data
+HOST_SONG_BUILD_DIR ?= $(NATIVE_BUILD_DIR)/songs
+HOST_LINK_BUILD_DIR ?= $(NATIVE_BUILD_DIR)/link
+ifeq ($(WINDOWS),1)
+HOST_CC := $(WINDOWS_PREFIX)gcc
+HOST_CPP := $(WINDOWS_PREFIX)cpp
+HOST_AS := $(WINDOWS_PREFIX)as
+HOST_LD := $(WINDOWS_PREFIX)ld
+HOST_OBJCOPY := $(WINDOWS_PREFIX)objcopy
+HOST_NM := $(WINDOWS_PREFIX)nm
+HOST_EXECUTABLE ?= build/windows/pokeemerald.exe
+SDL_CFLAGS ?= -I$(WINDOWS_SDL_DIR)/include -I$(WINDOWS_SDL_DIR)/include/SDL2 -DSDL_MAIN_HANDLED
+SDL_LIBS ?= -L$(WINDOWS_SDL_DIR)/lib -lSDL2
+WINDOWS_SDL_DLL ?= $(WINDOWS_SDL_DIR)/bin/SDL2.dll
+HOST_ASM_FIXUP ?= $(HOST_OBJCOPY) --prefix-symbol _
+HOST_REL_LDFLAGS ?= -r
+HOST_EXECUTABLE_LDFLAGS := -m32 -mconsole -static-libgcc -Wl,--gc-sections
+HOST_MAIN_SYMBOL := _main
+else
+HOST_CC ?= gcc
+HOST_OBJCOPY ?= objcopy
+HOST_NM ?= nm
+HOST_EXECUTABLE ?= $(NATIVE_BUILD_DIR)/pokeemerald-host
+# Debian/Ubuntu split SDL_config.h into a multiarch directory: the wrapper
+# /usr/include/SDL2/SDL_config.h includes "SDL2/_real_SDL_config.h", which only
+# resolves when the multiarch include root is on the search path.
+SDL_REAL_CONFIG := $(firstword $(wildcard /usr/include/*-linux-gnu/SDL2/_real_SDL_config.h))
+SDL_CFLAGS := $(shell pkg-config --cflags sdl2) $(if $(SDL_REAL_CONFIG),-I$(patsubst %/SDL2/_real_SDL_config.h,%,$(SDL_REAL_CONFIG)),)
+SDL_LIBS := $(shell pkg-config --libs sdl2)
+HOST_ASM_FIXUP ?= cp
+HOST_REL_LDFLAGS ?= -m elf_i386 -r
+HOST_EXECUTABLE_LDFLAGS := -m32 -no-pie -Wl,--gc-sections
+HOST_MAIN_SYMBOL := main
+endif
+
+# The Expansion source contains game-text and INCGFX directives that cannot be
+# passed directly to a host compiler.  Keep the audit on the same preprocessing
+# path as the ARM build, then ask the host compiler only for an object file.
+HOST_CPP ?= cpp
+HOST_AS ?= as
+HOST_LD ?= ld
+FIND ?= find
+HOST_PREPROC ?= tools/preproc/preproc
+HOST_MID ?= tools/mid2agb/mid2agb
+HOST_PREPROC_TOOL_SRCS := $(wildcard tools/preproc/*.cpp tools/preproc/*.h)
+HOST_MID_TOOL_SRCS := $(wildcard tools/mid2agb/*.cpp tools/mid2agb/*.h)
+HOST_PREPROC_FLAGS := -H
+HOST_CPPFLAGS := -m32 -iquote include $(SDL_CFLAGS) -Wno-trigraphs \
+	-DPORTABLE -DPLATFORM_SDL2 -DRENDERER_EASY_DRAW -DMODERN=1 -DTESTING=0 -DEMERALD -std=gnu17
+HOST_CFLAGS := -m32 -std=gnu17 -fno-pie -Wall -Wextra \
+	-Wno-error=ignored-qualifiers -Wno-error=sign-compare -Wno-error=type-limits \
+	-Wno-error=unused-variable -Wno-error=unused-const-variable \
+	-Wno-error=unused-parameter -Wno-error=unused-function \
+	-Wno-error=unused-but-set-parameter -Wno-error=unused-but-set-variable \
+	-Wno-error=unused-value -Wno-error=unused-local-typedefs \
+	-Wno-error=deprecated-declarations -Wno-error=address-of-packed-member \
+	-Wno-error=implicit-fallthrough
+ifeq ($(WINDOWS),1)
+# Match the GBA/SysV allocation of C bitfields. MinGW's MS-compatible default
+# changes several save/battle structs and trips their size assertions. MinGW
+# also aligns 64-bit fields to 8 bytes by default; the GBA ABI aligns them to
+# four bytes, so keep the portable layout identical to the ARM build.
+HOST_CFLAGS += -mno-ms-bitfields -mno-align-double
+endif
+
+HOST_C_SRCS := $(shell find src -type f -name '*.c' ! -name '*.inc.c' -print | sort)
+HOST_C_OBJS := $(patsubst %.c,$(HOST_AUDIT_BUILD_DIR)/%.o,$(HOST_C_SRCS))
+HOST_OBJECTS := $(patsubst %.c,$(HOST_OBJECT_BUILD_DIR)/%.o,$(HOST_C_SRCS))
+ifeq ($(WINDOWS),1)
+# PE/COFF has a 16-bit section-count field.  The full Expansion object graph
+# exceeds that limit when every function and datum gets its own section, so
+# use the compiler's normal section layout for the Windows aggregate.  Linux
+# keeps fine-grained sections for --gc-sections and the smaller audit binary.
+HOST_OBJECT_CFLAGS := $(HOST_CFLAGS)
+else
+HOST_OBJECT_CFLAGS := $(HOST_CFLAGS) -ffunction-sections -fdata-sections
+endif
+ifeq ($(HOST_SANITIZE),1)
+HOST_OBJECT_CFLAGS += -g -fno-omit-frame-pointer -fsanitize=address,undefined
+HOST_EXECUTABLE_LDFLAGS += -fsanitize=address,undefined
+endif
+HOST_AS_CPPFLAGS := -I include -DPORTABLE -DMODERN=1 -DTESTING=0 -DEMERALD
+# ARM GAS treats these macro-only names as local constants.  i386 GAS would
+# otherwise emit relocations for them, so define the same values only in the
+# host assembler invocation.
+HOST_ASFLAGS := --32 --defsym MODERN=1 --defsym PORTABLE=1 --defsym UBFIX=1 \
+	--defsym STR_VAR_1=0 --defsym STR_VAR_2=1 --defsym STR_VAR_3=2 \
+	--defsym ANIM_BATTLER=0
+HOST_ASM_CONV := sed -E 's/@.*$$//; s/(^|[[:space:]])\.(word|4byte)([[:space:]])/\1.long\3/g; s/(^|[[:space:]])\.2byte([[:space:]])/\1.short\2/g; s/(^|[[:space:]])\.align([[:space:]]+)/\1.p2align\2/g'
+# Data sources contain GAS macro-local names such as \@. Preserve those while
+# removing only actual comments; the song sources do not need this distinction.
+HOST_DATA_ASM_CONV := sed -E 's/^@[^"]*$$//; s/([[:space:]])@.*$$/\1/; s/(^|[[:space:]])\.(word|4byte)([[:space:]])/\1.long\3/g; s/(^|[[:space:]])\.2byte([[:space:]])/\1.short\2/g; s/(^|[[:space:]])\.align([[:space:]]+)/\1.p2align\2/g'
+ifeq ($(WINDOWS),1)
+# PE/COFF GAS does not implement ELF .size metadata emitted by Expansion
+# data macros. It is non-semantic for the host and is removed before assembly.
+HOST_ASM_CONV := sed -E 's/@.*$$//; s/[[:space:]]*\.(size|type|ident|syntax|thumb_func(_start|_end)?|arm_func(_start|_end)?|thumb|arm)[^;]*;?//g; s/\.section[[:space:]]+([^,[:space:]]+),[^;]*$$/.section \1/; s/(^|[[:space:]])\.(word|4byte)([[:space:]])/\1.long\3/g; s/(^|[[:space:]])\.2byte([[:space:]])/\1.short\2/g; s/(^|[[:space:]])\.align([[:space:]]+)/\1.p2align\2/g'
+HOST_DATA_ASM_CONV := sed -E 's/^@.*$$//; s/([[:space:]])@.*$$/\1/; s/[[:space:]]*\.(size|type|ident|syntax|thumb_func(_start|_end)?|arm_func(_start|_end)?|thumb|arm)[^;]*;?//g; s/\.section[[:space:]]+([^,[:space:]]+),[^;]*$$/.section \1/; s/(^|[[:space:]])\.(word|4byte)([[:space:]])/\1.long\3/g; s/(^|[[:space:]])\.2byte([[:space:]])/\1.short\2/g; s/(^|[[:space:]])\.align([[:space:]]+)/\1.p2align\2/g'
+endif
+HOST_DATA_SRCS := $(shell find data -maxdepth 1 -type f -name '*.s' -print | sort)
+HOST_DATA_OBJS := $(patsubst %.s,$(HOST_DATA_BUILD_DIR)/%.o,$(HOST_DATA_SRCS))
+HOST_MID_SUBDIR := sound/songs/midi
+HOST_MID_CFG_PATH := $(HOST_MID_SUBDIR)/midi.cfg
+HOST_MID_SRCS := $(wildcard $(HOST_MID_SUBDIR)/*.mid)
+HOST_SONG_ASMS := $(patsubst $(HOST_MID_SUBDIR)/%.mid,$(HOST_SONG_BUILD_DIR)/%.s,$(HOST_MID_SRCS))
+HOST_SONG_OBJS := $(HOST_SONG_ASMS:.s=.o)
+HOST_MPLAYDEF := $(HOST_SONG_BUILD_DIR)/MPlayDef.s
+HOST_LINK_SHIM := test/native/host_link_shim.c
+HOST_LINK_SHIM_OBJ := $(NATIVE_BUILD_DIR)/host_link_shim.o
+HOST_LINK_AUDIT_OBJ := $(HOST_LINK_BUILD_DIR)/all.o
+HOST_LINK_UNRESOLVED := $(HOST_LINK_BUILD_DIR)/unresolved.txt
+HOST_LINK_GAME_UNRESOLVED := $(HOST_LINK_BUILD_DIR)/game-unresolved.txt
+HOST_SCRIPT_LINK_BUILD_DIR ?= $(NATIVE_BUILD_DIR)/script
+HOST_SCRIPT_LINK_OBJ := $(HOST_SCRIPT_LINK_BUILD_DIR)/all.o
+
+NATIVE_CPPFLAGS := -iquote include $(SDL_CFLAGS) \
+    -DPORTABLE -DPLATFORM_SDL2 -DRENDERER_EASY_DRAW -DMODERN=1
+NATIVE_CFLAGS := -m32 -std=gnu17 -fno-pie -Wall -Wextra -Werror
+ifeq ($(WINDOWS),1)
+NATIVE_CFLAGS += -mno-ms-bitfields -mno-align-double
+endif
+NATIVE_LDFLAGS := -m32 -no-pie
+
+ifeq ($(SANITIZE),1)
+NATIVE_CFLAGS += -fsanitize=address,undefined
+NATIVE_LDFLAGS += -fsanitize=address,undefined
+endif
+
+NATIVE_HARDWARE_SRCS := \
+    src/platform/bios.c \
+    src/platform/dma.c \
+    src/platform/gcn_multiboot.c
+NATIVE_RENDERER_SRCS := src/platform/gba_easy_draw.c
+NATIVE_SDL_SRCS := src/platform/sdl2.c
+NATIVE_FLASH_SRCS := src/platform/flash.c
+
+HARDWARE_SMOKE_SRCS := $(NATIVE_HARDWARE_SRCS) src/multiboot.c test/native/hardware_smoke.c
+HARDWARE_SMOKE_OBJS := $(addprefix $(NATIVE_BUILD_DIR)/,$(HARDWARE_SMOKE_SRCS:.c=.o))
+HARDWARE_SMOKE := $(NATIVE_BUILD_DIR)/hardware-smoke
+
+RENDERER_SMOKE_SRCS := $(NATIVE_HARDWARE_SRCS) $(NATIVE_RENDERER_SRCS) test/native/renderer_smoke.c
+RENDERER_SMOKE_OBJS := $(addprefix $(NATIVE_BUILD_DIR)/,$(RENDERER_SMOKE_SRCS:.c=.o))
+RENDERER_SMOKE := $(NATIVE_BUILD_DIR)/renderer-smoke
+
+SDL_SMOKE_SRCS := $(NATIVE_HARDWARE_SRCS) src/gpu_regs.c $(NATIVE_RENDERER_SRCS) \
+    $(NATIVE_SDL_SRCS) test/native/sdl_smoke.c
+SDL_SMOKE_FONT_OBJS := $(HOST_OBJECT_BUILD_DIR)/src/fonts.o
+SDL_SMOKE_OBJS := $(addprefix $(NATIVE_BUILD_DIR)/,$(SDL_SMOKE_SRCS:.c=.o)) \
+    $(SDL_SMOKE_FONT_OBJS)
+SDL_SMOKE := $(NATIVE_BUILD_DIR)/sdl-smoke
+
+FLASH_SMOKE_SRCS := src/platform/bios.c $(NATIVE_FLASH_SRCS) test/native/flash_smoke.c
+FLASH_SMOKE_OBJS := $(addprefix $(NATIVE_BUILD_DIR)/,$(FLASH_SMOKE_SRCS:.c=.o))
+FLASH_SMOKE := $(NATIVE_BUILD_DIR)/flash-smoke
+
+RANDOM_SMOKE_SRCS := src/random.c test/native/random_smoke.c
+RANDOM_SMOKE_OBJS := $(addprefix $(NATIVE_BUILD_DIR)/,$(RANDOM_SMOKE_SRCS:.c=.o))
+RANDOM_SMOKE := $(NATIVE_BUILD_DIR)/random-smoke
+
+DECOMPRESS_SMOKE_SRCS := src/platform/bios.c src/decompress.c test/native/decompress_smoke.c
+DECOMPRESS_SMOKE_OBJS := $(addprefix $(NATIVE_BUILD_DIR)/,$(DECOMPRESS_SMOKE_SRCS:.c=.o))
+DECOMPRESS_SMOKE := $(NATIVE_BUILD_DIR)/decompress-smoke
+
+RTC_SMOKE_SRCS := src/platform/rtc.c src/siirtc.c test/native/rtc_smoke.c
+RTC_SMOKE_OBJS := $(addprefix $(NATIVE_BUILD_DIR)/,$(RTC_SMOKE_SRCS:.c=.o))
+RTC_SMOKE := $(NATIVE_BUILD_DIR)/rtc-smoke
+
+M4A_SMOKE_SRCS := src/platform/bios.c src/m4a.c src/platform/m4a_host.c \
+    src/platform/cgb_audio.c test/native/m4a_smoke.c
+M4A_SMOKE_OBJS := $(addprefix $(NATIVE_BUILD_DIR)/,$(M4A_SMOKE_SRCS:.c=.o))
+M4A_SMOKE := $(NATIVE_BUILD_DIR)/m4a-smoke
+
+CGB_AUDIO_SMOKE_SRCS := src/platform/bios.c src/m4a.c src/platform/cgb_audio.c test/native/cgb_audio_smoke.c
+CGB_AUDIO_SMOKE_OBJS := $(addprefix $(NATIVE_BUILD_DIR)/,$(CGB_AUDIO_SMOKE_SRCS:.c=.o))
+CGB_AUDIO_SMOKE := $(NATIVE_BUILD_DIR)/cgb-audio-smoke
+
+MALLOC_SMOKE_SRCS := src/malloc.c test/native/malloc_smoke.c
+MALLOC_SMOKE_OBJS := $(addprefix $(NATIVE_BUILD_DIR)/,$(MALLOC_SMOKE_SRCS:.c=.o))
+MALLOC_SMOKE := $(NATIVE_BUILD_DIR)/malloc-smoke
+
+TEXT_MASK_SMOKE_SRCS := test/native/text_mask_smoke.c
+TEXT_MASK_SMOKE_OBJS := $(addprefix $(NATIVE_BUILD_DIR)/,$(TEXT_MASK_SMOKE_SRCS:.c=.o))
+TEXT_MASK_SMOKE := $(NATIVE_BUILD_DIR)/text-mask-smoke
+
+RUNTIME_SMOKE_SRCS := test/native/runtime_boundary_smoke.c
+RUNTIME_SMOKE_OBJS := $(HOST_OBJECT_BUILD_DIR)/src/link_rfu_2.o \
+	$(HOST_OBJECT_BUILD_DIR)/src/link_rfu_3.o \
+	$(addprefix $(NATIVE_BUILD_DIR)/,$(RUNTIME_SMOKE_SRCS:.c=.o))
+RUNTIME_SMOKE := $(NATIVE_BUILD_DIR)/runtime-boundary-smoke
+
+SCRIPT_SMOKE_OBJ := $(NATIVE_BUILD_DIR)/test/native/script_pointer_smoke.o
+SCRIPT_SMOKE := $(NATIVE_BUILD_DIR)/script-pointer-smoke
+
+.DEFAULT_GOAL := check
+
+.PHONY: check runtime-boundary-smoke host-script-smoke host-audit host-objects host-data host-songs host-link-audit host-executable host-executable-prepare windows-executable text-mask-smoke clean
+
+runtime-boundary-smoke: $(RUNTIME_SMOKE)
+	$(RUNTIME_SMOKE)
+
+text-mask-smoke: $(TEXT_MASK_SMOKE)
+	$(TEXT_MASK_SMOKE)
+
+host-script-smoke: $(SCRIPT_SMOKE)
+	$(SCRIPT_SMOKE)
+
+host-audit: $(HOST_C_OBJS)
+	@echo "portable host audit passed for $(words $(HOST_C_SRCS)) C translation units"
+
+host-objects:
+	@mkdir -p $(HOST_OBJECT_BUILD_DIR)
+	@$(FIND) $(HOST_OBJECT_BUILD_DIR) -type f -name '*.o' -empty -delete
+	@$(MAKE) -f $(firstword $(MAKEFILE_LIST)) $(HOST_OBJECTS)
+	@empty="$$($(FIND) $(HOST_OBJECT_BUILD_DIR) -type f -name '*.o' -empty -print -quit)" && test -z "$$empty"
+	@echo "portable host objects built for $(words $(HOST_C_SRCS)) C translation units"
+
+host-data:
+	@mkdir -p $(HOST_DATA_BUILD_DIR)
+	@$(FIND) $(HOST_DATA_BUILD_DIR) -type f -name '*.o' -empty -delete
+	@$(MAKE) -f $(firstword $(MAKEFILE_LIST)) $(HOST_DATA_OBJS)
+	@empty="$$($(FIND) $(HOST_DATA_BUILD_DIR) -type f -name '*.o' -empty -print -quit)" && test -z "$$empty"
+	@echo "portable host data objects built for $(words $(HOST_DATA_SRCS)) assembly units"
+
+host-songs:
+	@mkdir -p $(HOST_SONG_BUILD_DIR)
+	@$(FIND) $(HOST_SONG_BUILD_DIR) -type f \( -name '*.o' -o -name '*.s' \) -empty -delete
+	@$(MAKE) -f $(firstword $(MAKEFILE_LIST)) $(HOST_SONG_OBJS)
+	@empty="$$($(FIND) $(HOST_SONG_BUILD_DIR) -type f -name '*.o' -empty -print -quit)" && test -z "$$empty"
+	@echo "portable host song objects built for $(words $(HOST_MID_SRCS)) MIDI sources"
+
+host-link-audit: $(HOST_LINK_AUDIT_OBJ)
+	@mkdir -p $(dir $(HOST_LINK_UNRESOLVED))
+ifeq ($(WINDOWS),1)
+	@$(HOST_NM) -u $(HOST_LINK_AUDIT_OBJ) | awk '{name=$$2; sub(/^_/, "", name); print name}' | sort -u > $(HOST_LINK_UNRESOLVED)
+	@grep -Ev '^(SDL_|__|_imp_|_bss_start__$$|_image_base__$$|_setjmp3$$|fclose$$|ferror$$|fflush$$|fopen$$|fread$$|fwrite$$|memcpy$$|memmove$$|memset$$|puts$$|remove$$|strcmp$$|strlen$$)' $(HOST_LINK_UNRESOLVED) > $(HOST_LINK_GAME_UNRESOLVED) || true
+else
+	@$(HOST_NM) -u $(HOST_LINK_AUDIT_OBJ) | awk '{print $$2}' | sort -u > $(HOST_LINK_UNRESOLVED)
+	@grep -Ev '^(SDL_|__|_setjmp$$|fclose$$|ferror$$|fflush$$|fopen$$|fprintf$$|fread$$|fwrite$$|localtime$$|longjmp$$|memcpy$$|memmove$$|memset$$|mktime$$|puts$$|remove$$|rename$$|snprintf$$|stderr$$|strcmp$$|strlen$$|time$$|vsnprintf$$)' $(HOST_LINK_UNRESOLVED) > $(HOST_LINK_GAME_UNRESOLVED) || true
+endif
+	@echo "portable host link audit wrote $(HOST_LINK_UNRESOLVED) and $(HOST_LINK_GAME_UNRESOLVED)"
+
+host-executable: host-link-audit $(HOST_EXECUTABLE) $(SCRIPT_SMOKE)
+	@test -s $(HOST_EXECUTABLE)
+	$(SCRIPT_SMOKE)
+
+host-executable-prepare:
+	@mkdir -p $(dir $(HOST_EXECUTABLE))
+	@test ! -e $(HOST_EXECUTABLE) || test -s $(HOST_EXECUTABLE) || rm -f $(HOST_EXECUTABLE)
+
+$(HOST_EXECUTABLE): $(HOST_LINK_AUDIT_OBJ) | host-executable-prepare
+	@mkdir -p $(dir $@)
+	@rm -f $@.tmp
+	$(HOST_CC) $(HOST_EXECUTABLE_LDFLAGS) $< $(SDL_LIBS) -o $@.tmp
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
+
+windows-executable: host-link-audit $(HOST_EXECUTABLE)
+	@test -s $(HOST_EXECUTABLE)
+	@test -s $(WINDOWS_SDL_DLL)
+	cp -f $(WINDOWS_SDL_DLL) $(dir $(HOST_EXECUTABLE))
+	@echo "Windows executable and SDL2.dll staged in $(dir $(HOST_EXECUTABLE))"
+
+$(HOST_AUDIT_BUILD_DIR)/%.o: %.c $(HOST_PREPROC)
+	@mkdir -p $(dir $@)
+	@rm -f $@.tmp
+	$(HOST_CPP) $(HOST_CPPFLAGS) $< | $(HOST_PREPROC) $(HOST_PREPROC_FLAGS) -i -g build/assets $< charmap.txt | $(HOST_CC) $(HOST_CFLAGS) -fsyntax-only -x c -
+	@touch $@.tmp
+	@mv -f $@.tmp $@
+
+$(HOST_OBJECT_BUILD_DIR)/%.o: %.c $(HOST_PREPROC)
+	@mkdir -p $(dir $@)
+	@rm -f $@.tmp
+	$(HOST_CPP) $(HOST_CPPFLAGS) $< | $(HOST_PREPROC) $(HOST_PREPROC_FLAGS) -i -g build/assets $< charmap.txt | $(HOST_CC) $(HOST_OBJECT_CFLAGS) -x c -c -o $@.tmp -
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
+
+$(HOST_DATA_BUILD_DIR)/%.o: %.s
+	@mkdir -p $(dir $@)
+	@rm -f $@.asm.tmp $@.tmp
+	$(HOST_PREPROC) -s $< charmap.txt | $(HOST_CPP) $(HOST_AS_CPPFLAGS) | $(HOST_PREPROC) -ie $< charmap.txt | $(HOST_DATA_ASM_CONV) | $(HOST_AS) $(HOST_ASFLAGS) -o $@.asm.tmp -
+	$(HOST_ASM_FIXUP) $@.asm.tmp $@.tmp
+	@rm -f $@.asm.tmp
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
+
+# The special table is included by event_scripts.s rather than listed as a
+# standalone assembly source. Keep its generated end marker in sync so host
+# script validation never uses a stale table boundary.
+$(HOST_DATA_BUILD_DIR)/data/event_scripts.o: data/specials.inc
+
+$(HOST_MPLAYDEF): sound/MPlayDef.s
+	@mkdir -p $(dir $@)
+	@rm -f $@.tmp
+	@$(HOST_ASM_CONV) $< > $@.tmp
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
+
+$(HOST_SONG_BUILD_DIR)/%.o: $(HOST_SONG_BUILD_DIR)/%.s $(HOST_MPLAYDEF)
+	@rm -f $@.asm.tmp $@.tmp
+	@$(HOST_ASM_CONV) $< | $(HOST_AS) $(HOST_ASFLAGS) -I $(HOST_SONG_BUILD_DIR) -I sound -o $@.asm.tmp -
+	$(HOST_ASM_FIXUP) $@.asm.tmp $@.tmp
+	@rm -f $@.asm.tmp
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
+
+define HOST_MID_RULE
+$(HOST_SONG_BUILD_DIR)/$1.s: $(HOST_MID_SUBDIR)/$1.mid $(HOST_MID_CFG_PATH) include/config/battle.h $(HOST_MID)
+	@mkdir -p $$(dir $$@)
+	@rm -f $$@.tmp.s
+	@$$(HOST_MID) $$< $$@.tmp.s -L$1 $2
+	@test -s $$@.tmp.s
+	@mv -f $$@.tmp.s $$@
+endef
+
+define HOST_MID_EXPANSION
+	$(eval $(call HOST_MID_RULE,$(basename $(patsubst %:,%,$(word 1,$1))),$(wordlist 2,999,$1)))
+endef
+
+$(foreach line,$(shell sed "s/ /__SPACE__/g" $(HOST_MID_CFG_PATH)),$(call HOST_MID_EXPANSION,$(subst __SPACE__, ,$(line))))
+
+$(HOST_PREPROC): $(HOST_PREPROC_TOOL_SRCS)
+	$(MAKE) -C tools/preproc
+
+$(HOST_MID): $(HOST_MID_TOOL_SRCS)
+	$(MAKE) -C tools/mid2agb
+
+$(HOST_LINK_SHIM_OBJ): $(HOST_LINK_SHIM)
+	@mkdir -p $(dir $@)
+	@rm -f $@.tmp
+	$(HOST_CC) $(HOST_CPPFLAGS) $(HOST_CFLAGS) -c $< -o $@.tmp
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
+
+$(HOST_LINK_AUDIT_OBJ): host-objects host-data host-songs $(HOST_LINK_SHIM_OBJ)
+	@mkdir -p $(dir $@)
+	@rm -f $@.tmp
+	$(HOST_LD) $(HOST_REL_LDFLAGS) -o $@.tmp $(HOST_OBJECTS) $(HOST_DATA_OBJS) $(HOST_SONG_OBJS) $(HOST_LINK_SHIM_OBJ)
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
+
+$(HOST_SCRIPT_LINK_OBJ): $(HOST_LINK_AUDIT_OBJ)
+	@mkdir -p $(dir $@)
+	@rm -f $@.tmp
+	$(HOST_OBJCOPY) --redefine-sym $(HOST_MAIN_SYMBOL)=host_platform_main $< $@.tmp
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
+
+check: $(HARDWARE_SMOKE) $(RENDERER_SMOKE) $(SDL_SMOKE) $(FLASH_SMOKE) $(RANDOM_SMOKE) $(DECOMPRESS_SMOKE) $(RTC_SMOKE) $(M4A_SMOKE) $(CGB_AUDIO_SMOKE) $(MALLOC_SMOKE) $(RUNTIME_SMOKE) $(TEXT_MASK_SMOKE)
+	$(HARDWARE_SMOKE)
+	$(RENDERER_SMOKE)
+	SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy $(SDL_SMOKE)
+	$(FLASH_SMOKE)
+	$(RANDOM_SMOKE)
+	$(DECOMPRESS_SMOKE)
+	$(RTC_SMOKE)
+	$(M4A_SMOKE)
+	$(CGB_AUDIO_SMOKE)
+	$(MALLOC_SMOKE)
+	$(RUNTIME_SMOKE)
+	$(TEXT_MASK_SMOKE)
+
+$(HARDWARE_SMOKE): $(HARDWARE_SMOKE_OBJS)
+	@rm -f $@.tmp
+	$(HOST_CC) $(NATIVE_LDFLAGS) $^ -o $@.tmp
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
+
+$(RENDERER_SMOKE): $(RENDERER_SMOKE_OBJS)
+	@rm -f $@.tmp
+	$(HOST_CC) $(NATIVE_LDFLAGS) $^ -o $@.tmp
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
+
+$(SDL_SMOKE): $(SDL_SMOKE_OBJS)
+	@rm -f $@.tmp
+	$(HOST_CC) $(NATIVE_LDFLAGS) $^ $(SDL_LIBS) -o $@.tmp
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
+
+$(FLASH_SMOKE): $(FLASH_SMOKE_OBJS)
+	@rm -f $@.tmp
+	$(HOST_CC) $(NATIVE_LDFLAGS) $^ -o $@.tmp
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
+
+$(RANDOM_SMOKE): $(RANDOM_SMOKE_OBJS)
+	@rm -f $@.tmp
+	$(HOST_CC) $(NATIVE_LDFLAGS) -Wl,--gc-sections $^ -o $@.tmp
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
+
+$(DECOMPRESS_SMOKE): $(DECOMPRESS_SMOKE_OBJS)
+	@rm -f $@.tmp
+	$(HOST_CC) $(NATIVE_LDFLAGS) -Wl,--gc-sections $^ -o $@.tmp
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
+
+$(RTC_SMOKE): $(RTC_SMOKE_OBJS)
+	@rm -f $@.tmp
+	$(HOST_CC) $(NATIVE_LDFLAGS) $^ -o $@.tmp
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
+
+$(M4A_SMOKE): $(M4A_SMOKE_OBJS)
+	@rm -f $@.tmp
+	$(HOST_CC) $(NATIVE_LDFLAGS) -Wl,--gc-sections $^ -o $@.tmp
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
+
+$(CGB_AUDIO_SMOKE): $(CGB_AUDIO_SMOKE_OBJS)
+	@rm -f $@.tmp
+	$(HOST_CC) $(NATIVE_LDFLAGS) -Wl,--gc-sections $^ -o $@.tmp
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
+
+$(MALLOC_SMOKE): $(MALLOC_SMOKE_OBJS)
+	@rm -f $@.tmp
+	$(HOST_CC) $(NATIVE_LDFLAGS) -Wl,--gc-sections $^ -o $@.tmp
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
+
+$(TEXT_MASK_SMOKE): $(TEXT_MASK_SMOKE_OBJS)
+	@rm -f $@.tmp
+	$(HOST_CC) $(NATIVE_LDFLAGS) -Wl,--gc-sections $^ -o $@.tmp
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
+
+$(RUNTIME_SMOKE): $(RUNTIME_SMOKE_OBJS)
+	@rm -f $@.tmp
+	$(HOST_CC) $(NATIVE_LDFLAGS) -Wl,--gc-sections $^ -o $@.tmp
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
+
+$(SCRIPT_SMOKE): $(SCRIPT_SMOKE_OBJ) $(HOST_SCRIPT_LINK_OBJ)
+	@rm -f $@.tmp
+	$(HOST_CC) $(HOST_EXECUTABLE_LDFLAGS) $^ $(SDL_LIBS) -o $@.tmp
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
+
+$(NATIVE_BUILD_DIR)/src/random.o: NATIVE_CFLAGS += -ffunction-sections -fdata-sections \
+	-Wno-error=ignored-qualifiers -Wno-error=sign-compare -Wno-error=unused-parameter
+
+$(NATIVE_BUILD_DIR)/src/decompress.o: NATIVE_CFLAGS += -ffunction-sections -fdata-sections \
+	-Wno-error=ignored-qualifiers -Wno-error=sign-compare
+
+$(NATIVE_BUILD_DIR)/src/multiboot.o: NATIVE_CFLAGS += \
+	-Wno-error=ignored-qualifiers -Wno-error=sign-compare
+
+$(NATIVE_BUILD_DIR)/src/m4a.o: NATIVE_CFLAGS += -ffunction-sections -fdata-sections \
+	-Wno-error=ignored-qualifiers -Wno-error=sign-compare -Wno-error=unused-parameter \
+	-Wno-error=implicit-fallthrough
+
+$(NATIVE_BUILD_DIR)/src/platform/m4a_host.o: NATIVE_CFLAGS += \
+	-Wno-error=ignored-qualifiers -Wno-error=sign-compare
+
+$(NATIVE_BUILD_DIR)/src/gpu_regs.o: NATIVE_CFLAGS += \
+	-Wno-error=ignored-qualifiers -Wno-error=sign-compare
+
+$(NATIVE_BUILD_DIR)/src/malloc.o: NATIVE_CPPFLAGS += -DTESTING=0
+$(NATIVE_BUILD_DIR)/src/malloc.o: NATIVE_CFLAGS += -ffunction-sections -fdata-sections \
+	-Wno-error=ignored-qualifiers -Wno-error=sign-compare
+
+$(NATIVE_BUILD_DIR)/test/native/malloc_smoke.o: NATIVE_CPPFLAGS += -DTESTING=0
+$(NATIVE_BUILD_DIR)/test/native/malloc_smoke.o: NATIVE_CFLAGS += \
+	-Wno-error=ignored-qualifiers -Wno-error=sign-compare
+
+$(NATIVE_BUILD_DIR)/test/native/text_mask_smoke.o: NATIVE_CFLAGS += \
+	-Wno-error=ignored-qualifiers -Wno-error=sign-compare
+
+$(NATIVE_BUILD_DIR)/test/native/runtime_boundary_smoke.o: NATIVE_CFLAGS += \
+	-Wno-error=ignored-qualifiers -Wno-error=sign-compare
+
+$(NATIVE_BUILD_DIR)/test/native/script_pointer_smoke.o: NATIVE_CFLAGS += \
+	-Wno-error=ignored-qualifiers -Wno-error=sign-compare
+
+# The legacy RFU translation units register large global tables with ASan,
+# which keeps unrelated hardware sections alive despite --gc-sections.  The
+# portable fallback is exercised by the sanitized smoke through its call
+# boundary; keep these legacy objects uninstrumented so unused RFU transport
+# code remains discarded and cannot introduce fake link requirements.
+$(HOST_OBJECT_BUILD_DIR)/src/link_rfu_2.o: HOST_OBJECT_CFLAGS += -fno-sanitize=all
+$(HOST_OBJECT_BUILD_DIR)/src/link_rfu_3.o: HOST_OBJECT_CFLAGS += -fno-sanitize=all
+
+$(NATIVE_BUILD_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
+	@rm -f $@.tmp
+	$(HOST_CC) $(NATIVE_CPPFLAGS) $(NATIVE_CFLAGS) -c $< -o $@.tmp
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
+
+clean:
+	rm -rf $(NATIVE_BUILD_DIR) $(HOST_AUDIT_BUILD_DIR) $(HOST_OBJECT_BUILD_DIR) \
+		$(HOST_DATA_BUILD_DIR) $(HOST_SONG_BUILD_DIR) $(HOST_LINK_BUILD_DIR) \
+		$(HOST_SCRIPT_LINK_BUILD_DIR)

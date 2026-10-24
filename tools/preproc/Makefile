@@ -20,7 +20,10 @@ all: preproc$(EXE)
 	@:
 
 preproc$(EXE): $(SRCS) $(HEADERS)
-	$(CXX) $(CXXFLAGS) $(SRCS) -o $@ $(LDFLAGS)
+	@rm -f $@.tmp
+	$(CXX) $(CXXFLAGS) $(SRCS) -o $@.tmp $(LDFLAGS)
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
 
 clean:
 	$(RM) preproc preproc.exe

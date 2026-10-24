@@ -237,7 +237,15 @@ static void BerryFix_Main(void)
         }
         break;
     case MAINSTATE_MULTIBOOT:
+#ifdef PORTABLE
+        if (MultiBootMain(&sBerryFix->mb) == MULTIBOOT_ERROR_BOOT_FAILURE)
+        {
+            sBerryFix->state = MAINSTATE_FAILED;
+            break;
+        }
+#else
         MultiBootMain(&sBerryFix->mb);
+#endif
         if (sBerryFix->mb.probe_count != 0 || (!(sBerryFix->mb.response_bit & 2) || !(sBerryFix->mb.client_bit & 2)))
         {
             sBerryFix->timer = 0;

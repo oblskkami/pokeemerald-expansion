@@ -101,6 +101,50 @@ void InitRamScript_NoObjectEvent(u8 *script, u16 scriptSize);
 bool32 Script_MatchesCallNative(const u8 *script, void *funcPtr, bool32 requestEffects);
 bool32 Script_MatchesSpecial(const u8 *script, void *funcPtr);
 
+// Validate addresses and table indices before a script turns serialized data
+// into a host function call.  The GBA path keeps the original ROM mirror
+// representation; PORTABLE uses the linked executable image bounds.
+bool32 Script_IsValidNativeAddress(uintptr_t address);
+bool32 Script_IsValidSpecialIndex(u32 specialId);
+
+/* Effect-instrumented script pointers use the GBA's second ROM mirror.  Keep
+ * that tag in bytecode/table data so effect analysis remains exact, then
+ * remove it at the host call boundary where the mirror is not mapped. */
+static inline bool32 Script_IsEffectInstrumentedAddress(uintptr_t address)
+{
+#ifdef PORTABLE
+    // GBA uses the 0x0A... ROM mirror.  Windows host code is linked in the
+    // 0x00... range, so adding the 0x02000000 effect tag produces 0x02....
+    return (address & 0x0E000000u) == 0x0A000000u
+        || (address & 0x0E000000u) == 0x02000000u;
+#else
+    return (address & 0x0E000000u) == 0x0A000000u;
+#endif
+}
+
+static inline uintptr_t Script_DecodeEffectAddress(uintptr_t address)
+{
+#ifdef PORTABLE
+    if (Script_IsEffectInstrumentedAddress(address))
+        address -= 0x02000000u;
+#endif
+    return address;
+}
+
+static inline uintptr_t Script_EncodeEffectAddress(const void *funcPtr)
+{
+    uintptr_t address = (uintptr_t)funcPtr;
+
+#ifdef PORTABLE
+    return address + 0x02000000u;
+#else
+    return address | 0x0A000000u;
+#endif
+}
+
+#define Script_DecodeEffectFunction(type, value) \
+    ((type)Script_DecodeEffectAddress((uintptr_t)(value)))
+
 // srccmd.h
 void SetMovingNpcId(u16 npcId);
 
@@ -194,22 +238,26 @@ static inline void Script_CheckEffectInstrumentedSpecial(u32 specialId)
 {
     typedef u16 (*SpecialFunc)(void);
     extern const SpecialFunc gSpecials[];
-    // In ROM mirror 1.
-    if (Script_IsAnalyzingEffects() && (((uintptr_t)gSpecials[specialId]) & 0xE000000) != 0xA000000)
+    if (Script_IsAnalyzingEffects()
+     && (!Script_IsValidSpecialIndex(specialId)
+      || !Script_IsEffectInstrumentedAddress((uintptr_t)gSpecials[specialId])
+      || !Script_IsValidNativeAddress((uintptr_t)gSpecials[specialId])))
         Script_GotoBreak_Internal();
 }
 
 static inline void Script_CheckEffectInstrumentedGotoNative(bool8 (*func)(void))
 {
-    // In ROM mirror 1.
-    if (Script_IsAnalyzingEffects() && (((uintptr_t)func) & 0xE000000) != 0xA000000)
+    if (Script_IsAnalyzingEffects()
+     && (!Script_IsEffectInstrumentedAddress((uintptr_t)func)
+      || !Script_IsValidNativeAddress((uintptr_t)func)))
         Script_GotoBreak_Internal();
 }
 
 static inline void Script_CheckEffectInstrumentedCallNative(void (*func)(struct ScriptContext *))
 {
-    // In ROM mirror 1.
-    if (Script_IsAnalyzingEffects() && (((uintptr_t)func) & 0xE000000) != 0xA000000)
+    if (Script_IsAnalyzingEffects()
+     && (!Script_IsEffectInstrumentedAddress((uintptr_t)func)
+      || !Script_IsValidNativeAddress((uintptr_t)func)))
         Script_GotoBreak_Internal();
 }
 

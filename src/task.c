@@ -83,6 +83,12 @@ static void InsertTask(u8 newTaskId)
 
 void DestroyTask(u8 taskId)
 {
+    // FindTaskIdByFunc returns TASK_NONE (0xFF) when no matching task exists.
+    // Treat that sentinel as a no-op instead of indexing past gTasks; a
+    // missing cleanup task must not corrupt adjacent EWRAM on the host.
+    if (taskId >= NUM_TASKS)
+        return;
+
     if (gTasks[taskId].isActive)
     {
         gTasks[taskId].isActive = FALSE;
@@ -149,7 +155,7 @@ void SwitchTaskToFollowupFunc(u8 taskId)
 {
     u8 followupFuncIndex = NUM_TASK_DATA - 2; // Should be const.
 
-    gTasks[taskId].func = (TaskFunc)((u16)(gTasks[taskId].data[followupFuncIndex]) | (gTasks[taskId].data[followupFuncIndex + 1] << 16));
+    gTasks[taskId].func = (TaskFunc)((u16)gTasks[taskId].data[followupFuncIndex] | ((u32)(u16)gTasks[taskId].data[followupFuncIndex + 1] << 16));
 }
 
 bool8 FuncIsActiveTask(TaskFunc func)
@@ -174,6 +180,21 @@ u8 FindTaskIdByFunc(TaskFunc func)
     return TASK_NONE; // No task was found.
 }
 
+u8 GetTaskCount(void)
+{
+    u8 i;
+    u8 count = 0;
+
+    for (i = 0; i < NUM_TASKS; i++)
+    {
+        if (gTasks[i].isActive == TRUE)
+            count++;
+    }
+
+    return count;
+}
+
+
 void SetWordTaskArg(u8 taskId, u8 dataElem, u32 value)
 {
     if (dataElem < NUM_TASK_DATA - 1)
@@ -186,7 +207,7 @@ void SetWordTaskArg(u8 taskId, u8 dataElem, u32 value)
 u32 GetWordTaskArg(u8 taskId, u8 dataElem)
 {
     if (dataElem < NUM_TASK_DATA - 1)
-        return (u16)gTasks[taskId].data[dataElem] | (gTasks[taskId].data[dataElem + 1] << 16);
+        return (u16)gTasks[taskId].data[dataElem] | ((u32)(u16)gTasks[taskId].data[dataElem + 1] << 16);
     else
         return 0;
 }
