@@ -5854,12 +5854,16 @@ void DestroyMonSpritesGfxManager(u8 managerId)
         memset(gfx, 0, sizeof(*gfx));
         Free(gfx);
     }
+    // 原来这里没有清槽：销毁后 sMonSpritesGfxManagers[managerId] 仍是悬空指针。
+    // 再 Destroy 一次就会双重释放（GBA 的 AGB_ASSERT 是空宏，会把堆链表合并两次 → 写坏），
+    // 而 GetSpritePtr 会读到已释放的块（被复用后 active 可能恰好等于 1，于是把垃圾当数据指针写）。
+    sMonSpritesGfxManagers[managerId] = NULL;
 }
 
 u8 *MonSpritesGfxManager_GetSpritePtr(u8 managerId, u8 spriteNum)
 {
     struct MonSpritesGfxManager *gfx = sMonSpritesGfxManagers[managerId % MON_SPR_GFX_MANAGERS_COUNT];
-    if (gfx->active != GFX_MANAGER_ACTIVE)
+    if (gfx == NULL || gfx->active != GFX_MANAGER_ACTIVE)
     {
         return NULL;
     }

@@ -29,6 +29,7 @@
 #include "scanline_effect.h"
 #include "sprite.h"
 #include "field_camera.h"
+#include "malloc.h"
 
 #ifdef _WIN32
 // winuser.h 也声明了一个 ScrollWindow（HWND 版），和 window.h 的
@@ -1625,6 +1626,8 @@ static void DumpFrameDiagnostics(const u16 *pixels)
                          (void *)gWindows[w].tileData);
         }
     }
+
+    HeapLogSummary();
 
     HostLogf("---- end frame dump ----");
 }

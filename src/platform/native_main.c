@@ -14,6 +14,9 @@
 
 #include "platform.h"
 
+// 定义在 src/malloc.c（仅 PORTABLE），崩溃时把堆状态写进 crash.log
+void HeapLogCrashState(void);
+
 void AgbMain(void);
 
 static jmp_buf sGameThreadExit;
@@ -134,6 +137,8 @@ static LONG WINAPI HostCrashFilter(EXCEPTION_POINTERS *info)
 #endif
         fflush(logFile);
         fclose(logFile);
+        // 崩溃现场的堆快照：若这次不是崩在 Alloc/Free 里，也能看出堆之前是否已坏。
+        HeapLogCrashState();
     }
 
     return EXCEPTION_EXECUTE_HANDLER;

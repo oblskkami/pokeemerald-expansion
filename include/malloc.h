@@ -70,11 +70,22 @@ void *Alloc_(u32 size, const char *location);
 void *AllocUnchecked_(u32 size, const char *location);
 void *AllocZeroed_(u32 size, const char *location);
 void *AllocZeroedUnchecked_(u32 size, const char *location);
+#ifdef PORTABLE
+// 宿主版：Free 也带上调用点（文件:行），用来指认"哪次释放把堆链表弄坏了"。
+// 见 src/malloc.c 的 FreeInternal/HeapReport。GBA 构建不走这条路径。
+void Free_Debug(void *pointer, const char *location);
+#define Free(pointer) Free_Debug((pointer), __FILE__ ":" STR(__LINE__))
+#else
 void Free(void *pointer);
+#endif
 void InitHeap(void *heapStart, u32 heapSize);
 void PrintHeap(void);
 
 const struct MemBlock *HeapHead(void);
 const char *MemBlockLocation(const struct MemBlock *block);
+#ifdef PORTABLE
+void HeapLogSummary(void);
+void HeapLogCrashState(void);
+#endif
 
 #endif // GUARD_ALLOC_H
