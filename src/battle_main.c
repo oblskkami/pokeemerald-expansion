@@ -2852,17 +2852,16 @@ static void BattleStartClearSetData(void)
     }
     gBattleStruct->beatUpSlot = 0;
 
-    for (i = 0; i < PARTY_SIZE; i++)
+    for (u32 partySlot = 0; partySlot < PARTY_SIZE; partySlot++)
     {
         for (enum BattleTrainer trainer = B_TRAINER_PLAYER; trainer < MAX_BATTLE_TRAINERS; trainer++)
         {
-            gBattleStruct->partyState[trainer][i].usedHeldItem = ITEM_NONE;
+            SetItemsToRestoreAfterBattle(trainer, partySlot);
             // 突变威压：记录战斗开始时的形态，供战斗结束时还原（形态表的 END_BATTLE 条目不含 species）
-            if (GetMonAbility(&gParties[trainer][i]) == ABILITY_MUTANT_PRESSURE)
-                gBattleStruct->partyState[trainer][i].changedSpecies = GetMonData(&gParties[trainer][i], MON_DATA_SPECIES);
-            gBattleStruct->itemLost[trainer][i].originalItem = GetMonData(&gParties[trainer][i], MON_DATA_HELD_ITEM);
-            gPartyCriticalHits[i] = 0;
+            if (GetMonAbility(&gParties[trainer][partySlot]) == ABILITY_MUTANT_PRESSURE)
+                gBattleStruct->partyState[trainer][partySlot].changedSpecies = GetMonData(&gParties[trainer][partySlot], MON_DATA_SPECIES);
         }
+        gPartyCriticalHits[partySlot] = 0;
     }
 
     ClearPursuitValues();
