@@ -95,7 +95,7 @@ static bool8 LoadPokedexListPage(u8);
 static void FreeWindowAndBgBuffers(void);
 static bool8 UpdateDexListScroll(u8, u8, u8);
 static u16 TryDoPokedexScroll(u16, u16);
-static void UpdateSelectedMonSpriteId(void);
+static bool8 UpdateSelectedMonSpriteId(void);
 static bool8 TryDoInfoScreenScroll(void);
 static u8 ClearMonSprites(void);
 static u16 GetPokemonSpriteToDisplay(u16);
@@ -1534,7 +1534,8 @@ void Task_HandlePokedexInput(u8 taskId)
         if (JOY_NEW(A_BUTTON) && sPokedexView->pokedexList[sPokedexView->selectedPokemon].seen)
         {
             HandleDestroyStatBars_HGSS();
-            UpdateSelectedMonSpriteId();
+            if (!UpdateSelectedMonSpriteId())
+                return;
             BeginNormalPaletteFade(~(1 << (gSprites[sPokedexView->selectedMonSpriteId].oam.paletteNum + 16)), 0, 0, 0x10, RGB_BLACK);
             gSprites[sPokedexView->selectedMonSpriteId].callback = SpriteCB_MoveMonForInfoScreen;
             gTasks[taskId].func = Task_OpenInfoScreenAfterMonMovement;
@@ -1754,7 +1755,8 @@ static void Task_HandleSearchResultsInput(u8 taskId)
             u32 a;
 
             HandleDestroyStatBars_HGSS();
-            UpdateSelectedMonSpriteId();
+            if (!UpdateSelectedMonSpriteId())
+                return;
             a = (1 << (gSprites[sPokedexView->selectedMonSpriteId].oam.paletteNum + 16));
             gSprites[sPokedexView->selectedMonSpriteId].callback = SpriteCB_MoveMonForInfoScreen;
             BeginNormalPaletteFade(~a, 0, 0, 0x10, RGB_BLACK);
@@ -2605,17 +2607,33 @@ static u16 TryDoPokedexScroll(u16 selectedMon, u16 ignored)
     return selectedMon;
 }
 
-static void UpdateSelectedMonSpriteId(void)
+static bool8 UpdateSelectedMonSpriteId(void)
 {
     u16 i;
+    bool8 found = FALSE;
 
     for (i = 0; i < MAX_MONS_ON_SCREEN; i++)
     {
         u16 spriteId = sPokedexView->monSpriteIds[i];
 
-        if (gSprites[spriteId].x2 == 0 && gSprites[spriteId].y2 == 0 && spriteId != 0xFFFF)
+        // 先确认 spriteId 合法再解引用 gSprites。原写法把 spriteId != 0xFFFF 放在 && 最后，
+        // spriteId == 0xFFFF（槽位为空）时会先读 gSprites[0xFFFF]：GBA 上该地址落在 EWRAM 之外、
+        // 读回来只是总线垃圾值不会异常，宿主无 MMU 则直接访问违例闪退（实测 0xc0000005 读 0x027AB240）。
+        if (spriteId >= MAX_SPRITES)
+            continue;
+        if (gSprites[spriteId].x2 == 0 && gSprites[spriteId].y2 == 0)
+        {
             sPokedexView->selectedMonSpriteId = spriteId;
+            found = TRUE;
+        }
     }
+
+    // 没有精灵停在正中（例如还在滚动/移动中）时不要沿用上一次的 id，
+    // 否则调用方会拿 0xFFFF 或已销毁的 id 去解引用 gSprites（宿主同样会闪退）。
+    if (!found)
+        sPokedexView->selectedMonSpriteId = 0xFFFF;
+
+    return found;
 }
 
 static bool8 TryDoInfoScreenScroll(void)
@@ -3064,8 +3082,10 @@ static void SpriteCB_Scrollbar(struct Sprite *sprite)
 {
     if (sPokedexView->currentPage != PAGE_MAIN && sPokedexView->currentPage != PAGE_SEARCH_RESULTS)
         DestroySprite(sprite);
-    else
+    else if (sPokedexView->pokemonListCount > 1)
         sprite->y2 = sPokedexView->selectedPokemon * 120 / (sPokedexView->pokemonListCount - 1);
+    else
+        sprite->y2 = 0; // 列表里只有 1 条时除数为 0（宿主整数除零会崩），滚条位置按顶端处理
 }
 
 static void SpriteCB_ScrollArrow(struct Sprite *sprite)

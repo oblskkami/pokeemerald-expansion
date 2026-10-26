@@ -4834,7 +4834,10 @@ static void Cmd_hpthresholds(void)
         enum BattlerId battler = GetBattlerForBattleScript(cmd->battler);
         enum BattlerId opposingBattler = GetOppositeBattler(battler);
 
-        s32 result = gBattleMons[opposingBattler].hp * 100 / gBattleMons[opposingBattler].maxHP;
+        // 宿主版防护：GBA 除零返回 0，x86 会抛 0xc0000094
+        s32 result = (gBattleMons[opposingBattler].maxHP != 0)
+                   ? (s32)(gBattleMons[opposingBattler].hp * 100 / gBattleMons[opposingBattler].maxHP)
+                   : 0;
         if (result == 0)
             result = 1;
 
@@ -4860,7 +4863,10 @@ static void Cmd_hpthresholds2(void)
         enum BattlerId battler = GetBattlerForBattleScript(cmd->battler);
         enum BattlerId opposingBattler = GetOppositeBattler(battler);
         u32 hpSwitchout = gBattleStruct->battlerState[opposingBattler].hpOnSwitchout;
-        s32 result = (hpSwitchout - gBattleMons[opposingBattler].hp) * 100 / hpSwitchout;
+        // 宿主版防护：hpSwitchout 为 0 时除数不能为 0（GBA 除零返回 0）
+        s32 result = (hpSwitchout != 0)
+                   ? (s32)((hpSwitchout - gBattleMons[opposingBattler].hp) * 100 / hpSwitchout)
+                   : 0;
 
         if (gBattleMons[opposingBattler].hp >= hpSwitchout)
             gBattleStruct->hpScale = 0;

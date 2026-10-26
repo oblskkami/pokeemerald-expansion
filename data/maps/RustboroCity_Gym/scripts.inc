@@ -149,7 +149,7 @@ RustboroCity_Gym_Text_StoneBadgeInfoTakeThis:
     .string "岩石徽章能提高您的\n宝可梦的攻击力。\p有了它，您的宝可梦也能在对战外\n使用秘传招式居合劈了。\p然后……\n请您也收下这个。$"
 
 RustboroCity_Gym_Text_ExplainRockTomb:
-    .string "那个招式学习器39中\n装着岩石封锁。\p用落石攻击对手的同时\n也能降低对手的速度。\p如果您使用招式学习器，\n宝可梦能立刻学会其中的招式。\p但一个招式学习器使用后就会消失，\n所以使用前要仔细考虑才行呢。$"
+    .string "那个招式学习器39中\n装着岩石封锁。\p用落石攻击对手的同时\n也能降低对手的速度。\p如果您使用招式学习器，\n宝可梦能立刻学会其中的招式。$"
 
 RustboroCity_Gym_Text_RoxannePostBattle:
     .string "像您这么强的训练家为什么不去\n其他道馆挑战看看呢？\p通过和许许多多的训练家对战，\n您能够学到很多知识哟。$"

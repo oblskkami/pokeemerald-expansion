@@ -6219,7 +6219,11 @@ static inline u32 CalcMoveBasePower(struct DamageContext *ctx)
         basePower = GetFlingPowerFromItemId(gBattleMons[battlerAtk].item);
         break;
     case EFFECT_POWER_BASED_ON_USER_HP:
-        basePower = gBattleMons[battlerAtk].hp * basePower / gBattleMons[battlerAtk].maxHP;
+        // 宿主版防护：GBA 的除法除零返回 0，x86 的 div 会抛 0xc0000094（空战斗位 maxHP 为 0）
+        if (gBattleMons[battlerAtk].maxHP != 0)
+            basePower = gBattleMons[battlerAtk].hp * basePower / gBattleMons[battlerAtk].maxHP;
+        else
+            basePower = 0;
         break;
     case EFFECT_FLAIL:
         hpFraction = GetScaledHPFraction(gBattleMons[battlerAtk].hp, gBattleMons[battlerAtk].maxHP, 48);
@@ -6276,7 +6280,11 @@ static inline u32 CalcMoveBasePower(struct DamageContext *ctx)
             basePower *= 2;
         break;
     case EFFECT_POWER_BASED_ON_TARGET_HP:
-        basePower = gBattleMons[battlerDef].hp * basePower / gBattleMons[battlerDef].maxHP;
+        // 同上：目标 maxHP 为 0 时按 GBA 的「除零得 0」处理
+        if (gBattleMons[battlerDef].maxHP != 0)
+            basePower = gBattleMons[battlerDef].hp * basePower / gBattleMons[battlerDef].maxHP;
+        else
+            basePower = 0;
         break;
     case EFFECT_ASSURANCE:
         if (gProtectStructs[battlerDef].assuranceDoubled)
@@ -6326,7 +6334,14 @@ static inline u32 CalcMoveBasePower(struct DamageContext *ctx)
         basePower += (CountBattlerStatIncreases(battlerAtk, TRUE) * 20);
         break;
     case EFFECT_ELECTRO_BALL:
-        speed = GetBattlerTotalSpeedStat(battlerAtk, ctx->abilities[battlerAtk], ctx->holdEffects[battlerAtk]) / GetBattlerTotalSpeedStat(battlerDef, ctx->abilities[battlerDef], ctx->holdEffects[battlerDef]);
+        {
+            // 宿主版防护：对手速度被压到 0 时除数不能为 0（GBA 除零返回 0，即 speed = 0）
+            u32 defenderSpeed = GetBattlerTotalSpeedStat(battlerDef, ctx->abilities[battlerDef], ctx->holdEffects[battlerDef]);
+            if (defenderSpeed == 0)
+                speed = 0;
+            else
+                speed = GetBattlerTotalSpeedStat(battlerAtk, ctx->abilities[battlerAtk], ctx->holdEffects[battlerAtk]) / defenderSpeed;
+        }
         if (speed >= ARRAY_COUNT(sSpeedDiffPowerTable))
             speed = ARRAY_COUNT(sSpeedDiffPowerTable) - 1;
         basePower = sSpeedDiffPowerTable[speed];

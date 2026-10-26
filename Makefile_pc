@@ -51,6 +51,16 @@ HOST_EXECUTABLE_LDFLAGS := -m32 -no-pie -Wl,--gc-sections
 HOST_MAIN_SYMBOL := main
 endif
 
+# GNU as accepts the body of a C enum that leaks into a data/*.s file (through
+# #include "constants/....h") as a run of absolute symbol definitions.  The ARM
+# linker used for the GBA build tolerates the resulting duplicate ABS symbols
+# (e.g. enum EvoSpinDirections -> SPIN_CW_SHORT ...), MinGW/libiberty on the
+# host reports "multiple definition of `SPIN_CW_SHORT'".  Those symbols are
+# assembly-time constants that are already baked into the instructions, so
+# merging them during the partial link is safe; real duplicate functions are
+# still caught when the final executable is linked.
+HOST_LD_DEDUP ?= --allow-multiple-definition
+
 # The Expansion source contains game-text and INCGFX directives that cannot be
 # passed directly to a host compiler.  Keep the audit on the same preprocessing
 # path as the ARM build, then ask the host compiler only for an object file.
@@ -84,6 +94,12 @@ endif
 HOST_C_SRCS := $(shell find src -type f -name '*.c' ! -name '*.inc.c' -print | sort)
 HOST_C_OBJS := $(patsubst %.c,$(HOST_AUDIT_BUILD_DIR)/%.o,$(HOST_C_SRCS))
 HOST_OBJECTS := $(patsubst %.c,$(HOST_OBJECT_BUILD_DIR)/%.o,$(HOST_C_SRCS))
+# The host pipeline pipes a preprocessed stream into the compiler, so the compiler
+# cannot emit a usable .d file. Without an explicit prerequisite an edit to a header
+# (for example src/data/graphics/pokemon.h) leaves the old objects in place and the
+# change silently never reaches the executable. Depend on every project header.
+HOST_HEADERS := $(shell find include src -type f -name '*.h' -print | sort)
+$(HOST_OBJECTS) $(HOST_C_OBJS): $(HOST_HEADERS)
 ifeq ($(WINDOWS),1)
 # PE/COFF has a 16-bit section-count field.  The full Expansion object graph
 # exceeds that limit when every function and datum gets its own section, so
@@ -124,6 +140,7 @@ HOST_SONG_OBJS := $(HOST_SONG_ASMS:.s=.o)
 HOST_MPLAYDEF := $(HOST_SONG_BUILD_DIR)/MPlayDef.s
 HOST_LINK_SHIM := test/native/host_link_shim.c
 HOST_LINK_SHIM_OBJ := $(NATIVE_BUILD_DIR)/host_link_shim.o
+HOST_LINK_DATA_OBJ := $(HOST_LINK_BUILD_DIR)/data.o
 HOST_LINK_AUDIT_OBJ := $(HOST_LINK_BUILD_DIR)/all.o
 HOST_LINK_UNRESOLVED := $(HOST_LINK_BUILD_DIR)/unresolved.txt
 HOST_LINK_GAME_UNRESOLVED := $(HOST_LINK_BUILD_DIR)/game-unresolved.txt
@@ -348,10 +365,21 @@ $(HOST_LINK_SHIM_OBJ): $(HOST_LINK_SHIM)
 	@test -s $@.tmp
 	@mv -f $@.tmp $@
 
-$(HOST_LINK_AUDIT_OBJ): host-objects host-data host-songs $(HOST_LINK_SHIM_OBJ)
+# Merge the data/*.s objects on their own first: those are the only units that
+# pick up duplicated absolute symbols from C enum bodies leaking through the
+# headers, so the tolerance is scoped to them and duplicate function symbols
+# coming from the C sources are still reported below.
+$(HOST_LINK_DATA_OBJ): host-data
 	@mkdir -p $(dir $@)
 	@rm -f $@.tmp
-	$(HOST_LD) $(HOST_REL_LDFLAGS) -o $@.tmp $(HOST_OBJECTS) $(HOST_DATA_OBJS) $(HOST_SONG_OBJS) $(HOST_LINK_SHIM_OBJ)
+	$(HOST_LD) $(HOST_REL_LDFLAGS) $(HOST_LD_DEDUP) -o $@.tmp $(HOST_DATA_OBJS)
+	@test -s $@.tmp
+	@mv -f $@.tmp $@
+
+$(HOST_LINK_AUDIT_OBJ): host-objects host-songs $(HOST_LINK_DATA_OBJ) $(HOST_LINK_SHIM_OBJ)
+	@mkdir -p $(dir $@)
+	@rm -f $@.tmp
+	$(HOST_LD) $(HOST_REL_LDFLAGS) -o $@.tmp $(HOST_OBJECTS) $(HOST_LINK_DATA_OBJ) $(HOST_SONG_OBJS) $(HOST_LINK_SHIM_OBJ)
 	@test -s $@.tmp
 	@mv -f $@.tmp $@
 
