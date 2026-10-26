@@ -181,6 +181,15 @@ struct TextGlyph
     u8 height;
 };
 
+// Return the packed 4bpp mask used when copying a glyph row into a window.
+// Widths of eight or more pixels occupy the complete 32-bit tile row.
+static inline u32 GetTextGlyphWidthMask(s32 width)
+{
+    if (width <= 0)
+        return 0;
+    return (width >= 8) ? 0xFFFFFFFFu : ((1u << (width * 4)) - 1u);
+}
+
 extern TextFlags gTextFlags;
 extern bool8 gDisableTextPrinters;
 extern struct TextGlyph gCurGlyph;

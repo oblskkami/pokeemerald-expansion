@@ -453,6 +453,13 @@ void Pokenav_AllocAndLoadPalettes(const struct SpritePalette *palettes)
         {
             index = OBJ_PLTT_ID(index);
             CopyPaletteIntoBufferUnfaded(current->data, index, PLTT_SIZE_4BPP);
+            // CopyPaletteIntoBufferUnfaded 只写 Unfaded 缓冲，Faded 要等下一次淡入/淡出
+            // 由 BlendPalette 从 Unfaded 重新算一遍才会更新。如果这次加载调色板发生
+            // 在一次已经完成的淡入之后（例如从子菜单返回主菜单、或第二次进入 Navigator），
+            // 就没有任何东西来同步，Faded/显存会一直保留"上一个占用这个槽的界面"的旧调色板。
+            // 表现就是：某个选项条的颜色属于别的界面（host 上第一项读到了 blue_light）。
+            // 这里直接把同一份数据也写进 Faded，保证加载完立刻生效。
+            CpuCopy16(current->data, &gPlttBufferFaded[index], PLTT_SIZE_4BPP);
         }
     }
 }
@@ -568,6 +575,50 @@ static void DrawHelpBar(u32 windowId)
     FillWindowPixelRect(windowId, PIXEL_FILL(5), 0, 0, 0x80, 1);
 }
 
+// 右上角旋转小图标（sSpinningPokenav）同时依赖三样 tag 0 的资源：精灵图块表、
+// 精灵调色板、OAM 调色板槽 0。某些"进出菜单"的路径会把 tag 0 的登记清掉
+// （FreeSpritePaletteByTag(0) / FreeSpriteTilesByTag(0)），而精灵本身还活着：
+//  - 调色板被清 -> 主菜单选项的调色板（PALTAG_OPTIONS_DEFAULT）会分到 0 号槽,
+//    图标被画成选项条的颜色（现象：图标上多出一块绿色/橙色）；
+//  - 图块表被清 -> 那块图块区被选项条图块表（tag 4, 占 292..707）重新分配，
+//    图标框里画出中文字形/棕色括号（现象：图标变成"精灵"/"对战"字样）。
+// 这里做一层"兜底"：tag 不在就重新加载/占位，并把精灵的 sheetTileStart、
+// oam.paletteNum 拉回正确值。正常情况下这段每帧只是一两次查表。
+static void EnsureSpinningPokenavResources(struct Sprite *sprite)
+{
+    u16 tileStart;
+    u32 slot;
+
+    if (sprite == NULL || !sprite->inUse)
+        return;
+
+    // 图块：tag 0 的图块表没了就重新压进去；基址漂了就跟着改。
+    tileStart = GetSpriteTileStartByTag(0);
+    if (tileStart == TAG_NONE)
+    {
+        LoadCompressedSpriteSheet(&sSpinningPokenavSpriteSheet[0]);
+        tileStart = GetSpriteTileStartByTag(0);
+    }
+    if (tileStart != TAG_NONE && sprite->sheetTileStart != tileStart)
+    {
+        sprite->sheetTileStart = tileStart;
+        SetSpriteSheetFrameTileNum(sprite);
+    }
+
+    // 调色板：tag 0 不在任何槽里就重新占一个并写入图标自己的板。
+    slot = IndexOfSpritePaletteTag(0);
+    if (slot == 0xFF)
+    {
+        slot = AllocSpritePalette(0);
+        if (slot == 0xFF)
+            return;
+        LoadPalette(sSpinningPokenav_Pal, OBJ_PLTT_ID(slot), PLTT_SIZE_4BPP);
+    }
+
+    if (sprite->oam.paletteNum != slot)
+        sprite->oam.paletteNum = slot;
+}
+
 static void InitPokenavMainMenuResources(void)
 {
     s32 i;
@@ -581,6 +632,7 @@ static void InitPokenavMainMenuResources(void)
     menu->palettes = ~1 & ~(0x10000 << IndexOfSpritePaletteTag(0));
     spriteId = CreateSprite(&sSpinningPokenavSpriteTemplate, 220, 12, 0);
     menu->spinningPokenav = &gSprites[spriteId];
+    EnsureSpinningPokenavResources(menu->spinningPokenav);
 }
 
 static void CleanupPokenavMainMenuResources(void)
@@ -594,6 +646,8 @@ static void CleanupPokenavMainMenuResources(void)
 
 static void SpriteCB_SpinningPokenav(struct Sprite *sprite)
 {
+    EnsureSpinningPokenavResources(sprite);
+
     // If the background starts scrolling, follow it.
     sprite->y2 = (GetBgY(0) / 256u) * -1;
 }
@@ -602,6 +656,7 @@ struct Sprite *GetSpinningPokenavSprite(void)
 {
     struct Pokenav_MainMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);
 
+    EnsureSpinningPokenavResources(menu->spinningPokenav);
     menu->spinningPokenav->callback = SpriteCallbackDummy;
     return menu->spinningPokenav;
 }
@@ -611,6 +666,7 @@ void HideSpinningPokenavSprite(void)
     struct Pokenav_MainMenu *menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);
 
     // Move sprite so it's no longer visible
+    EnsureSpinningPokenavResources(menu->spinningPokenav);
     menu->spinningPokenav->x = 220;
     menu->spinningPokenav->y = 12;
     menu->spinningPokenav->callback = SpriteCB_SpinningPokenav;

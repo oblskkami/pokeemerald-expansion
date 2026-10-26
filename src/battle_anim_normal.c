@@ -937,6 +937,16 @@ void AnimTask_TintPalettes(u8 taskId)
 #define sShakePtrLo    data[6]
 #define sShakePtrHi    data[7]
 
+// 把 data[6]/data[7] 里拼出的 32 位地址还原成指针。
+// 注意 data[] 是 s16：直接写 sShakePtrLo | (sShakePtrHi << 16) 时，低半字会被符号扩展
+// （低半字最高位为 1 就变成 0xFFFFxxxx），高位左移负值还是未定义行为。
+// GBA 上读错地址只是总线垃圾，宿主版（无 MMU）会直接闪退——实测 gSpriteCoordOffsetY
+// 地址低半字为 0xB3AA，金属爪等带震动的招式必崩。
+static u16 *GetShakeTargetPtr(struct Sprite *sprite)
+{
+    return (u16 *)(uintptr_t)((u16)sprite->sShakePtrLo | ((u32)(u16)sprite->sShakePtrHi << 16));
+}
+
 static void AnimShakeMonOrBattlePlatforms(struct Sprite *sprite)
 {
     CMD_ARGS(velocity, shakeTimer, shakeDuration, type, battlerSelector);
@@ -963,7 +973,7 @@ static void AnimShakeMonOrBattlePlatforms(struct Sprite *sprite)
         break;
     }
 
-    sprite->sOriginalValue = *(u16 *)(sprite->sShakePtrLo | (sprite->sShakePtrHi << 16));
+    sprite->sOriginalValue = *GetShakeTargetPtr(sprite);
     sprite->sType = cmd->type;
     if (sprite->sType == SHAKE_MON_X || sprite->sType == SHAKE_MON_Y)
         AnimShakeMonOrBattlePlatforms_UpdateCoordOffsetEnabled();
@@ -983,13 +993,13 @@ static void AnimShakeMonOrBattlePlatforms_Step(struct Sprite *sprite)
         else
         {
             sprite->sShakeTimer = sprite->sShakeDuration;
-            *(u16 *)(sprite->sShakePtrLo | (sprite->sShakePtrHi << 16)) += sprite->sShakeVelocity;
+            *GetShakeTargetPtr(sprite) += sprite->sShakeVelocity;
             sprite->sShakeVelocity = -sprite->sShakeVelocity;
         }
     }
     else
     {
-        *(u16 *)(sprite->sShakePtrLo | (sprite->sShakePtrHi << 16)) = sprite->sOriginalValue;
+        *GetShakeTargetPtr(sprite) = sprite->sOriginalValue;
         if (sprite->sType == SHAKE_MON_X || sprite->sType == SHAKE_MON_Y)
         {
             for (enum BattlerId i = 0; i < gBattlersCount; i++)

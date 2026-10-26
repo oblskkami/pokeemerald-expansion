@@ -172,6 +172,8 @@ u8 CreateMonIconIsEgg(enum Species species, void (*callback)(struct Sprite *), s
 #endif
 
     spriteId = CreateMonIconSprite(&iconTemplate, x, y, subpriority);
+    if (spriteId >= MAX_SPRITES)
+        return SPRITE_NONE;
 
     UpdateMonIconFrame(&gSprites[spriteId]);
 
@@ -231,6 +233,8 @@ u8 CreateMonIconNoPersonalityIsEgg(enum Species species, void (*callback)(struct
 
     iconTemplate.image = GetMonIconTilesIsEgg(species, 0, isEgg);
     spriteId = CreateMonIconSprite(&iconTemplate, x, y, subpriority);
+    if (spriteId >= MAX_SPRITES)
+        return SPRITE_NONE;
 
     UpdateMonIconFrame(&gSprites[spriteId]);
 
@@ -494,7 +498,10 @@ static u8 CreateMonIconSprite(struct MonIconSpriteTemplate *iconTemplate, s16 x,
         .callback = iconTemplate->callback,
     };
 
-    spriteId = CreateSprite(&spriteTemplate, x, y, subpriority);
+    spriteId = CreateSpriteUnchecked(&spriteTemplate, x, y, subpriority);
+    if (spriteId >= MAX_SPRITES)
+        return SPRITE_NONE;
+
     gSprites[spriteId].animPaused = TRUE;
     gSprites[spriteId].animBeginning = FALSE;
     gSprites[spriteId].images = (const struct SpriteFrameImage *)iconTemplate->image;

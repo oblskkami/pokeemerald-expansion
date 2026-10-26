@@ -1930,6 +1930,12 @@ u32 GetMonData3(struct Pokemon *mon, s32 field, u8 *data)
 {
     u32 ret;
 
+    // 宿主无 MMU：mon 为 NULL 时下面每次 mon->xxx 都是读地址 0+偏移（GBA 上只是总线垃圾值，
+    // 宿主直接访问违例）。某些调用点确实会传 NULL（例：src/item_use.c 的
+    // ItemUseInBattle_BagMenu() 调 CannotUseItemsInBattle(itemId, NULL)），这里统一兜底。
+    if (mon == NULL)
+        return 0;
+
     switch (field)
     {
     case MON_DATA_STATUS:
@@ -2528,6 +2534,10 @@ u32 GetBoxMonData2(struct BoxPokemon *boxMon, s32 field)
 void SetMonData(struct Pokemon *mon, s32 field, const void *dataArg)
 {
     const u8 *data = dataArg;
+
+    // 同上：mon 为 NULL 时不要往地址 0 写。
+    if (mon == NULL)
+        return;
 
     switch (field)
     {
@@ -5868,12 +5878,16 @@ void DestroyMonSpritesGfxManager(u8 managerId)
         memset(gfx, 0, sizeof(*gfx));
         Free(gfx);
     }
+    // 原来这里没有清槽：销毁后 sMonSpritesGfxManagers[managerId] 仍是悬空指针。
+    // 再 Destroy 一次就会双重释放（GBA 的 AGB_ASSERT 是空宏，会把堆链表合并两次 → 写坏），
+    // 而 GetSpritePtr 会读到已释放的块（被复用后 active 可能恰好等于 1，于是把垃圾当数据指针写）。
+    sMonSpritesGfxManagers[managerId] = NULL;
 }
 
 u8 *MonSpritesGfxManager_GetSpritePtr(u8 managerId, u8 spriteNum)
 {
     struct MonSpritesGfxManager *gfx = sMonSpritesGfxManagers[managerId % MON_SPR_GFX_MANAGERS_COUNT];
-    if (gfx->active != GFX_MANAGER_ACTIVE)
+    if (gfx == NULL || gfx->active != GFX_MANAGER_ACTIVE)
     {
         return NULL;
     }

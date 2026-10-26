@@ -68,3 +68,6 @@ python_tools/src/~$文本.xlsx
 __pycache__
 .map_version
 .porydaw/
+
+# PC 移植参考副本（约 13MB，不入库）
+/_pc_host_ref/

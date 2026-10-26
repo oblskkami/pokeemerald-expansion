@@ -498,13 +498,15 @@ bool8 IsCryFinished(void)
 
 void StopCryAndClearCrySongs(void)
 {
-    m4aMPlayStop(gMPlay_PokemonCry);
+    if (gMPlay_PokemonCry != NULL)
+        m4aMPlayStop(gMPlay_PokemonCry);
     ClearPokemonCrySongs();
 }
 
 void StopCry(void)
 {
-    m4aMPlayStop(gMPlay_PokemonCry);
+    if (gMPlay_PokemonCry != NULL)
+        m4aMPlayStop(gMPlay_PokemonCry);
 }
 
 bool8 IsCryPlayingOrClearCrySongs(void)

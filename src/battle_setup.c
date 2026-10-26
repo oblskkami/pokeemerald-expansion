@@ -274,7 +274,14 @@ static void Task_BattleStart(u8 taskId)
 
 static void CreateBattleStartTask(enum BattleTransition transition, u16 song)
 {
-    u8 taskId = CreateTask(Task_BattleStart, 1);
+    u8 taskId;
+
+    // CreateTask returns slot 0 on exhaustion. Do not overwrite an active
+    // task when a transition is requested with a full task table.
+    if (GetTaskCount() >= NUM_TASKS)
+        return;
+
+    taskId = CreateTask(Task_BattleStart, 1);
 
     gTasks[taskId].tTransition = transition;
     PlayMapChosenOrBattleBGM(song);
@@ -309,7 +316,12 @@ static void Task_BattleStart_Debug(u8 taskId)
 
 static void CreateBattleStartTask_Debug(u8 transition, u16 song)
 {
-    u8 taskId = CreateTask(Task_BattleStart_Debug, 1);
+    u8 taskId;
+
+    if (GetTaskCount() >= NUM_TASKS)
+        return;
+
+    taskId = CreateTask(Task_BattleStart_Debug, 1);
 
     gTasks[taskId].tTransition = transition;
     PlayMapChosenOrBattleBGM(song);

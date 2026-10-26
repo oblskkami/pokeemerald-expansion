@@ -1019,6 +1019,8 @@ u8 FldEff_ExclamationMarkIcon(void)
         SetIconSpriteData(&gSprites[spriteId], FLDEFF_EXCLAMATION_MARK_ICON, 0);
         UpdateSpritePaletteByTemplate(&sSpriteTemplate_ExclamationQuestionMark, &gSprites[spriteId]);
     }
+    else
+        FieldEffectActiveListRemove(FLDEFF_EXCLAMATION_MARK_ICON);
 
     return 0;
 }
@@ -1026,13 +1028,16 @@ u8 FldEff_ExclamationMarkIcon(void)
 u8 FldEff_QuestionMarkIcon(void)
 {
     u8 spriteId;
-    if (gFieldEffectArguments[7] >= 0)
+    if ((s32)gFieldEffectArguments[7] >= 0)
     {
         // Use follower emotes
         u8 emotion = gFieldEffectArguments[7];
         spriteId = CreateSpriteAtEndUnchecked(&sSpriteTemplate_Emote, 0, 0, 0x52);
         if (spriteId == MAX_SPRITES)
+        {
+            FieldEffectActiveListRemove(FLDEFF_EMOTE);
             return 0;
+        }
         SetIconSpriteData(&gSprites[spriteId], FLDEFF_EMOTE, emotion); // Set animation based on emotion
         UpdateSpritePaletteByTemplate(&sSpriteTemplate_Emote, &gSprites[spriteId]);
         return 0;
@@ -1044,6 +1049,8 @@ u8 FldEff_QuestionMarkIcon(void)
         SetIconSpriteData(&gSprites[spriteId], FLDEFF_QUESTION_MARK_ICON, 1);
         UpdateSpritePaletteByTemplate(&sSpriteTemplate_ExclamationQuestionMark, &gSprites[spriteId]);
     }
+    else
+        FieldEffectActiveListRemove(FLDEFF_QUESTION_MARK_ICON);
 
     return 0;
 }
@@ -1059,6 +1066,8 @@ u8 FldEff_HeartIcon(void)
         SetIconSpriteData(sprite, FLDEFF_HEART_ICON, 0);
         UpdateSpritePaletteByTemplate(&sSpriteTemplate_HeartIcon, sprite);
     }
+    else
+        FieldEffectActiveListRemove(FLDEFF_HEART_ICON);
 
     return 0;
 }
@@ -1074,6 +1083,8 @@ u8 FldEff_DoubleExclMarkIcon(void)
         SetIconSpriteData(sprite, FLDEFF_DOUBLE_EXCL_MARK_ICON, 2);
         UpdateSpritePaletteByTemplate(&sSpriteTemplate_ExclamationQuestionMark, sprite);
     }
+    else
+        FieldEffectActiveListRemove(FLDEFF_DOUBLE_EXCL_MARK_ICON);
 
     return 0;
 }
@@ -1089,6 +1100,8 @@ u8 FldEff_XIcon(void)
         SetIconSpriteData(sprite, FLDEFF_X_ICON, 3);
         UpdateSpritePaletteByTemplate(&sSpriteTemplate_ExclamationQuestionMark, sprite);
     }
+    else
+        FieldEffectActiveListRemove(FLDEFF_X_ICON);
 
     return 0;
 }
@@ -1099,6 +1112,8 @@ u8 FldEff_SmileyFaceIcon(void)
 
     if (spriteId != MAX_SPRITES)
         SetIconSpriteData(&gSprites[spriteId], FLDEFF_SMILEY_FACE_ICON, 3);
+    else
+        FieldEffectActiveListRemove(FLDEFF_SMILEY_FACE_ICON);
 
     return 0;
 }

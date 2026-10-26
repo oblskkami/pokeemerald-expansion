@@ -527,7 +527,10 @@ static void Task_HandleMonAnimation(u8 taskId)
         // Task_HandleMonAnimation handles more than just KO animations,
         // but if the counter is non-zero then only KO animations are running.
         // This assumption is not checked.
-        if (gBattleStruct->battlerKOAnimsRunning > 0)
+        // Front/back animations are also used outside battles (for example
+        // during the opening scene), where the battle-only structure has not
+        // been allocated yet.
+        if (gBattleStruct != NULL && gBattleStruct->battlerKOAnimsRunning > 0)
             gBattleStruct->battlerKOAnimsRunning--;
         DestroyTask(taskId);
     }

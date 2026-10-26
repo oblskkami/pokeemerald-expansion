@@ -232,6 +232,7 @@ static bool8 PrintBlendingRanking(void);
 static bool8 PrintBlendingResults(void);
 static void CB2_CheckPlayAgainLocal(void);
 static void CB2_CheckPlayAgainLink(void);
+static void FreeBerryBlender(void);
 static void UpdateProgressBar(u16, u16);
 static void PrintMadePokeblockString(struct Pokeblock *, u8 *);
 static bool32 TryAddContestLinkTvShow(struct Pokeblock *, struct TvBlenderStruct *);
@@ -917,6 +918,9 @@ static void UpdateHitPitch(void)
 
 static void VBlankCB_BerryBlender(void)
 {
+    if (sBerryBlender == NULL)
+        return;
+
     SetBgPos();
     SetBgAffine(2, sBerryBlender->bgAffineSrc.texX, sBerryBlender->bgAffineSrc.texY,
                 sBerryBlender->bgAffineSrc.scrX, sBerryBlender->bgAffineSrc.scrY,
@@ -925,6 +929,15 @@ static void VBlankCB_BerryBlender(void)
     LoadOam();
     ProcessSpriteCopyRequests();
     TransferPlttBuffer();
+}
+
+// Stop the VBlank producer before releasing the state it consumes.  On the
+// host, the render thread may be between frames when a main callback changes;
+// clearing the callback first keeps it from observing a freed blender state.
+static void FreeBerryBlender(void)
+{
+    SetVBlankCallback(NULL);
+    FREE_AND_SET_NULL(sBerryBlender);
 }
 
 static bool8 LoadBerryBlenderGfx(void)
@@ -2883,8 +2896,9 @@ static void CB2_CheckPlayAgainLink(void)
                 FreeAllWindowBuffers();
                 UnsetBgTilemapBuffer(2);
                 UnsetBgTilemapBuffer(1);
-                FREE_AND_SET_NULL(sBerryBlender);
+                FreeBerryBlender();
                 SetMainCallback2(DoBerryBlending);
+                return;
             }
             else
             {
@@ -2903,8 +2917,9 @@ static void CB2_CheckPlayAgainLink(void)
     case 12:
         if (!gReceivedRemoteLinkPlayers)
         {
-            FREE_AND_SET_NULL(sBerryBlender);
+            FreeBerryBlender();
             SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
+            return;
         }
         break;
     }
@@ -2959,7 +2974,8 @@ static void CB2_CheckPlayAgainLocal(void)
             FreeAllWindowBuffers();
             UnsetBgTilemapBuffer(2);
             UnsetBgTilemapBuffer(1);
-            FREE_AND_SET_NULL(sBerryBlender);
+            FreeBerryBlender();
+            return;
         }
         break;
     }

@@ -95,7 +95,7 @@ static bool8 LoadPokedexListPage(u8);
 static void FreeWindowAndBgBuffers(void);
 static bool8 UpdateDexListScroll(u8, u8, u8);
 static u16 TryDoPokedexScroll(u16, u16);
-static void UpdateSelectedMonSpriteId(void);
+static bool8 UpdateSelectedMonSpriteId(void);
 static bool8 TryDoInfoScreenScroll(void);
 static u8 ClearMonSprites(void);
 static u16 GetPokemonSpriteToDisplay(u16);
@@ -1534,7 +1534,8 @@ void Task_HandlePokedexInput(u8 taskId)
         if (JOY_NEW(A_BUTTON) && sPokedexView->pokedexList[sPokedexView->selectedPokemon].seen)
         {
             HandleDestroyStatBars_HGSS();
-            UpdateSelectedMonSpriteId();
+            if (!UpdateSelectedMonSpriteId())
+                return;
             BeginNormalPaletteFade(~(1 << (gSprites[sPokedexView->selectedMonSpriteId].oam.paletteNum + 16)), 0, 0, 0x10, RGB_BLACK);
             gSprites[sPokedexView->selectedMonSpriteId].callback = SpriteCB_MoveMonForInfoScreen;
             gTasks[taskId].func = Task_OpenInfoScreenAfterMonMovement;
@@ -1754,7 +1755,8 @@ static void Task_HandleSearchResultsInput(u8 taskId)
             u32 a;
 
             HandleDestroyStatBars_HGSS();
-            UpdateSelectedMonSpriteId();
+            if (!UpdateSelectedMonSpriteId())
+                return;
             a = (1 << (gSprites[sPokedexView->selectedMonSpriteId].oam.paletteNum + 16));
             gSprites[sPokedexView->selectedMonSpriteId].callback = SpriteCB_MoveMonForInfoScreen;
             BeginNormalPaletteFade(~a, 0, 0, 0x10, RGB_BLACK);
@@ -2605,17 +2607,33 @@ static u16 TryDoPokedexScroll(u16 selectedMon, u16 ignored)
     return selectedMon;
 }
 
-static void UpdateSelectedMonSpriteId(void)
+static bool8 UpdateSelectedMonSpriteId(void)
 {
     u16 i;
+    bool8 found = FALSE;
 
     for (i = 0; i < MAX_MONS_ON_SCREEN; i++)
     {
         u16 spriteId = sPokedexView->monSpriteIds[i];
 
-        if (gSprites[spriteId].x2 == 0 && gSprites[spriteId].y2 == 0 && spriteId != 0xFFFF)
+        // 先确认 spriteId 合法再解引用 gSprites。原写法把 spriteId != 0xFFFF 放在 && 最后，
+        // spriteId == 0xFFFF（槽位为空）时会先读 gSprites[0xFFFF]：GBA 上该地址落在 EWRAM 之外、
+        // 读回来只是总线垃圾值不会异常，宿主无 MMU 则直接访问违例闪退（实测 0xc0000005 读 0x027AB240）。
+        if (spriteId >= MAX_SPRITES)
+            continue;
+        if (gSprites[spriteId].x2 == 0 && gSprites[spriteId].y2 == 0)
+        {
             sPokedexView->selectedMonSpriteId = spriteId;
+            found = TRUE;
+        }
     }
+
+    // 没有精灵停在正中（例如还在滚动/移动中）时不要沿用上一次的 id，
+    // 否则调用方会拿 0xFFFF 或已销毁的 id 去解引用 gSprites（宿主同样会闪退）。
+    if (!found)
+        sPokedexView->selectedMonSpriteId = 0xFFFF;
+
+    return found;
 }
 
 static bool8 TryDoInfoScreenScroll(void)
@@ -2712,7 +2730,9 @@ static u32 CreatePokedexMonSprite(u16 num, s16 x, s16 y)
     {
         if (sPokedexView->monSpriteIds[i] == 0xFFFF)
         {
-            u8 spriteId = CreateMonSpriteFromNationalDexNumber(num, x, y, i);
+            u16 spriteId = CreateMonSpriteFromNationalDexNumber(num, x, y, i);
+            if (spriteId >= MAX_SPRITES)
+                return 0xFFFF;
 
             gSprites[spriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;
             gSprites[spriteId].oam.priority = 3;
@@ -3062,8 +3082,10 @@ static void SpriteCB_Scrollbar(struct Sprite *sprite)
 {
     if (sPokedexView->currentPage != PAGE_MAIN && sPokedexView->currentPage != PAGE_SEARCH_RESULTS)
         DestroySprite(sprite);
-    else
+    else if (sPokedexView->pokemonListCount > 1)
         sprite->y2 = sPokedexView->selectedPokemon * 120 / (sPokedexView->pokemonListCount - 1);
+    else
+        sprite->y2 = 0; // 列表里只有 1 条时除数为 0（宿主整数除零会崩），滚条位置按顶端处理
 }
 
 static void SpriteCB_ScrollArrow(struct Sprite *sprite)
@@ -3275,7 +3297,10 @@ void Task_LoadInfoScreen(u8 taskId)
         if (!gTasks[taskId].tMonSpriteDone)
         {
             gTasks[taskId].tMonSpriteId = (u16)CreateMonSpriteFromNationalDexNumber(sPokedexListItem->dexNum, MON_PAGE_X, MON_PAGE_Y, 0);
-            gSprites[gTasks[taskId].tMonSpriteId].oam.priority = 0;
+            if (gTasks[taskId].tMonSpriteId < MAX_SPRITES)
+                gSprites[gTasks[taskId].tMonSpriteId].oam.priority = 0;
+            else
+                gTasks[taskId].tMonSpriteId = SPRITE_NONE;
         }
         gMain.state++;
         break;
@@ -3285,7 +3310,7 @@ void Task_LoadInfoScreen(u8 taskId)
 
             if (gTasks[taskId].tBgLoaded)
                 preservedPalettes = 0x14; // each bit represents a palette index
-            if (gTasks[taskId].tMonSpriteDone)
+            if (gTasks[taskId].tMonSpriteDone && gTasks[taskId].tMonSpriteId < MAX_SPRITES)
                 preservedPalettes |= (1 << (gSprites[gTasks[taskId].tMonSpriteId].oam.paletteNum + 16));
             BeginNormalPaletteFade(~preservedPalettes, 0, 16, 0, RGB_BLACK);
             SetVBlankCallback(gPokedexVBlankCB);
@@ -3309,6 +3334,7 @@ void Task_LoadInfoScreen(u8 taskId)
             gMain.state++;
             if (!gTasks[taskId].tSkipCry)
             {
+                gTasks[taskId].data[14] = 0;
                 StopCryAndClearCrySongs();
                 PlayCry_NormalNoDucking(NationalPokedexNumToSpeciesForm(sPokedexListItem->dexNum), 0, CRY_VOLUME_RS, CRY_PRIORITY_NORMAL);
             }
@@ -3319,7 +3345,10 @@ void Task_LoadInfoScreen(u8 taskId)
         }
         break;
     case 9:
-        if (!IsCryPlayingOrClearCrySongs())
+        // A damaged/unsupported host cry must not hold the info screen
+        // forever. Normal cries finish well within this window; after the
+        // timeout continue with the same state as a cleared cry.
+        if (!IsCryPlayingOrClearCrySongs() || ++gTasks[taskId].data[14] > 180)
             gMain.state++;
         break;
     case 10:
@@ -3607,7 +3636,10 @@ void Task_LoadCryScreen(u8 taskId)
         break;
     case 5:
         gTasks[taskId].tMonSpriteId = CreateMonSpriteFromNationalDexNumber(sPokedexListItem->dexNum, MON_PAGE_X, MON_PAGE_Y, 0);
-        gSprites[gTasks[taskId].tMonSpriteId].oam.priority = 0;
+        if (gTasks[taskId].tMonSpriteId < MAX_SPRITES)
+            gSprites[gTasks[taskId].tMonSpriteId].oam.priority = 0;
+        else
+            gTasks[taskId].tMonSpriteId = SPRITE_NONE;
         gDexCryScreenState = 0;
         gMain.state++;
         break;
@@ -3820,6 +3852,13 @@ void Task_LoadSizeScreen(u8 taskId)
         break;
     case 5:
         spriteId = CreateSizeScreenTrainerPic(PlayerGenderToFrontTrainerPicId(gSaveBlock2Ptr->playerGender), 152, 56, 0);
+        if (spriteId >= MAX_SPRITES)
+        {
+            gTasks[taskId].tTrainerSpriteId = SPRITE_NONE;
+            gTasks[taskId].tMonSpriteId = SPRITE_NONE;
+            gMain.state = 7;
+            break;
+        }
         gSprites[spriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;
         gSprites[spriteId].oam.matrixNum = 1;
         gSprites[spriteId].oam.priority = 0;
@@ -3831,6 +3870,12 @@ void Task_LoadSizeScreen(u8 taskId)
         break;
     case 6:
         spriteId = CreateMonSpriteFromNationalDexNumber(sPokedexListItem->dexNum, 88, 56, 1);
+        if (spriteId >= MAX_SPRITES)
+        {
+            gTasks[taskId].tMonSpriteId = SPRITE_NONE;
+            gMain.state = 7;
+            break;
+        }
         gSprites[spriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;
         gSprites[spriteId].oam.matrixNum = 2;
         gSprites[spriteId].oam.priority = 0;
@@ -3991,7 +4036,11 @@ static void HighlightSubmenuScreenSelectBarItem(u8 a, u16 b)
 
 u8 DisplayCaughtMonDexPage(enum Species species, bool32 isShiny, u32 personality)
 {
-    u8 taskId = 0;
+    u8 taskId;
+
+    if (GetTaskCount() >= NUM_TASKS)
+        return TASK_NONE;
+
     if (POKEDEX_PLUS_HGSS)
         taskId = CreateTask(Task_DisplayCaughtMonDexPageHGSS, 0);
     else
@@ -4007,6 +4056,9 @@ u8 DisplayCaughtMonDexPage(enum Species species, bool32 isShiny, u32 personality
 
 static void LoadDexMonPalette(u32 taskId, bool32 isShiny)
 {
+    if (taskId >= NUM_TASKS || gTasks[taskId].tMonSpriteId >= MAX_SPRITES)
+        return;
+
     const u16 *paletteData = GetMonSpritePalFromSpeciesAndPersonality(gTasks[taskId].tSpecies, isShiny, GetWordTaskArg(taskId, tPersonalityLo));
     u32 paletteNum = gSprites[gTasks[taskId].tMonSpriteId].oam.paletteNum;
     LoadPalette(paletteData, OBJ_PLTT_ID(paletteNum), PLTT_SIZE_4BPP);
@@ -4017,7 +4069,10 @@ u32 Pokedex_CreateCaughtMonSprite(enum Species species, s32 x, s32 y)
     u32 spriteId;
 
     SetMultiuseSpriteTemplateToPokemon(species, GetCatchingBattler());
-    spriteId = CreateSprite(&gMultiuseSpriteTemplate, x, y, 0);
+    spriteId = CreateSpriteUnchecked(&gMultiuseSpriteTemplate, x, y, 0);
+    if (spriteId >= MAX_SPRITES)
+        return SPRITE_NONE;
+
     gSprites[spriteId].oam.priority = 0;
     gSprites[spriteId].callback = SpriteCallbackDummy;
     return spriteId;
@@ -4073,8 +4128,11 @@ static void Task_DisplayCaughtMonDexPage(u8 taskId)
         // We're using a different mon sprite creation method, because we don't have enough memory to safely use CreateMonPicSprite.
         spriteId = Pokedex_CreateCaughtMonSprite(species, MON_PAGE_X, MON_PAGE_Y);
         gTasks[taskId].tMonSpriteId = spriteId;
-        LoadDexMonPalette(taskId, FALSE);
-        gSprites[spriteId].oam.priority = 0;
+        if (spriteId < MAX_SPRITES)
+        {
+            LoadDexMonPalette(taskId, FALSE);
+            gSprites[spriteId].oam.priority = 0;
+        }
         BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
         SetVBlankCallback(gPokedexVBlankCB);
         gTasks[taskId].tState++;
@@ -4104,7 +4162,8 @@ void Task_HandleCaughtMonPageInput(u8 taskId)
     if (JOY_NEW(A_BUTTON | B_BUTTON))
     {
         BeginNormalPaletteFade(PALETTES_BG, 0, 0, 16, RGB_BLACK);
-        gSprites[gTasks[taskId].tMonSpriteId].callback = SpriteCB_SlideCaughtMonToCenter;
+        if (gTasks[taskId].tMonSpriteId < MAX_SPRITES)
+            gSprites[gTasks[taskId].tMonSpriteId].callback = SpriteCB_SlideCaughtMonToCenter;
         gTasks[taskId].func = Task_ExitCaughtMonPage;
         HandleCaughtMonPageTypeIcons_HGSS();
     }
@@ -4508,6 +4567,12 @@ s8 GetSetPokedexFlag(enum NationalDexOrder nationalDexNo, u8 caseID)
 {
     u32 index, bit, mask;
     s8 retVal = 0;
+
+    // National dex order 0 is the NONE sentinel.  Reject it (and malformed
+    // values above the configured dex) before the unsigned decrement below
+    // can wrap into an out-of-bounds save-block access.
+    if (nationalDexNo == NATIONAL_DEX_NONE || nationalDexNo > NATIONAL_DEX_COUNT)
+        return 0;
 
     nationalDexNo--;
     index = nationalDexNo / 8;

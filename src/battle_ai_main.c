@@ -4392,7 +4392,8 @@ static s32 AI_CalcMoveEffectScore(enum BattlerId battlerAtk, enum BattlerId batt
         u32 atkStage = gBattleMons[battlerDef].statStages[STAT_ATK];
         atkStat *= gStatStageRatios[atkStage][0];
         atkStat /= gStatStageRatios[atkStage][1];
-        u32 healPercent = atkStat * 100 / gBattleMons[battlerAtk].maxHP;
+        u32 maxHp = gBattleMons[battlerAtk].maxHP;
+        u32 healPercent = (maxHp == 0) ? 0 : (atkStat * 100 / maxHp); // 空战斗位 maxHP 为 0，宿主 x86 除零会崩
         if (ShouldRecover(battlerAtk, battlerDef, move, healPercent))
         {
             ADJUST_SCORE(GOOD_EFFECT);

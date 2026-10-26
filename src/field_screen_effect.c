@@ -77,7 +77,7 @@ const s32 gMaxFlashLevel = ARRAY_COUNT(sFlashLevelToRadius) - 1;
 static const struct ScanlineEffectParams sFlashEffectParams =
 {
     &REG_WIN0H,
-    ((DMA_ENABLE | DMA_START_HBLANK | DMA_REPEAT | DMA_DEST_RELOAD) << 16) | 1,
+    ((u32)(DMA_ENABLE | DMA_START_HBLANK | DMA_REPEAT | DMA_DEST_RELOAD) << 16) | 1,
     1
 };
 

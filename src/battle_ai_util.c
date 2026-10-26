@@ -425,7 +425,15 @@ void RestoreBattlerData(enum BattlerId battlerId)
 
 u32 GetHealthPercentage(enum BattlerId battlerId)
 {
-    return (u32)((100 * gBattleMons[battlerId].hp) / gBattleMons[battlerId].maxHP);
+    // 双打里一方只有 1 只（2VS1）时，空着的战斗位 maxHP 为 0。GBA 的 BIOS 除法除零只返回 0，
+    // 但宿主版（x86 idiv）会直接 0xc0000094 闪退（crash.log 里 GetHealthPercentage 的 idiv）。
+    // 空位按“满血”处理，避免 AI 把空槽当成濒死。
+    u32 maxHP = gBattleMons[battlerId].maxHP;
+
+    if (maxHP == 0)
+        return 100;
+
+    return (u32)((100 * gBattleMons[battlerId].hp) / maxHP);
 }
 
 bool32 AI_BattlerAtMaxHp(enum BattlerId battlerId)
@@ -1719,6 +1727,9 @@ bool32 CanTargetFaintAiWithMod(enum BattlerId battlerDef, enum BattlerId battler
     enum Move *moves = GetMovesArray(battlerDef);
     u32 hpCheck = gBattleMons[battlerAtk].hp + hpMod;
     u32 moveLimitations = aiData->moveLimitations[battlerAtk];
+    // 空战斗位（双打里一方只有 1 只）的 maxHP 为 0：GBA 的 BIOS 除法除零只返回 0，
+    // 但宿主 x86 的 idiv 会直接 0xc0000094 闪退，所以下面一律先判 0。
+    u32 maxHp = gBattleMons[battlerAtk].maxHP;
 
     if (hpCheck > gBattleMons[battlerAtk].maxHP)
         hpCheck = gBattleMons[battlerAtk].maxHP;
@@ -1734,14 +1745,14 @@ bool32 CanTargetFaintAiWithMod(enum BattlerId battlerDef, enum BattlerId battler
             dmg *= dmgMod;
 
         // Applies modified HP percent to AI data for consideration when running CanEndureHit
-        gAiLogicData->hpPercents[battlerAtk] = (hpCheck/gBattleMons[battlerAtk].maxHP)*100;
+        gAiLogicData->hpPercents[battlerAtk] = (maxHp == 0) ? 100 : (hpCheck / maxHp) * 100;
 
         if (dmg >= hpCheck && !(CanEndureHit(battlerDef, battlerAtk, moves[moveIndex]) && (dmgMod <= 1)))
         {
-            gAiLogicData->hpPercents[battlerAtk] = (gBattleMons[battlerAtk].hp / gBattleMons[battlerAtk].maxHP) * 100;
+            gAiLogicData->hpPercents[battlerAtk] = (maxHp == 0) ? 100 : (gBattleMons[battlerAtk].hp / maxHp) * 100;
             return TRUE;
         }
-        gAiLogicData->hpPercents[battlerAtk] = (gBattleMons[battlerAtk].hp / gBattleMons[battlerAtk].maxHP) * 100;
+        gAiLogicData->hpPercents[battlerAtk] = (maxHp == 0) ? 100 : (gBattleMons[battlerAtk].hp / maxHp) * 100;
     }
 
     return FALSE;

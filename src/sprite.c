@@ -367,10 +367,10 @@ void BuildOamBuffer(void)
 
         // y in [-128...159], so (159 - y) in [0..287].
         spritePriorities[toSort++]
-            = (sprite->oam.priority << 30)
-            | (sprite->subpriority << 22)
-            | (((159 - y) & 0x1FF) << 13)
-            | (index << 0);
+            = ((u32)sprite->oam.priority << 30)
+            | ((u32)sprite->subpriority << 22)
+            | ((u32)((159 - y) & 0x1FF) << 13)
+            | (u32)index;
     }
 
     SortSprites(spritePriorities, toSort);
@@ -912,6 +912,15 @@ void BeginAnim(struct Sprite *sprite)
     sprite->animCmdIndex = 0;
     sprite->animEnded = FALSE;
     sprite->animLoopCounter = 0;
+
+    // 同上：0 号动画可能是 NULL（“无动画”位）。按空动画处理，
+    // 必须清掉 animBeginning，否则每帧都会重进这里。
+    if (sprite->anims == NULL || sprite->anims[sprite->animNum] == NULL)
+    {
+        sprite->animBeginning = FALSE;
+        return;
+    }
+
     imageValue = sprite->anims[sprite->animNum][sprite->animCmdIndex].frame.imageValue;
 
     if (imageValue != -1)
@@ -947,6 +956,8 @@ void BeginAnim(struct Sprite *sprite)
 
 void ContinueAnim(struct Sprite *sprite)
 {
+    if (sprite->anims == NULL || sprite->anims[sprite->animNum] == NULL)
+        return;
     if (sprite->animDelayCounter)
     {
         u8 hFlip;
@@ -1422,15 +1433,24 @@ void ChangeSpriteAffineAnimIfDifferent(struct Sprite *sprite, u8 animNum)
 
 void SetSpriteSheetFrameTileNum(struct Sprite *sprite)
 {
-    if (sprite->usingSheet)
-    {
-        s16 tileOffset = sprite->anims[sprite->animNum][sprite->animCmdIndex].frame.imageValue;
-        if (OW_GFX_COMPRESS && sprite->sheetSpan)
-            tileOffset = (tileOffset + 1) << sprite->sheetSpan;
-        if (tileOffset < 0)
-            tileOffset = 0;
-        sprite->oam.tileNum = sprite->sheetTileStart + tileOffset;
-    }
+    s16 tileOffset;
+
+    // 有些动画表的 0 号位是 NULL（例：summary 屏的招式分类图标
+    // sSpriteAnimTable_CategoryIcons[0] == NULL），而 CreateSpriteAt 里刚
+    // ResetSprite 过的精灵 animNum 还是 0。GBA 读地址 0 只拿到 BIOS 垃圾值，
+    // 看不出来；宿主没有 MMU，直接访问违例崩溃（学习技能机时进入招式详情就崩）。
+    // 没有动画表就跳过，tileNum 交给随后的 StartSpriteAnim() -> BeginAnim()。
+    if (!sprite->usingSheet)
+        return;
+    if (sprite->anims == NULL || sprite->anims[sprite->animNum] == NULL)
+        return;
+
+    tileOffset = sprite->anims[sprite->animNum][sprite->animCmdIndex].frame.imageValue;
+    if (OW_GFX_COMPRESS && sprite->sheetSpan)
+        tileOffset = (tileOffset + 1) << sprite->sheetSpan;
+    if (tileOffset < 0)
+        tileOffset = 0;
+    sprite->oam.tileNum = sprite->sheetTileStart + tileOffset;
 }
 
 void ResetAffineAnimData(void)

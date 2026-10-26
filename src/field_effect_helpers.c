@@ -433,7 +433,7 @@ void UpdateShadowFieldEffect(struct Sprite *sprite)
 
 u32 FldEff_TallGrass(void)
 {
-    u8 spriteId;
+    u32 spriteId;
     s16 x = gFieldEffectArguments[0];
     s16 y = gFieldEffectArguments[1];
     SetSpritePosToOffsetMapCoords(&x, &y, 8, 8);
@@ -453,6 +453,8 @@ u32 FldEff_TallGrass(void)
         if (gFieldEffectArguments[7])
             SeekSpriteAnim(sprite, 4); // Skip to end of anim
     }
+    else
+        FieldEffectActiveListRemove(FLDEFF_TALL_GRASS);
     return 0;
 }
 
@@ -501,7 +503,7 @@ void UpdateTallGrassFieldEffect(struct Sprite *sprite)
 
 u32 FldEff_JumpTallGrass(void)
 {
-    u8 spriteId;
+    u32 spriteId;
 
     SetSpritePosToOffsetMapCoords((s16 *)&gFieldEffectArguments[0], (s16 *)&gFieldEffectArguments[1], 8, 12);
     spriteId = CreateSpriteAtEndUnchecked(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_JUMP_TALL_GRASS], gFieldEffectArguments[0], gFieldEffectArguments[1], 0);
@@ -513,6 +515,8 @@ u32 FldEff_JumpTallGrass(void)
         sprite->sJumpElevation = gFieldEffectArguments[2];
         sprite->sJumpFldEff = FLDEFF_JUMP_TALL_GRASS;
     }
+    else
+        FieldEffectActiveListRemove(FLDEFF_JUMP_TALL_GRASS);
     return 0;
 }
 
@@ -537,7 +541,7 @@ u8 FindTallGrassFieldEffectSpriteId(u8 localId, u8 mapNum, u8 mapGroup, s16 x, s
 
 u32 FldEff_LongGrass(void)
 {
-    u8 spriteId;
+    u32 spriteId;
     s16 x = gFieldEffectArguments[0];
     s16 y = gFieldEffectArguments[1];
     SetSpritePosToOffsetMapCoords(&x, &y, 8, 8);
@@ -557,6 +561,8 @@ u32 FldEff_LongGrass(void)
         if (gFieldEffectArguments[7])
             SeekSpriteAnim(sprite, 6); // Skip to end of anim
     }
+    else
+        FieldEffectActiveListRemove(FLDEFF_LONG_GRASS);
     return 0;
 }
 
@@ -610,7 +616,7 @@ void UpdateLongGrassFieldEffect(struct Sprite *sprite)
 // The graphics for this effect do not visually correspond to long grass either. Perhaps these graphics were its original design?
 u32 FldEff_JumpLongGrass(void)
 {
-    u8 spriteId;
+    u32 spriteId;
 
     SetSpritePosToOffsetMapCoords((s16 *)&gFieldEffectArguments[0], (s16 *)&gFieldEffectArguments[1], 8, 8);
     spriteId = CreateSpriteAtEndUnchecked(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_JUMP_LONG_GRASS], gFieldEffectArguments[0], gFieldEffectArguments[1], 0);
@@ -622,6 +628,8 @@ u32 FldEff_JumpLongGrass(void)
         sprite->sJumpElevation = gFieldEffectArguments[2];
         sprite->sJumpFldEff = FLDEFF_JUMP_LONG_GRASS;
     }
+    else
+        FieldEffectActiveListRemove(FLDEFF_JUMP_LONG_GRASS);
     return 0;
 }
 
@@ -648,6 +656,8 @@ u32 FldEff_ShortGrass(void)
         sprite->sPrevX = gSprites[objectEvent->spriteId].x;
         sprite->sPrevY = gSprites[objectEvent->spriteId].y;
     }
+    else
+        FieldEffectActiveListRemove(FLDEFF_SHORT_GRASS);
     return 0;
 }
 
@@ -1913,7 +1923,15 @@ u32 FldEff_OWE_SpawnAnim(void)
 {
     u8 spriteId;
     enum SpawnDespawnTypeOWE spawnAnim = gFieldEffectArguments[2];
+    if (spawnAnim >= OWE_SPAWN_ANIM_SHINY + 1)
+        return MAX_SPRITES;
+
     u32 visual = gOverworldWildEncounterFieldEffectInfo[spawnAnim].visual;
+    if (visual > FLDEFFOBJ_SHINY_SPARKLE
+     || gFieldEffectObjectTemplatePointers[visual] == NULL
+     || gFieldEffectObjectTemplatePointers[visual]->images == NULL)
+        return MAX_SPRITES;
+
     s16 xOffset = gOverworldWildEncounterFieldEffectInfo[spawnAnim].xOffset;
     s16 yOffset = gOverworldWildEncounterFieldEffectInfo[spawnAnim].yOffset;
     struct SpritePalette palette = GetOWESpawnDespawnAnimFldEffPalette(spawnAnim);

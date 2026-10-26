@@ -935,8 +935,8 @@ static void Task_BicycleBgAnimation(u8 taskId)
     bg1Speed = gTasks[taskId].tBg1Speed;
     if (bg1Speed != 0)
     {
-        offset = (gTasks[taskId].tBg1PosHi << 16) + (u16)gTasks[taskId].tBg1PosLo;
-        offset -= (u16)bg1Speed << 4;
+        offset = (s32)gTasks[taskId].tBg1PosHi * 0x10000 + (u16)gTasks[taskId].tBg1PosLo;
+        offset -= (s32)bg1Speed * 16;
         gTasks[taskId].tBg1PosHi = offset >> 16;
         gTasks[taskId].tBg1PosLo = offset;
         SetGpuReg(REG_OFFSET_BG1HOFS, gTasks[taskId].tBg1PosHi);
@@ -947,8 +947,8 @@ static void Task_BicycleBgAnimation(u8 taskId)
     bg2Speed = gTasks[taskId].tBg2Speed;
     if (bg2Speed != 0)
     {
-        offset = (gTasks[taskId].tBg2PosHi << 16) + (u16)gTasks[taskId].tBg2PosLo;
-        offset -= (u16)bg2Speed << 4;
+        offset = (s32)gTasks[taskId].tBg2PosHi * 0x10000 + (u16)gTasks[taskId].tBg2PosLo;
+        offset -= (s32)bg2Speed * 16;
         gTasks[taskId].tBg2PosHi = offset >> 16;
         gTasks[taskId].tBg2PosLo = offset;
         SetGpuReg(REG_OFFSET_BG2HOFS, gTasks[taskId].tBg2PosHi);
@@ -962,8 +962,8 @@ static void Task_BicycleBgAnimation(u8 taskId)
     bg3Speed = gTasks[taskId].tBg3Speed;
     if (bg3Speed != 0)
     {
-        offset = (gTasks[taskId].tBg3PosHi << 16) + (u16)gTasks[taskId].tBg3PosLo;
-        offset -= (u16)bg3Speed << 4;
+        offset = (s32)gTasks[taskId].tBg3PosHi * 0x10000 + (u16)gTasks[taskId].tBg3PosLo;
+        offset -= (s32)bg3Speed * 16;
         gTasks[taskId].tBg3PosHi = offset >> 16;
         gTasks[taskId].tBg3PosLo = offset;
         SetGpuReg(REG_OFFSET_BG3HOFS, gTasks[taskId].tBg3PosHi);
@@ -1032,7 +1032,7 @@ static void SpriteCB_MovingScenery(struct Sprite *sprite)
             DestroySprite(sprite);
             break;
         case INTROCRED_SCENERY_NORMAL:
-            x = ((sprite->x << 16) | (u16)sprite->tXPos) + (u16)sprite->tXOffset;
+            x = (s32)sprite->x * 0x10000 + (u16)sprite->tXPos + (u16)sprite->tXOffset;
             sprite->x = x >> 16;
             sprite->tXPos = x;
             if (sprite->x > 255)

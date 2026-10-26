@@ -926,7 +926,14 @@ static u32 GetNumberOfSpawnAnimTiles(s32 x, s32 y)
 {
     u32 metatileBehavior = MapGridGetMetatileBehaviorAt(x, y);
     enum SpawnDespawnTypeOWE spawnAnimType = GetOWESpawnDespawnAnimType(metatileBehavior);
+    if (spawnAnimType > OWE_SPAWN_ANIM_SHINY)
+        return 0;
+
     u32 visual = gOverworldWildEncounterFieldEffectInfo[spawnAnimType].visual;
+    if (visual > FLDEFFOBJ_SHINY_SPARKLE
+     || gFieldEffectObjectTemplatePointers[visual] == NULL
+     || gFieldEffectObjectTemplatePointers[visual]->images == NULL)
+        return 0;
 
     return gFieldEffectObjectTemplatePointers[visual]->images->size / TILE_SIZE_4BPP;
 }
@@ -1576,8 +1583,13 @@ void OWEApproachForBattle(struct ScriptContext *ctx)
         return;
     }
     
+    if (GetTaskCount() >= NUM_TASKS)
+    {
+        FreezeObjectEvent(owe);
+        return;
+    }
     u32 taskId = CreateTask(Task_OWEApproachForBattle, 2);
-    if (FindTaskIdByFunc(Task_OWEApproachForBattle) == TASK_NONE)
+    if (taskId >= NUM_TASKS || FindTaskIdByFunc(Task_OWEApproachForBattle) == TASK_NONE)
     {
         FreezeObjectEvent(owe);
         return;
@@ -1589,6 +1601,13 @@ void OWEApproachForBattle(struct ScriptContext *ctx)
 
 static void Task_OWEApproachForBattle(u8 taskId)
 {
+    if (taskId >= NUM_TASKS || gTasks[taskId].tObjectId >= OBJECT_EVENTS_COUNT)
+    {
+        if (taskId < NUM_TASKS)
+            DestroyTask(taskId);
+        ScriptContext_Enable();
+        return;
+    }
     struct ObjectEvent *OWE = &gObjectEvents[gTasks[taskId].tObjectId];
 
     // Let the mon continue to take steps until right next to the player.

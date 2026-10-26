@@ -32,6 +32,7 @@
 #include "secret_base.h"
 #include "sound.h"
 #include "start_menu.h"
+#include "task.h"
 #include "trainer_see.h"
 #include "trainer_hill.h"
 #include "unbound_start_menu.h"
@@ -916,6 +917,13 @@ static bool32 ShouldDisableRandomEncounters(void)
 
 static bool8 CheckStandardWildEncounter(u16 metatileBehavior)
 {
+    // StandardWildEncounter locks field controls after it reports success.
+    // If the task table is already full, BattleSetup cannot create its
+    // transition task and the player would remain permanently locked. Defer
+    // the encounter until a task slot is available instead.
+    if (GetTaskCount() >= NUM_TASKS)
+        return FALSE;
+
     if (ShouldDisableRandomEncounters())
         return FALSE;
 

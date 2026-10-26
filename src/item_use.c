@@ -1211,7 +1211,7 @@ bool32 CannotUseItemsInBattle(enum Item itemId, struct Pokemon *mon)
     bool8 cannotUse = FALSE;
     const u8* failStr = NULL;
     u32 i, battlerTarget;
-    u16 hp = GetMonData(mon, MON_DATA_HP);
+    u16 hp;
 
     if (gPartyMenu.slotId == 0)
         battlerTarget = B_POSITION_PLAYER_LEFT;
@@ -1219,6 +1219,15 @@ bool32 CannotUseItemsInBattle(enum Item itemId, struct Pokemon *mon)
         battlerTarget = B_POSITION_PLAYER_RIGHT;
     else
         battlerTarget = MAX_POSITION_COUNT;
+
+    // mon 允许为 NULL：ItemUseInBattle_BagMenu() 就是这么调的（战斗背包里直接使用的道具，
+    // 例如防御强化等强化道具）。此时按当前出战位去取队伍成员，否则下面 GetMonData(NULL, ...)
+    // 会解引用空指针——GBA 上只是读回总线垃圾值，宿主无 MMU 直接访问违例闪退。
+    if (mon == NULL && battlerTarget < MAX_POSITION_COUNT
+        && gBattlerPartyIndexes[battlerTarget] < PARTY_SIZE)
+        mon = &gPlayerParty[gBattlerPartyIndexes[battlerTarget]];
+
+    hp = (mon != NULL) ? GetMonData(mon, MON_DATA_HP) : 0;
 
     // Embargo Check
     if (battlerTarget < MAX_POSITION_COUNT && GetItemType(itemId) != ITEM_USE_BAG_MENU)
@@ -1295,14 +1304,16 @@ bool32 CannotUseItemsInBattle(enum Item itemId, struct Pokemon *mon)
             cannotUse = TRUE;
         break;
     case EFFECT_ITEM_CURE_STATUS:
-        if (!((GetMonData(mon, MON_DATA_STATUS) & GetItemStatus1Mask(itemId))
-            || SelectedMonHasVolatile(itemId)))
+        if (mon == NULL
+            || !((GetMonData(mon, MON_DATA_STATUS) & GetItemStatus1Mask(itemId))
+                || SelectedMonHasVolatile(itemId)))
             cannotUse = TRUE;
         break;
     case EFFECT_ITEM_HEAL_AND_CURE_STATUS:
-        if ((hp == 0 || hp == GetMonData(mon, MON_DATA_MAX_HP))
-            && !((GetMonData(mon, MON_DATA_STATUS) & GetItemStatus1Mask(itemId))
-            || SelectedMonHasVolatile(itemId)))
+        if ((mon == NULL || hp == 0 || hp == GetMonData(mon, MON_DATA_MAX_HP))
+            && (mon == NULL
+                || !((GetMonData(mon, MON_DATA_STATUS) & GetItemStatus1Mask(itemId))
+                    || SelectedMonHasVolatile(itemId))))
             cannotUse = TRUE;
         break;
     case EFFECT_ITEM_REVIVE:
@@ -1310,6 +1321,11 @@ bool32 CannotUseItemsInBattle(enum Item itemId, struct Pokemon *mon)
             cannotUse = TRUE;
         break;
     case EFFECT_ITEM_RESTORE_PP:
+        if (mon == NULL)
+        {
+            cannotUse = TRUE;
+            break;
+        }
         if (GetItemEffect(itemId)[4] == ITEM4_HEAL_PP)
         {
             for (i = 0; i < MAX_MON_MOVES; i++)
