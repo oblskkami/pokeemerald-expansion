@@ -1,4 +1,7 @@
 #include "global.h"
+#ifdef PORTABLE
+#include "platform.h"
+#endif
 #include "battle.h"
 #include "battle_anim.h"
 #include "battle_anim_scripts.h"
@@ -9997,7 +10000,22 @@ bool32 AreMultiPartiesFullTeams(void)
         return FALSE;
     }
 #else
-    enum DifficultyLevel difficulty = GetCurrentDifficultyLevel();
+    // gBattleTypeFlags 此时还带着"上一场战斗"的标志位（野战时它被清成 0，战斗结束后也没有人恢复），
+    // 所以单看 BATTLE_TYPE_TRAINER 并不能判断"即将开始的这场"是不是训练家战。这里同时读取即将
+    // 开打的这场的训练家 id，否则本函数会误报"双方都是满编队伍"，脚本就会跳过
+    // ReducePlayerPartyToSelectedMons()：玩家会带着队伍前三只进双打，而不是在队伍菜单里选的三只。
+    u16 trainerA = TRAINER_BATTLE_PARAM.opponentA;
+    u16 trainerB = TRAINER_BATTLE_PARAM.opponentB;
+    // 只有"真实训练家 id"才允许查 gTrainers 表：TRAINER_NONE(0)、TRAINER_LINK_OPPONENT(0xFF01)、
+    // 以及 2 VS 1 里被写成 0xFFFF 的空槽都不是合法下标（宿主版会越界读内存）。
+    bool32 trainerAValid = trainerA != TRAINER_NONE && trainerA != TRAINER_LINK_OPPONENT && trainerA < TRAINERS_COUNT;
+    bool32 trainerBValid = trainerB != TRAINER_NONE && trainerB != TRAINER_LINK_OPPONENT && trainerB < TRAINERS_COUNT;
+    bool32 isTrainerBattle = (gBattleTypeFlags & BATTLE_TYPE_TRAINER) || trainerAValid || trainerBValid;
+
+#ifdef PORTABLE
+    HostLogf("multi parties: gBattleTypeFlags=%08X trainerA=%u trainerB=%u validA=%d validB=%d",
+             gBattleTypeFlags, trainerA, trainerB, trainerAValid, trainerBValid);
+#endif
 
     if (B_MULTI_HALF_TEAMS)
     {
@@ -10005,16 +10023,18 @@ bool32 AreMultiPartiesFullTeams(void)
         return FALSE;
     }
 
-    if (!(gBattleTypeFlags & BATTLE_TYPE_TRAINER))
+    if (!isTrainerBattle)
     {
         gSpecialVar_Result = TRUE;
         return TRUE;
     }
 
-    if (TRAINER_BATTLE_PARAM.opponentA == TRAINER_LINK_OPPONENT
+    if (trainerA == TRAINER_LINK_OPPONENT
      || gBattleTypeFlags & BATTLE_TYPE_TOWER_LINK_MULTI
-     || (gTrainers[difficulty][TRAINER_BATTLE_PARAM.opponentA].multiTeamSize == MULTI_TEAM_SIZE_HALF)
-     || (gTrainers[difficulty][TRAINER_BATTLE_PARAM.opponentB].multiTeamSize == MULTI_TEAM_SIZE_HALF))
+     || (trainerAValid
+         && gTrainers[GetTrainerDifficultyLevel(trainerA)][trainerA].multiTeamSize == MULTI_TEAM_SIZE_HALF)
+     || (trainerBValid
+         && gTrainers[GetTrainerDifficultyLevel(trainerB)][trainerB].multiTeamSize == MULTI_TEAM_SIZE_HALF))
     {
         gSpecialVar_Result = FALSE;
         return FALSE;
