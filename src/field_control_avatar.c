@@ -395,6 +395,16 @@ static const u8 *GetInteractedObjectEventScript(struct MapPosition *position, u8
         break;
     }
 
+#ifdef PORTABLE
+    if (objectEventId != OBJECT_EVENTS_COUNT)
+        HostLogf("talk candidate: obj=%u local=%u gfx=%u map=%u:%u cur=(%d,%d) player=(%d,%d) face=%u invisible=%u sprite=%u script=%p",
+                 objectEventId, gObjectEvents[objectEventId].localId, gObjectEvents[objectEventId].graphicsId,
+                 gObjectEvents[objectEventId].mapGroup, gObjectEvents[objectEventId].mapNum,
+                 gObjectEvents[objectEventId].currentCoords.x, gObjectEvents[objectEventId].currentCoords.y,
+                 currX, currY, direction, (u32)gObjectEvents[objectEventId].invisible,
+                 gObjectEvents[objectEventId].spriteId,
+                 GetObjectEventScriptPointerByObjectEventId(objectEventId));
+#endif
     // 隐形物件（例如尚未真正出场的跟随 NPC）不应该能被 A 键对话。
     // 上游只检查 active + 坐标，不看 invisible，于是被藏起来的跟随 NPC 仍可被搭话，
     // 会跑它自带的脚本（例：跟随的劲敌脚本 → 触发劲敌对战）。
