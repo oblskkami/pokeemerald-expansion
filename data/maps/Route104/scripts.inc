@@ -1013,7 +1013,7 @@ Route104_Text_LikeFillingMouthWithSeedsTakeThis:
     .string "我喜欢在嘴里塞满种子，\n然后飞速射出去！\p这个给你，你也可以试试！\p把它给宝可梦使用，宝可梦就能\n学会快速射出种子的招式。$"
 
 Route104_Text_TMsAreOneTimeUse:
-    .string "要提醒你！\pTM，就是招式学习器，\n只能使用一次。\p一旦你用了，它就会消失。\n所以使用之前要三思！$"
+    .string "要提醒你！\pTM，就是招式学习器，\n是可以多次使用的。\p它不会消失。\n所以请随心所欲地使用吧！$"
 
 Route104_Text_DontNeedThisTakeIt:
     .string "这间花店最近\n开始卖小树，\p我太兴奋了，\n买了太多的东西。\p这个白色香草我不需要了，\n你想要吗？$"
