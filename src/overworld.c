@@ -1852,7 +1852,7 @@ u8 UpdateSpritePaletteWithTime(u8 paletteNum)
 
 static u16 sForeignObjectSweep;
 
-void OverworldBasic(void)
+static void OverworldBasic(void)
 {
     ScriptContext_RunScript();
     RunTasks();
@@ -2631,7 +2631,6 @@ static void InitObjectEventsLink(void)
     TrySpawnObjectEvents(0, 0);
     TryRunOnWarpIntoMapScript();
 }
-
 
 static void InitObjectEventsLocal(void)
 {
