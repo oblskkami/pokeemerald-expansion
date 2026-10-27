@@ -1,4 +1,7 @@
 #include "global.h"
+#ifdef PORTABLE
+#include "platform.h"
+#endif
 #include "battle_setup.h"
 #include "bike.h"
 #include "coord_event_weather.h"
@@ -392,14 +395,38 @@ static const u8 *GetInteractedObjectEventScript(struct MapPosition *position, u8
         break;
     }
 
-    if (objectEventId == OBJECT_EVENTS_COUNT || gObjectEvents[objectEventId].localId == LOCALID_PLAYER)
+    // 隐形物件（例如尚未真正出场的跟随 NPC）不应该能被 A 键对话。
+    // 上游只检查 active + 坐标，不看 invisible，于是被藏起来的跟随 NPC 仍可被搭话，
+    // 会跑它自带的脚本（例：跟随的劲敌脚本 → 触发劲敌对战）。
+    if (objectEventId == OBJECT_EVENTS_COUNT || gObjectEvents[objectEventId].localId == LOCALID_PLAYER
+     || gObjectEvents[objectEventId].invisible)
     {
+#ifdef PORTABLE
+        // 诊断：记录被拦下的隐形物件，以及当前所有隐形活动物件，便于定位残留来源
+        if (objectEventId != OBJECT_EVENTS_COUNT)
+            HostLogf("talk blocked (invisible): obj=%u local=%u gfx=%u map=%u:%u cur=(%d,%d) script=%p follower=%d",
+                     objectEventId, gObjectEvents[objectEventId].localId, gObjectEvents[objectEventId].graphicsId,
+                     gObjectEvents[objectEventId].mapGroup, gObjectEvents[objectEventId].mapNum,
+                     gObjectEvents[objectEventId].currentCoords.x, gObjectEvents[objectEventId].currentCoords.y,
+                     GetObjectEventScriptPointerByObjectEventId(objectEventId), PlayerHasFollowerNPC());
+        {
+            u32 k;
+            for (k = 0; k < OBJECT_EVENTS_COUNT; k++)
+                if (gObjectEvents[k].active && gObjectEvents[k].invisible)
+                    HostLogf("  invisible obj #%u local=%u gfx=%u map=%u:%u cur=(%d,%d) script=%p",
+                             k, gObjectEvents[k].localId, gObjectEvents[k].graphicsId,
+                             gObjectEvents[k].mapGroup, gObjectEvents[k].mapNum,
+                             gObjectEvents[k].currentCoords.x, gObjectEvents[k].currentCoords.y,
+                             GetObjectEventScriptPointerByObjectEventId(k));
+        }
+#endif
         if (MetatileBehavior_IsCounter(metatileBehavior) != TRUE)
             return NULL;
 
         // Look for an object event on the other side of the counter.
         objectEventId = GetObjectEventIdByPosition(position->x + gDirectionToVectors[direction].x, position->y + gDirectionToVectors[direction].y, position->elevation);
-        if (objectEventId == OBJECT_EVENTS_COUNT || gObjectEvents[objectEventId].localId == LOCALID_PLAYER)
+        if (objectEventId == OBJECT_EVENTS_COUNT || gObjectEvents[objectEventId].localId == LOCALID_PLAYER
+         || gObjectEvents[objectEventId].invisible)
             return NULL;
     }
 
