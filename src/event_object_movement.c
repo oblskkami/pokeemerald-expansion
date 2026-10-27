@@ -1591,6 +1591,13 @@ static u8 InitObjectEventStateFromTemplate(const struct ObjectEventTemplate *tem
         template = &(mapHeader->events->objectEvents[localId - 1]);
     }
 
+#ifdef PORTABLE
+    // 诊断：记录每次物件初始化（含 clone）的图身份与当时的地图，用于定位隐形挡路怪
+    HostLogf("obj init: clone=%u tplLocal=%u tplGfx=%u map=%u:%u tplPos=(%d,%d) loc=%u:%u",
+             isClone, template->localId, template->graphicsId, mapGroup, mapNum,
+             template->x, template->y,
+             gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum);
+#endif
     objectEventId = GetAvailableObjectEventId(template->localId, mapNum, mapGroup);
     if (objectEventId == OBJECT_EVENTS_COUNT)
         return OBJECT_EVENTS_COUNT;

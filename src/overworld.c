@@ -1883,7 +1883,9 @@ u8 UpdateSpritePaletteWithTime(u8 paletteNum)
     return paletteNum;
 }
 
-static void OverworldBasic(void)
+static u16 sForeignObjectSweep;
+
+void OverworldBasic(void)
 {
     ScriptContext_RunScript();
     RunTasks();
@@ -1910,6 +1912,14 @@ static void OverworldBasic(void)
         {
             ApplyWeatherColorMapIfIdle(gWeatherPtr->colorMapIndex);
         }
+    }
+    // 兜底：跨图时若有物件没被清理，它会隐形地留在旧坐标上挡路（典型症状：古玫镇里
+    // 按 A 触发劲敌对战的那个"隐形劲敌"）。每 30 帧扫一次，只摘掉地图字段与当前地图
+    // 不符的物件；本图物件、玩家、跟随宝可梦/跟随 NPC 都不受影响。
+    if (++sForeignObjectSweep >= 30)
+    {
+        sForeignObjectSweep = 0;
+        RemoveForeignObjectEvents();
     }
     UpdateOverworldWildEncounter();
 }
