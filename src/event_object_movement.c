@@ -1694,6 +1694,35 @@ void RemoveObjectEventByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup)
     }
 }
 
+void RemoveForeignObjectEvents(void)
+{
+    u32 i;
+
+    // 跨图时旧地图的物件可能没被清理，它们属于别的地图、在本图也没有模板，
+    // 会按旧坐标挡在场上：看不见，但按 A 仍能对话并跑它的脚本（典型症状：隐形的劲敌）。
+    for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+    {
+        struct ObjectEvent *obj = &gObjectEvents[i];
+
+        // 玩家自己的槽位在跨图后 map 字段常常还是上一张图，绝不能当成残留清掉
+        if (!obj->active || obj->isPlayer || obj->localId == OBJ_EVENT_ID_PLAYER)
+            continue;
+        if (obj->localId == OBJ_EVENT_ID_FOLLOWER || obj->localId == OBJ_EVENT_ID_NPC_FOLLOWER)
+            continue;
+        if (obj->mapGroup == gSaveBlock1Ptr->location.mapGroup
+         && obj->mapNum == gSaveBlock1Ptr->location.mapNum)
+            continue;
+
+        // 残留物的 graphicsId 可能是垃圾值，所以不走 RemoveObjectEvent()（那会去查图形信息），
+        // 只销毁它留下的精灵再从物件表摘掉。
+        if (obj->spriteId < MAX_SPRITES && gSprites[obj->spriteId].inUse)
+            DestroySprite(&gSprites[obj->spriteId]);
+        obj->spriteId = 0;
+        obj->active = FALSE;
+        obj->invisible = TRUE;
+    }
+}
+
 static void RemoveObjectEventInternal(struct ObjectEvent *objectEvent)
 {
     struct SpriteFrameImage image;

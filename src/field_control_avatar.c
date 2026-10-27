@@ -408,8 +408,12 @@ static const u8 *GetInteractedObjectEventScript(struct MapPosition *position, u8
     // 隐形物件（例如尚未真正出场的跟随 NPC）不应该能被 A 键对话。
     // 上游只检查 active + 坐标，不看 invisible，于是被藏起来的跟随 NPC 仍可被搭话，
     // 会跑它自带的脚本（例：跟随的劲敌脚本 → 触发劲敌对战）。
+    // 还有"属于别的地图"的物件：读档时存档里的物件表会带着上一张地图的残留，
+    // 它在当前地图没有模板，却仍按旧坐标留在场上（看起来隐形，按 A 却会跑它的脚本）。
     if (objectEventId == OBJECT_EVENTS_COUNT || gObjectEvents[objectEventId].localId == LOCALID_PLAYER
-     || gObjectEvents[objectEventId].invisible)
+     || gObjectEvents[objectEventId].invisible
+     || gObjectEvents[objectEventId].mapGroup != gSaveBlock1Ptr->location.mapGroup
+     || gObjectEvents[objectEventId].mapNum != gSaveBlock1Ptr->location.mapNum)
     {
 #ifdef PORTABLE
         // 诊断：记录被拦下的隐形物件，以及当前所有隐形活动物件，便于定位残留来源

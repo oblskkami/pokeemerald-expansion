@@ -2704,6 +2704,7 @@ static void InitObjectEventsLocal(void)
     FollowerNPC_HandleSprite();
     UpdateFollowingPokemon();
     TryRunOnWarpIntoMapScript();
+    RemoveForeignObjectEvents();
 #ifdef PORTABLE
     HostLogObjectEvents("InitObjectEventsLocal");
 #endif
@@ -2714,6 +2715,7 @@ static void InitObjectEventsReturnToField(void)
     SpawnObjectEventsOnReturnToField(0, 0);
     RotatingGate_InitPuzzleAndGraphics();
     RunOnReturnToFieldMapScript();
+    RemoveForeignObjectEvents();
 #ifdef PORTABLE
     HostLogObjectEvents("InitObjectEventsReturnToField");
 #endif

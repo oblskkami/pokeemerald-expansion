@@ -237,6 +237,17 @@ void LoadObjectEvents(void)
             !gObjectEvents[i].active &&
             gObjectEvents[i].graphicsId & OBJ_EVENT_MON)
             gObjectEvents[i].active = TRUE;
+        // 存档里的物件表会保留离开某张地图时未清理的残留（例如 103 号道路的劲敌对象），
+        // 这些物件在当前地图没有对应模板，读档后会按旧坐标留在场上：看不见，却能按 A 对话。
+        // 玩家自己、跟随宝可梦与跟随 NPC 不在此列（它们由各自系统管理）。
+        if (gObjectEvents[i].active
+         && !gObjectEvents[i].isPlayer
+         && gObjectEvents[i].localId != OBJ_EVENT_ID_PLAYER
+         && gObjectEvents[i].localId != OBJ_EVENT_ID_FOLLOWER
+         && gObjectEvents[i].localId != OBJ_EVENT_ID_NPC_FOLLOWER
+         && (gObjectEvents[i].mapGroup != gSaveBlock1Ptr->location.mapGroup
+          || gObjectEvents[i].mapNum != gSaveBlock1Ptr->location.mapNum))
+            gObjectEvents[i].active = FALSE;
     }
     SetMinimumOWESpawnTimer();
 }
