@@ -3,7 +3,7 @@
 > 本文件是给 AI 助手与协作者的现场手册。改动请保持"可验证"：写清文件路径 + 行号 + 现象 + 判读口径。
 > 版本基准：pokeemerald-expansion **1.17.2**（`include/constants/expansion.h:5-7`），emerald，游戏文本已中文化。
 > 工程根 = 仓库根：`D:\Game\lbs\pokeemerald-expansion\decp\pokeemerald-expansion`（会话工作目录是它的上层 `decp`，注意区分）。
-> 当前主分支：`multiplatform`（PC 宿主版）；GBA 侧在 `ny2` 上开发，两条线共享同一份 `src/`。
+> 当前开发主线：`ny2`（GBA 改版，游戏内容唯一真源）；PC 宿主版在 `multiplatform` = `ny2` + 宿主层，靠 `git merge ny2` 同步（见第九节）。
 
 ---
 
@@ -238,7 +238,37 @@ powershell.exe -ExecutionPolicy Bypass -File 'tools\package_windows.ps1'
 
 ---
 
-## 九、禁止事项
+## 九、分支模型与同步（2026-10-27 起）
+
+### 9.1 模型
+- `ny2`：GBA 改版开发分支，**游戏内容唯一真源**（地图、文本、数值、脚本、精灵、战斗逻辑）。
+- `multiplatform`：`ny2` + 宿主适配层 —— `src/platform/`、`include/platform*`、`Makefile_pc`、`tools/*windows*`、`test/native/`，以及各 `src/*.c`、`include/*.h` 里的 `#ifdef PORTABLE` 段。
+- 同步方向：**只有 ny2 → multiplatform**。不要直接在 multiplatform 上改游戏内容；宿主层修出的游戏层 bug 要回灌 ny2（见 9.4）。
+
+### 9.2 出 PC 包前（每次都是这三步）
+```bash
+git status                      # ny2 上必须先 commit，工作区要干净
+git checkout multiplatform
+git merge ny2                   # 冲突口径见 9.3
+bash tools/build_windows.sh
+git checkout ny2
+```
+
+### 9.3 冲突口径（2026-10-27 首次合并实测）
+- 冲突几乎固定落在 5 个文件：`.gitignore`、`src/task.c`、`src/battle_util.c`、`src/pokemon_storage_system.c`、`src/pokenav_main_menu.c`。原因是 ny2 版把 `#ifdef PORTABLE` 段整段删掉了（GBA 分支没有宿主头），multiplatform 版保留。
+- 这 5 处**一律取 multiplatform 一侧**：`git checkout --ours -- <file>`。那一侧 = ny2 内容 + 宿主钩子，是超集。实测：除 `src/field_control_avatar.c` 多一行 `#include "task.h"`（ny2 自己的修复，保留）之外，合并后的树与合并前的 multiplatform 完全一致。
+- 冲突若落在**别的**文件，说明 ny2 改到了宿主钩子附近，必须人工合并：**ny2 的逻辑改动与 multiplatform 的 `#ifdef PORTABLE` 段都要留**（通常两边各加几行），不要整文件取一边。
+- 合并后自查：`git diff ny2 --stat` 应只剩宿主层文件；`PORTABLE` 的命中数不应减少。
+
+### 9.4 反向：PC 侧的游戏层修复要回灌 ny2
+- 在 multiplatform 上修的游戏层 bug（8.5 表）必须同步到 ny2，否则下次 merge 时 ny2 的旧代码会把它"合回去"——merge 以 ny2 内容为准。
+- 做法：在 ny2 上 `git checkout multiplatform -- <files>`，再手工剥掉该文件里的 `#ifdef PORTABLE` / `HostLogf` / `platform.h` 段，最后**在 ny2 上 `make -j8`** 验证（`host-audit` 查不出 GBA 侧问题）。
+
+### 9.5 本文件（AGENTS.md）
+- 两条分支都要有。ny2 上若是未跟踪文件，切换分支时 git 会拒绝覆盖，所以**在 ny2 上 commit 一次**，之后合并自动带走。
+- 改本文件后两边内容保持一致（在 ny2 改、merge 过去即可）。
+
+## 十、禁止事项
 
 1. 不要为 PC 版修改根 `Makefile`、不要改 `ld_script_modern.ld`、不要动 GBA 的 section 属性。
 2. 不要把宿主专有头（`windows.h`、`SDL.h`）引进非 `PORTABLE` 段。
