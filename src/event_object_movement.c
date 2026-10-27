@@ -13,9 +13,6 @@
 #include "event_scripts.h"
 #include "faraway_island.h"
 #include "field_camera.h"
-#ifdef PORTABLE
-#include "platform.h"
-#endif
 #include "field_effect.h"
 #include "field_effect_helpers.h"
 #include "field_player_avatar.h"
@@ -1591,13 +1588,6 @@ static u8 InitObjectEventStateFromTemplate(const struct ObjectEventTemplate *tem
         template = &(mapHeader->events->objectEvents[localId - 1]);
     }
 
-#ifdef PORTABLE
-    // 诊断：记录每次物件初始化（含 clone）的图身份与当时的地图，用于定位隐形挡路怪
-    HostLogf("obj init: clone=%u tplLocal=%u tplGfx=%u map=%u:%u tplPos=(%d,%d) loc=%u:%u",
-             isClone, template->localId, template->graphicsId, mapGroup, mapNum,
-             template->x, template->y,
-             gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum);
-#endif
     objectEventId = GetAvailableObjectEventId(template->localId, mapNum, mapGroup);
     if (objectEventId == OBJECT_EVENTS_COUNT)
         return OBJECT_EVENTS_COUNT;
@@ -1646,14 +1636,6 @@ static u8 InitObjectEventStateFromTemplate(const struct ObjectEventTemplate *tem
     objectEvent->trainerRange_berryTreeId = template->trainerRange_berryTreeId;
     objectEvent->previousMovementDirection = gInitialMovementTypeFacingDirections[template->movementType];
     SetObjectEventDirection(objectEvent, objectEvent->previousMovementDirection);
-#ifdef PORTABLE
-    // 诊断：抓出"按别的地图身份被生成"的物件（隐形挡路怪）
-    if (mapNum != gSaveBlock1Ptr->location.mapNum || mapGroup != gSaveBlock1Ptr->location.mapGroup)
-        HostLogf("spawn FOREIGN obj: slot=%u local=%u gfx=%u map=%u:%u cur=(%d,%d) tpl=%p tplScript=%p curMap=%u:%u",
-                 objectEventId, objectEvent->localId, objectEvent->graphicsId, mapGroup, mapNum,
-                 objectEvent->currentCoords.x, objectEvent->currentCoords.y, template, template->script,
-                 gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum);
-#endif
     if (sMovementTypeHasRange[objectEvent->movementType])
     {
         if (objectEvent->range.rangeX == 0)
@@ -1733,12 +1715,6 @@ void RemoveForeignObjectEvents(void)
 
         // 残留物的 graphicsId 可能是垃圾值，所以不走 RemoveObjectEvent()（那会去查图形信息），
         // 只销毁它留下的精灵再从物件表摘掉。
-#ifdef PORTABLE
-        HostLogf("removed FOREIGN obj: slot=%u local=%u gfx=%u map=%u:%u cur=(%d,%d) curMap=%u:%u",
-                 i, obj->localId, obj->graphicsId, obj->mapGroup, obj->mapNum,
-                 obj->currentCoords.x, obj->currentCoords.y,
-                 gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum);
-#endif
         if (obj->spriteId < MAX_SPRITES && gSprites[obj->spriteId].inUse)
             DestroySprite(&gSprites[obj->spriteId]);
         obj->spriteId = 0;

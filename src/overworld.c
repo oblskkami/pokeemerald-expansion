@@ -1885,7 +1885,7 @@ u8 UpdateSpritePaletteWithTime(u8 paletteNum)
 
 static u16 sForeignObjectSweep;
 
-void OverworldBasic(void)
+static void OverworldBasic(void)
 {
     ScriptContext_RunScript();
     RunTasks();
@@ -2670,33 +2670,6 @@ static void InitObjectEventsLink(void)
     TryRunOnWarpIntoMapScript();
 }
 
-#ifdef PORTABLE
-// 诊断：每次地图加载后列出所有活动物件，用于定位跨图残留的物件
-static void HostLogObjectEvents(const char *when)
-{
-    u32 i;
-
-    HostLogf("objects on load (%s): map=%u:%u pos=(%d,%d)", when,
-             gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum,
-             gSaveBlock1Ptr->pos.x, gSaveBlock1Ptr->pos.y);
-    for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
-    {
-        if (!gObjectEvents[i].active)
-            continue;
-        // 注意：不能用 GetObjectEventScriptPointerByObjectEventId()，它在找不到模板时会解引用 NULL
-        const struct ObjectEventTemplate *tpl = GetObjectEventTemplateByLocalIdAndMap(
-            gObjectEvents[i].localId, gObjectEvents[i].mapNum, gObjectEvents[i].mapGroup);
-
-        HostLogf("  obj #%u local=%u gfx=%u map=%u:%u cur=(%d,%d) sprite=%u invisible=%u tpl=%s script=%p",
-                 i, gObjectEvents[i].localId, gObjectEvents[i].graphicsId,
-                 gObjectEvents[i].mapGroup, gObjectEvents[i].mapNum,
-                 gObjectEvents[i].currentCoords.x, gObjectEvents[i].currentCoords.y,
-                 gObjectEvents[i].spriteId, (u32)gObjectEvents[i].invisible,
-                 tpl != NULL ? "yes" : "MISSING", tpl != NULL ? (const void *)tpl->script : NULL);
-    }
-}
-#endif
-
 static void InitObjectEventsLocal(void)
 {
     u16 x, y;
@@ -2715,9 +2688,6 @@ static void InitObjectEventsLocal(void)
     UpdateFollowingPokemon();
     TryRunOnWarpIntoMapScript();
     RemoveForeignObjectEvents();
-#ifdef PORTABLE
-    HostLogObjectEvents("InitObjectEventsLocal");
-#endif
 }
 
 static void InitObjectEventsReturnToField(void)
@@ -2726,9 +2696,6 @@ static void InitObjectEventsReturnToField(void)
     RotatingGate_InitPuzzleAndGraphics();
     RunOnReturnToFieldMapScript();
     RemoveForeignObjectEvents();
-#ifdef PORTABLE
-    HostLogObjectEvents("InitObjectEventsReturnToField");
-#endif
 }
 
 static void SetCameraToTrackPlayer(void)
