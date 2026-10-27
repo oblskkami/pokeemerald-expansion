@@ -397,11 +397,12 @@ static const u8 *GetInteractedObjectEventScript(struct MapPosition *position, u8
 
 #ifdef PORTABLE
     if (objectEventId != OBJECT_EVENTS_COUNT)
-        HostLogf("talk candidate: obj=%u local=%u gfx=%u map=%u:%u cur=(%d,%d) player=(%d,%d) face=%u invisible=%u sprite=%u script=%p",
+        HostLogf("talk candidate: obj=%u local=%u gfx=%u map=%u:%u cur=(%d,%d) player=(%d,%d) curMap=%u:%u face=%u invisible=%u sprite=%u script=%p",
                  objectEventId, gObjectEvents[objectEventId].localId, gObjectEvents[objectEventId].graphicsId,
                  gObjectEvents[objectEventId].mapGroup, gObjectEvents[objectEventId].mapNum,
                  gObjectEvents[objectEventId].currentCoords.x, gObjectEvents[objectEventId].currentCoords.y,
-                 currX, currY, direction, (u32)gObjectEvents[objectEventId].invisible,
+                 currX, currY, gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum,
+                 direction, (u32)gObjectEvents[objectEventId].invisible,
                  gObjectEvents[objectEventId].spriteId,
                  GetObjectEventScriptPointerByObjectEventId(objectEventId));
 #endif
