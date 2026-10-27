@@ -71,5 +71,8 @@ __pycache__
 *.zip
 dist/PokemonEmerald-PC/操作说明.txt
 
-# multiplatform 参考副本（可由网络/git 重建，约 13MB）
+# 打包产物（exe/dll/zip，一律不入库；发布只上传 zip）
+/dist/
+
+# PC 移植参考副本（可由网络/git 重建，约 13MB）
 /_pc_host_ref/
