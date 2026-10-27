@@ -3656,7 +3656,13 @@ void SetObjectEventDirection(struct ObjectEvent *objectEvent, enum Direction dir
 
 static const u8 *GetObjectEventScriptPointerByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup)
 {
-    return GetObjectEventTemplateByLocalIdAndMap(localId, mapNum, mapGroup)->script;
+    const struct ObjectEventTemplate *obj = GetObjectEventTemplateByLocalIdAndMap(localId, mapNum, mapGroup);
+
+    // 上游在此处直接解引用，找不到模板（例如物件是从别的图残留过来的）就会读 NULL。
+    // GBA 读地址 0 只拿到垃圾脚本指针，PC 宿主则直接崩溃，这里统一按「没有脚本」处理。
+    if (obj == NULL)
+        return NULL;
+    return obj->script;
 }
 
 const u8 *GetObjectEventScriptPointerByObjectEventId(u8 objectEventId)

@@ -2673,12 +2673,16 @@ static void HostLogObjectEvents(const char *when)
     {
         if (!gObjectEvents[i].active)
             continue;
-        HostLogf("  obj #%u local=%u gfx=%u map=%u:%u cur=(%d,%d) sprite=%u invisible=%u script=%p",
+        // 注意：不能用 GetObjectEventScriptPointerByObjectEventId()，它在找不到模板时会解引用 NULL
+        const struct ObjectEventTemplate *tpl = GetObjectEventTemplateByLocalIdAndMap(
+            gObjectEvents[i].localId, gObjectEvents[i].mapNum, gObjectEvents[i].mapGroup);
+
+        HostLogf("  obj #%u local=%u gfx=%u map=%u:%u cur=(%d,%d) sprite=%u invisible=%u tpl=%s script=%p",
                  i, gObjectEvents[i].localId, gObjectEvents[i].graphicsId,
                  gObjectEvents[i].mapGroup, gObjectEvents[i].mapNum,
                  gObjectEvents[i].currentCoords.x, gObjectEvents[i].currentCoords.y,
                  gObjectEvents[i].spriteId, (u32)gObjectEvents[i].invisible,
-                 GetObjectEventScriptPointerByObjectEventId(i));
+                 tpl != NULL ? "yes" : "MISSING", tpl != NULL ? (const void *)tpl->script : NULL);
     }
 }
 #endif
