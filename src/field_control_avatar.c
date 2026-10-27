@@ -1,7 +1,4 @@
 #include "global.h"
-#ifdef PORTABLE
-#include "platform.h"
-#endif
 #include "battle_setup.h"
 #include "bike.h"
 #include "coord_event_weather.h"
@@ -398,28 +395,13 @@ static const u8 *GetInteractedObjectEventScript(struct MapPosition *position, u8
     // 隐形物件（例如尚未真正出场的跟随 NPC）不应该能被 A 键对话。
     // 上游只检查 active + 坐标，不看 invisible，于是被藏起来的跟随 NPC 仍可被搭话，
     // 会跑它自带的脚本（例：跟随的劲敌脚本 → 触发劲敌对战）。
+    // 还有"属于别的地图"的物件：读档时存档里的物件表会带着上一张地图的残留，
+    // 它在当前地图没有模板，却仍按旧坐标留在场上（看起来隐形，按 A 却会跑它的脚本）。
     if (objectEventId == OBJECT_EVENTS_COUNT || gObjectEvents[objectEventId].localId == LOCALID_PLAYER
-     || gObjectEvents[objectEventId].invisible)
+     || gObjectEvents[objectEventId].invisible
+     || gObjectEvents[objectEventId].mapGroup != gSaveBlock1Ptr->location.mapGroup
+     || gObjectEvents[objectEventId].mapNum != gSaveBlock1Ptr->location.mapNum)
     {
-#ifdef PORTABLE
-        // 诊断：记录被拦下的隐形物件，以及当前所有隐形活动物件，便于定位残留来源
-        if (objectEventId != OBJECT_EVENTS_COUNT)
-            HostLogf("talk blocked (invisible): obj=%u local=%u gfx=%u map=%u:%u cur=(%d,%d) script=%p follower=%d",
-                     objectEventId, gObjectEvents[objectEventId].localId, gObjectEvents[objectEventId].graphicsId,
-                     gObjectEvents[objectEventId].mapGroup, gObjectEvents[objectEventId].mapNum,
-                     gObjectEvents[objectEventId].currentCoords.x, gObjectEvents[objectEventId].currentCoords.y,
-                     GetObjectEventScriptPointerByObjectEventId(objectEventId), PlayerHasFollowerNPC());
-        {
-            u32 k;
-            for (k = 0; k < OBJECT_EVENTS_COUNT; k++)
-                if (gObjectEvents[k].active && gObjectEvents[k].invisible)
-                    HostLogf("  invisible obj #%u local=%u gfx=%u map=%u:%u cur=(%d,%d) script=%p",
-                             k, gObjectEvents[k].localId, gObjectEvents[k].graphicsId,
-                             gObjectEvents[k].mapGroup, gObjectEvents[k].mapNum,
-                             gObjectEvents[k].currentCoords.x, gObjectEvents[k].currentCoords.y,
-                             GetObjectEventScriptPointerByObjectEventId(k));
-        }
-#endif
         if (MetatileBehavior_IsCounter(metatileBehavior) != TRUE)
             return NULL;
 
