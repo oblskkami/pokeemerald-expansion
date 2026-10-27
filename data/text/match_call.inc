@@ -929,7 +929,7 @@ MatchCall_Text_MrStone4::
     .string "兹伏奇：哦！{PLAYER}{KUN}！\p你知道得文正在挖掘\n卡绿隧道的事吗？\p但为了保护那里的宝可梦，\n我们停止了工程。\p这是理所当然的。\p比起人类的便利，\n宝可梦能安稳地生活更为重要。$"
 
 MatchCall_Text_MrStone5::
-    .string "兹伏奇：你好，{PLAYER}{KUN}！\p我听从橙华市来的人说\n你是千里的孩子！\p果然是\n虎父无犬子！$"
+    .string "兹伏奇：你好，{PLAYER}{KUN}！\p你真棒。\n不愧是千里的孩子！\p果然是\n虎父无犬子！$"
 
 MatchCall_Text_MrStone6::
     .string "兹伏奇：什么？\p你和自己的父亲对战\n并获得了胜利？\p太了不起了！\p我从没想到能交到像你这样\n特别的朋友！哇哈哈！$"

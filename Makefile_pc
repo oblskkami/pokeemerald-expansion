@@ -132,6 +132,46 @@ HOST_DATA_ASM_CONV := sed -E 's/^@.*$$//; s/([[:space:]])@.*$$/\1/; s/[[:space:]
 endif
 HOST_DATA_SRCS := $(shell find data -maxdepth 1 -type f -name '*.s' -print | sort)
 HOST_DATA_OBJS := $(patsubst %.s,$(HOST_DATA_BUILD_DIR)/%.o,$(HOST_DATA_SRCS))
+# Data assembly pulls map scripts, event text and macros in through .include, and
+# headers through cpp, so the compiler never sees the stream and cannot emit a .d
+# file. The GBA Makefile covers that with tools/scaninc (Makefile:530); without the
+# same prerequisites here an edit to data/maps/<map>/scripts.inc (dialogue text)
+# leaves event_scripts.o untouched and the old text ships in the executable.
+# Over-approximating the dependency is cheap: the whole data/asm tree is a few
+# seconds to reassemble and never silently stale.
+HOST_DATA_DEPS := charmap.txt $(HOST_HEADERS) \
+	$(shell find data asm -type f \( -name '*.inc' -o -name '*.s' -o -name '*.json' \) -print | sort)
+$(HOST_DATA_OBJS): $(HOST_DATA_DEPS)
+# The GBA build converts data/maps/*/map.json into the .inc files that the
+# assembly sources include (map_data_rules.mk) and regenerates the map/layout
+# constants during `make generated`. The host build skipped that step, so an
+# object edited in Porymap updated map.json while the executable kept the old
+# events.inc/header.inc and therefore the old sprite. Mirror the generation.
+HOST_MAP_VERSION ?= emerald
+HOST_MAPJSON ?= tools/mapjson/mapjson
+HOST_MAP_DIRS := $(sort $(dir $(wildcard data/maps/*/map.json)))
+HOST_MAP_JSONS := $(patsubst %/,%/map.json,$(HOST_MAP_DIRS))
+HOST_MAP_GEN_STAMP := $(NATIVE_BUILD_DIR)/map_data.stamp
+
+$(HOST_MAPJSON): $(wildcard tools/mapjson/*.cpp tools/mapjson/*.h)
+	$(MAKE) -C tools/mapjson
+
+# One stamp drives every generated file. Outputs land in the source tree exactly
+# like the GBA build, so both builds share them and the file mtimes decide which
+# objects are stale afterwards.
+$(HOST_MAP_GEN_STAMP): $(HOST_MAP_JSONS) data/maps/map_groups.json data/layouts/layouts.json $(HOST_MAPJSON)
+	@mkdir -p $(dir $@)
+	@$(HOST_MAPJSON) groups $(HOST_MAP_VERSION) data/maps/map_groups.json $(HOST_MAP_JSONS) data/maps include/constants
+	@$(HOST_MAPJSON) layouts $(HOST_MAP_VERSION) data/layouts/layouts.json data/layouts include/constants
+	@for d in $(HOST_MAP_DIRS); do \
+		$(HOST_MAPJSON) map $(HOST_MAP_VERSION) $$d/map.json data/layouts/layouts.json $$d || exit 1; \
+	done
+	@$(HOST_MAPJSON) event_constants $(HOST_MAP_VERSION) $(HOST_MAP_JSONS) include/constants/map_event_ids.h
+	@touch $@
+
+# Order-only: the generated sources must exist before anything is compiled, but
+# only their own mtimes should force a rebuild.
+$(HOST_OBJECTS) $(HOST_C_OBJS) $(HOST_DATA_OBJS): | $(HOST_MAP_GEN_STAMP)
 HOST_MID_SUBDIR := sound/songs/midi
 HOST_MID_CFG_PATH := $(HOST_MID_SUBDIR)/midi.cfg
 HOST_MID_SRCS := $(wildcard $(HOST_MID_SUBDIR)/*.mid)

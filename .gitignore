@@ -68,6 +68,8 @@ python_tools/src/~$文本.xlsx
 __pycache__
 .map_version
 .porydaw/
-AGENTS.md
 *.zip
 dist/PokemonEmerald-PC/操作说明.txt
+
+# multiplatform 参考副本（可由网络/git 重建，约 13MB）
+/_pc_host_ref/
