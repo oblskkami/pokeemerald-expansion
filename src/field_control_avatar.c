@@ -32,6 +32,7 @@
 #include "secret_base.h"
 #include "sound.h"
 #include "start_menu.h"
+#include "task.h"
 #include "trainer_see.h"
 #include "trainer_hill.h"
 #include "unbound_start_menu.h"
