@@ -76,3 +76,4 @@ dist/PokemonEmerald-PC/操作说明.txt
 
 # PC 移植参考副本（可由网络/git 重建，约 13MB）
 /_pc_host_ref/
+/python_tools
