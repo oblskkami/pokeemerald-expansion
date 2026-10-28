@@ -140,8 +140,31 @@ HOST_DATA_OBJS := $(patsubst %.s,$(HOST_DATA_BUILD_DIR)/%.o,$(HOST_DATA_SRCS))
 # Over-approximating the dependency is cheap: the whole data/asm tree is a few
 # seconds to reassemble and never silently stale.
 HOST_DATA_DEPS := charmap.txt $(HOST_HEADERS) \
-	$(shell find data asm -type f \( -name '*.inc' -o -name '*.s' -o -name '*.json' \) -print | sort)
+	$(shell find data asm -type f -print | sort)
 $(HOST_DATA_OBJS): $(HOST_DATA_DEPS)
+
+# Every file under data/ and asm/ counts, not just the sources: layouts.inc and
+# the map/tileset includes pull raw blobs in with .incbin
+# (data/layouts/*/map.bin, data/layouts/*/border.bin,
+# data/tilesets/*/metatiles.bin, ...). The GBA build gets those from
+# tools/scaninc; without them a Porymap edit of the block data left layouts.o
+# untouched and the old map shipped inside the executable.
+
+# Same trap on the C side: INCGFX/INCBIN in the data headers (for example
+# src/data/tilesets/graphics.h and src/data/tilesets/metatiles.h) read the PNG /
+# .pal / .bin into the object at compile time, and the piped preprocessor stream
+# gives the compiler no .d file to record that. One stamp covers the asset trees,
+# so editing a tileset tile, a metatile blob or a map layout bin rebuilds every
+# unit that could embed it instead of silently keeping the old bytes.
+HOST_ASSET_STAMP := $(NATIVE_BUILD_DIR)/asset_data.stamp
+HOST_ASSET_FILES := $(shell find data graphics -type f -print | sort)
+
+$(HOST_ASSET_STAMP): $(HOST_ASSET_FILES)
+	@mkdir -p $(dir $@)
+	@touch $@
+
+$(HOST_OBJECTS) $(HOST_C_OBJS) $(HOST_DATA_OBJS): $(HOST_ASSET_STAMP)
+
 # The GBA build converts data/maps/*/map.json into the .inc files that the
 # assembly sources include (map_data_rules.mk) and regenerates the map/layout
 # constants during `make generated`. The host build skipped that step, so an

@@ -37,12 +37,24 @@ echo "== 准备用户工具 =="
 make -C tools/preproc >/dev/null || die "tools/preproc 构建失败"
 
 echo "== 编译 Windows 桌面版（-j$JOBS，日志 $LOG） =="
-if ! make -f Makefile_pc -j"$JOBS" WINDOWS=1 windows-executable > "$LOG" 2>&1; then
+RC=0
+make -f Makefile_pc -j"$JOBS" WINDOWS=1 windows-executable > "$LOG" 2>&1 || RC=$?
+if [ "$RC" -ne 0 ]; then
     echo "" >&2
-    echo "构建失败，错误行：" >&2
+    echo "构建失败（make 退出码 $RC），错误行：" >&2
     grep -n "error:" "$LOG" | head -n 40 >&2 || true
+    # 有的失败不带 "error:"（ld 的 multiple definition/undefined reference、cp/mv 权限、
+    # 子 make 的 "Error 1"、tools/mapjson 与 preproc 的 stderr），单独捞一遍。
+    grep -nE "Error [0-9]|\*\*\*|undefined reference|multiple definition|cannot (open|find|stat|move)|No such file|Permission denied|Segmentation fault|not found" "$LOG" | head -n 40 >&2 || true
     echo "" >&2
     tail -n 25 "$LOG" >&2
+    # 日志落在 /tmp，Windows 侧读不到；复制一份到 build/（已被 .gitignore 忽略）方便贴给助手。
+    mkdir -p build && cp -f "$LOG" build/pc_build.log 2>/dev/null || true
+    echo "" >&2
+    echo "完整日志已复制到 build/pc_build.log（共 $(wc -l < "$LOG") 行）" >&2
+    if [ "$RC" -eq 130 ]; then
+        echo "提示：退出码 130 = 被 Ctrl+C 中断，不是编译错误。" >&2
+    fi
     exit 1
 fi
 
