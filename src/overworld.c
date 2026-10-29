@@ -739,7 +739,6 @@ static void SetPlayerCoordsFromWarp(void)
 
 void WarpIntoMap(void)
 {
-    FLY_TRACE("WarpIntoMap dest group=%d num=%d warpId=%d x=%d y=%d\n", sWarpDestination.mapGroup, sWarpDestination.mapNum, sWarpDestination.warpId, sWarpDestination.x, sWarpDestination.y);
     ApplyCurrentWarp();
     LoadCurrentMapData();
     SetPlayerCoordsFromWarp();
@@ -773,7 +772,6 @@ void SetWarpDestinationToDynamicWarp(u8 unusedWarpId)
 void SetWarpDestinationToHealLocation(u8 healLocationId)
 {
     const struct HealLocation *healLocation = GetHealLocation(healLocationId);
-    FLY_TRACE("SetWarpDestinationToHealLocation id=%d found=%d\n", healLocationId, healLocation != NULL);
     if (healLocation)
         SetWarpDestination(healLocation->mapGroup, healLocation->mapNum, WARP_ID_NONE, healLocation->x, healLocation->y);
 }
@@ -2427,31 +2425,25 @@ static bool32 ReturnToFieldLocal(u8 *state)
     switch (*state)
     {
     case 0:
-        FLY_TRACE("RTF 0: reset screen\n");
         ResetMirageTowerAndSaveBlockPtrs();
         ResetScreenForMapLoad();
         ResumeMap(FALSE);
         InitObjectEventsReturnToField();
-        FLY_TRACE("RTF 0: object events resumed\n");
         if (gFieldCallback == FieldCallback_UseFly)
             RemoveFollowingPokemon();
         else
             UpdateFollowingPokemon();
-        FLY_TRACE("RTF 0: follower handled\n");
         SetCameraToTrackPlayer();
         (*state)++;
         break;
     case 1:
-        FLY_TRACE("RTF 1: view graphics\n");
         InitViewGraphics();
         TryLoadTrainerHillEReaderPalette();
         FollowerNPC_BindToSurfBlobOnReloadScreen();
         ResumeORASDowseFieldEffect();
-        FLY_TRACE("RTF 1 done\n");
         (*state)++;
         break;
     case 2:
-        FLY_TRACE("RTF 2: run field callback\n");
         if (RunFieldCallback())
             (*state)++;
         break;
