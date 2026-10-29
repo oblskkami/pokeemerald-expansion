@@ -3297,6 +3297,13 @@ u32 AbilityBattleEffects(enum AbilityEffect caseID, enum BattlerId battler, enum
             }
             break;
         case ABILITY_MUTANT_PRESSURE:
+            if (shouldAbilityTrigger)
+            {
+                gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_SWITCHIN_MUTANT_PRESSURE;
+                BattleScriptCall(BattleScript_SwitchInAbilityMsg);
+                effect++;
+            }
+            break;
         case ABILITY_PRESSURE:
             if (shouldAbilityTrigger)
             {

@@ -3976,6 +3976,19 @@ BattleScript_BattlerFormChangeSilent::
 	handleformchange BS_SCRIPTING, 1
 	return
 
+@ 突变威压：形态变化时给出提示文本（出手前切攻击/速度形态、受击切防御形态共用）
+BattleScript_BattlerFormChangeMutantPressure::
+	pause 5
+	call BattleScript_AbilityPopUpScripting
+	flushtextbox
+	handleformchange BS_SCRIPTING, 0
+	playanimation BS_SCRIPTING, B_ANIM_FORM_CHANGE
+	waitanimation
+	handleformchange BS_SCRIPTING, 1
+	printstring STRINGID_MUTANTPRESSUREFORMCHANGE
+	waitmessage B_WAIT_TIME_LONG
+	return
+
 BattleScript_ZenMode::
 	flushtextbox
 	call BattleScript_AbilityPopUpScripting

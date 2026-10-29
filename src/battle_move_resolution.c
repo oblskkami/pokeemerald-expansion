@@ -66,7 +66,10 @@ static bool32 TryFormChangeBeforeMove(void)
         || TryBattleFormChange(gBattlerAttacker, FORM_CHANGE_BATTLE_BEFORE_MOVE_CATEGORY, ability))
     {
         gBattleScripting.battler = gBattlerAttacker;
-        BattleScriptCall(BattleScript_BattlerFormChange);
+        if (ability == ABILITY_MUTANT_PRESSURE)
+            BattleScriptCall(BattleScript_BattlerFormChangeMutantPressure);
+        else
+            BattleScriptCall(BattleScript_BattlerFormChange);
         return TRUE;
     }
     return FALSE;

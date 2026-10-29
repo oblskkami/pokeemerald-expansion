@@ -1225,7 +1225,7 @@ bool32 CannotUseItemsInBattle(enum Item itemId, struct Pokemon *mon)
     // 会解引用空指针——GBA 上只是读回总线垃圾值，宿主无 MMU 直接访问违例闪退。
     if (mon == NULL && battlerTarget < MAX_POSITION_COUNT
         && gBattlerPartyIndexes[battlerTarget] < PARTY_SIZE)
-        mon = &gPlayerParty[gBattlerPartyIndexes[battlerTarget]];
+        mon = &gParties[B_TRAINER_PLAYER][gBattlerPartyIndexes[battlerTarget]];
 
     hp = (mon != NULL) ? GetMonData(mon, MON_DATA_HP) : 0;
 
