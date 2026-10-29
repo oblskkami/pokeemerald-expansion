@@ -46,7 +46,8 @@ powershell.exe -ExecutionPolicy Bypass -File 'tools\package_windows.ps1'
 ### 2.4 增量构建的坑
 - 宿主编译走 `cpp | preproc | cc -x c -`（stdin），编译器产不出 `.d`；`Makefile_pc:101-102` 用
   `HOST_HEADERS := $(shell find include src -type f -name '*.h')` 让**所有 .o 依赖所有头文件**。改头文件后不重编的坑踩过（雌性立绘改完 exe 里还是旧数据）。
-- 汇编同理：`Makefile_pc:135-144` 的 `HOST_DATA_DEPS`（`charmap.txt` + 全部头文件 + `data/`、`asm/` 下所有 `*.inc`/`*.s`/`*.json`）让所有 `data/*.o` 依赖这些。踩过的坑：改 `data/maps/<map>/scripts.inc` 的台词、编了 exe、进游戏还是旧台词（`event_scripts.o` 没重编）。
+- 汇编同理：`Makefile_pc:142-144` 的 `HOST_DATA_DEPS`（`charmap.txt` + 全部头文件 + `data/`、`asm/` 下**所有文件**；2026-10-29 之前只匹配 `*.inc`/`*.s`/`*.json`）让所有 `data/*.o` 依赖这些。踩过的坑：改 `data/maps/<map>/scripts.inc` 的台词、编了 exe、进游戏还是旧台词（`event_scripts.o` 没重编）。
+- **Porymap 存的地图/图块二进制也算素材**：`Makefile_pc:146-166` 的 `HOST_ASSET_STAMP`（`find data graphics`，约 2.9 万前置）让所有 .o 依赖整棵素材树。踩过的坑（m04549）：在 Porymap 里改完布局存盘，`data/layouts/<X>/map.bin` 变了、exe 也重新链接了，但 `data/maps.o` 没重编（宿主没有 `tools/scaninc`），进游戏还是旧地图；`src/data/tilesets/metatiles.h:9` 的 `INCBIN_U16("data/tilesets/primary/general/metatiles.bin")` 与 `src/data/tilesets/graphics.h` 的 `INCGFX_U16("...palettes/00.pal", ".gbapal")` 同理。第一次启用戳记会全量重编一次，属预期。
 - **地图数据必须重新生成**：`Makefile_pc:145-174` 的 `HOST_MAP_GEN_STAMP` 会在编译前调用 `tools/mapjson`（groups / layouts / map / event_constants），把 `data/maps/*/map.json` 变成各图的 `events.inc`/`header.inc`、`data/layouts/layouts*.inc` 与 `include/constants/{map_groups,layouts,map_event_ids}.h`。没有这一步时，在 Porymap 里改 object 的 sprite（`map.json` 的 `graphics_id`，例如 `OBJ_EVENT_GFX_WINGULL` → `OBJ_EVENT_GFX_SPECIES(WINGULL)`）编完 PC 版看不到变化；GBA 侧一直由 `map_data_rules.mk` + `make generated` 负责。
 - 素材改了要清对应缓存：`rm -rf build/assets/graphics/pokemon/<species>`；对象/链接可疑时 `rm -rf build/windows/native/objects build/windows/native/link`。
 - 上一版 exe 还在跑会让最后一步 `mv` 报 `Permission denied`（`build_windows.sh` 里的 `taskkill.exe /IM pokeemerald.exe /F` 就是为此）。
