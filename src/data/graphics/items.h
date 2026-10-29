@@ -1877,6 +1877,9 @@ const u16 gItemIconPalette_SootSack[] = INCGFX_U16("graphics/items/icon_palettes
 const u32 gItemIcon_PokeFlute[] = INCGFX_U32("graphics/items/icons/poke_flute.png", ".4bpp.smol");
 const u16 gItemIconPalette_PokeFlute[] = INCGFX_U16("graphics/items/icon_palettes/poke_flute.pal", ".gbapal");
 
+const u32 gItemIcon_EonFlute[] = INCGFX_U32("graphics/items/icons/eon_flute.png", ".4bpp.smol");
+const u16 gItemIconPalette_EonFlute[] = INCGFX_U16("graphics/items/icon_palettes/eon_flute.pal", ".gbapal");
+
 const u32 gItemIcon_FameChecker[] = INCGFX_U32("graphics/items/icons/fame_checker.png", ".4bpp.smol");
 const u16 gItemIconPalette_FameChecker[] = INCGFX_U16("graphics/items/icon_palettes/fame_checker.pal", ".gbapal");
 

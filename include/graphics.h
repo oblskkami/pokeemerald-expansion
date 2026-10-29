@@ -1607,6 +1607,8 @@ extern const u32 gItemIcon_SootSack[];
 extern const u16 gItemIconPalette_SootSack[];
 extern const u32 gItemIcon_PokeFlute[];
 extern const u16 gItemIconPalette_PokeFlute[];
+extern const u32 gItemIcon_EonFlute[];
+extern const u16 gItemIconPalette_EonFlute[];
 extern const u32 gItemIcon_FameChecker[];
 extern const u16 gItemIconPalette_FameChecker[];
 extern const u32 gItemIcon_TeachyTV[];
