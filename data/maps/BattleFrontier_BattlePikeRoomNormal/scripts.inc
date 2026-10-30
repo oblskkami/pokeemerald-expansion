@@ -686,10 +686,10 @@ BattleFrontier_BattlePikeRoomNormal_Text_KirliaUsedThunderWave:
     .string "奇鲁莉安使出了电磁波！$"
 
 BattleFrontier_BattlePikeRoomNormal_Text_KirliaUsedWillOWisp:
-    .string "奇鲁莉安使出了磷火！$"
+    .string "奇鲁莉安使出了鬼火！$"
 
 BattleFrontier_BattlePikeRoomNormal_Text_DusclopsUsedWillOWisp:
-    .string "彷徨夜灵使出了磷火！$"
+    .string "彷徨夜灵使出了鬼火！$"
 
 BattleFrontier_BattlePikeRoomNormal_Text_DusclopsUsedIceBeam:
     .string "彷徨夜灵使出了冰冻光束！$"

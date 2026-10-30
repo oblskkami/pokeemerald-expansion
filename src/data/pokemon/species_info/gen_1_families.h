@@ -1950,14 +1950,14 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
         .abilities = { ABILITY_KEEN_EYE, ABILITY_NONE, ABILITY_BIG_PECKS },
     #endif
         .bodyColor = BODY_COLOR_BROWN,
-        .speciesName = _("大比鸟"),
+        .speciesName = _("比雕"),
         .cryId = CRY_PIDGEOT,
         .natDexNum = NATIONAL_DEX_PIDGEOT,
         .categoryName = _("鸟"),
         .height = 15,
         .weight = 395,
         .description = COMPOUND_STRING(
-			"大比鸟全力振翅时所刮起的\n"
+			"比雕全力振翅时所刮起的\n"
 			"强风连大树都能压弯。"),
         .pokemonScale = 269,
         .pokemonOffset = 0,
@@ -2018,7 +2018,7 @@ const struct SpeciesInfo gSpeciesInfoGen1[] =
         .eggGroups = MON_EGG_GROUPS(EGG_GROUP_FLYING),
         .abilities = { ABILITY_NO_GUARD, ABILITY_NO_GUARD, ABILITY_NO_GUARD },
         .bodyColor = BODY_COLOR_BROWN,
-        .speciesName = _("大比鸟"),
+        .speciesName = _("比雕"),
     #if P_MODIFIED_MEGA_CRIES
         .cryId = CRY_PIDGEOT_MEGA,
     #else

@@ -5534,11 +5534,11 @@ const struct ItemInfo gItemsInfo[] =
 
     [ITEM_PIDGEOTITE] =
     {
-        .name = ITEM_NAME("大比鸟进化石"),
+        .name = ITEM_NAME("比雕进化石"),
         .price = 0,
         .holdEffect = HOLD_EFFECT_MEGA_STONE,
         .description = COMPOUND_STRING(
-			"让大比鸟携带后，\n"
+			"让比雕携带后，\n"
 			"在战斗时能超级进\n"
 			"化的超级石。"),
         .pocket = POCKET_ITEMS,

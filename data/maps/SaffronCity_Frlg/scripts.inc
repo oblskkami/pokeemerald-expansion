@@ -167,7 +167,7 @@ SaffronCity_Text_PeopleComingBackToSaffron::
 
 SaffronCity_Text_FlewHereOnPidgeot::
     .string "当我得知西尔佛的事件后，\n"
-    .string "就马上乘着大比鸟飞过来了。\p"
+    .string "就马上乘着比雕飞过来了。\p"
     .string "现在一切都结束了吗？\n"
     .string "我错过了写报导的最好时机……$"
 

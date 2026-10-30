@@ -313,7 +313,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
 
     [MOVE_GUILLOTINE] =
     {
-        .name = COMPOUND_STRING("极落钳"),
+        .name = COMPOUND_STRING("剪刀断头台"),
         .description = COMPOUND_STRING(
 			"用钳子或剪刀夹断对手攻击。\n"
 			"只要命中就会一击昏厥。"),
@@ -3202,7 +3202,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
 
     [MOVE_SELF_DESTRUCT] =
     {
-        .name = COMPOUND_STRING("玉石俱碎"),
+        .name = COMPOUND_STRING("自爆"),
         .description = COMPOUND_STRING(
 			"引发爆炸，攻击周围所有的\n"
 			"宝可梦。使用后陷入昏厥。"),
@@ -4216,7 +4216,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
 
     [MOVE_HYPER_FANG] =
     {
-        .name = COMPOUND_STRING("终结门牙"),
+        .name = COMPOUND_STRING("必杀门牙"),
         .description = COMPOUND_STRING(
 			"用锋利门牙牢牢地咬住对手。\n"
 			"有时会使对手畏缩。"),
@@ -4933,7 +4933,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
 
     [MOVE_SCARY_FACE] =
     {
-        .name = COMPOUND_STRING("可怕面孔"),
+        .name = COMPOUND_STRING("鬼面"),
         .description = COMPOUND_STRING(
 			"用恐怖表情瞪着对手使其\n"
 			"害怕，大幅降低对手的速度。"),
@@ -7006,7 +7006,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
 
     [MOVE_WILL_O_WISP] =
     {
-        .name = COMPOUND_STRING("磷火"),
+        .name = COMPOUND_STRING("鬼火"),
         .description = COMPOUND_STRING(
 			"放出怪异的火焰，\n"
 			"从而让对手陷入灼伤状态。"),
@@ -16114,7 +16114,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
 
     [MOVE_OBLIVION_WING] =
     {
-        .name = COMPOUND_STRING("归天之翼"),
+        .name = COMPOUND_STRING("死亡之翼"),
         .description = COMPOUND_STRING(
 			"回复给予对手伤害的\n"
 			"一半以上的HP。"),
